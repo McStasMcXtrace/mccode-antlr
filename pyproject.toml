@@ -1,0 +1,8 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mccode"
+version = "0.0.1"
+dependencies = ['antlr4-tools==0.2', 'anltr4-python3-runtime==4.13.0']
