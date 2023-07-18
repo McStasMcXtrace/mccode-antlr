@@ -8,63 +8,79 @@ coords: LeftParen expr Comma expr Comma expr RightParen;
 reference: Absolute | Relative (Absolute | component_ref);
 
 dependency: Dependency StringLiteral;
+//declare
+//  : Declare UnparsedBlock                           #DeclareBlock
+//  | Declare Copy Identifier (Extend UnparsedBlock)? #DeclareBlockCopy
+//  ;
+//share
+//  : Share UnparsedBlock                           #ShareBlock
+//  | Share Copy Identifier (Extend UnparsedBlock)  #ShareBlockCopy
+//  ;
+//uservars: UserVars UnparsedBlock;
+//initialize
+//  : Initialize UnparsedBlock                           #InitializeBlock
+//  | Initialize Copy Identifier (Extend UnparsedBlock)? #InitializeBlockCopy
+//  ;
+//save
+//  : Save UnparsedBlock                            #SaveBlock
+//  | Save Copy Identifier (Extend UnparsedBlock)?  #SaveBlockCopy
+//  ;
+//finally_
+//  : Finally UnparsedBlock                           #FinallyBlock
+//  | Finally Copy Identifier (Extend UnparsedBlock)? #FinallyBlockCopy
+//  ;
+//display
+//  : McDisplay UnparsedBlock                           #DisplayBlock
+//  | McDisplay Copy Identifier (Extend UnparsedBlock)? #DisplayBlockCopy
+//  ;
+//extend: Extend UnparsedBlock;
+//metadata: MetaData mime=(Identifier | StringLiteral) name=(Identifier | StringLiteral) UnparsedBlock;
+
 declare
-  : Declare UnparsedBlock                           #DeclareBlock
-  | Declare Copy Identifier (Extend UnparsedBlock)? #DeclareBlockCopy
+  : Declare unparsed_block                           #DeclareBlock
+  | Declare Copy Identifier (Extend unparsed_block)? #DeclareBlockCopy
   ;
 share
-  : Share UnparsedBlock                           #ShareBlock
-  | Share Copy Identifier (Extend UnparsedBlock)  #ShareBlockCopy
+  : Share unparsed_block                           #ShareBlock
+  | Share Copy Identifier (Extend unparsed_block)  #ShareBlockCopy
   ;
-uservars: UserVars UnparsedBlock;
+uservars: UserVars unparsed_block;
 initialize
-  : Initialize UnparsedBlock                           #InitializeBlock
-  | Initialize Copy Identifier (Extend UnparsedBlock)? #InitializeBlockCopy
+  : Initialize unparsed_block                           #InitializeBlock
+  | Initialize Copy Identifier (Extend unparsed_block)? #InitializeBlockCopy
   ;
 save
-  : Save UnparsedBlock                            #SaveBlock
-  | Save Copy Identifier (Extend UnparsedBlock)?  #SaveBlockCopy
+  : Save unparsed_block                            #SaveBlock
+  | Save Copy Identifier (Extend unparsed_block)?  #SaveBlockCopy
   ;
 finally_
-  : Finally UnparsedBlock                           #FinallyBlock
-  | Finally Copy Identifier (Extend UnparsedBlock)? #FinallyBlockCopy
+  : Finally unparsed_block                           #FinallyBlock
+  | Finally Copy Identifier (Extend unparsed_block)? #FinallyBlockCopy
   ;
 display
-  : McDisplay UnparsedBlock                           #DisplayBlock
-  | McDisplay Copy Identifier (Extend UnparsedBlock)? #DisplayBlockCopy
+  : McDisplay unparsed_block                           #DisplayBlock
+  | McDisplay Copy Identifier (Extend unparsed_block)? #DisplayBlockCopy
   ;
-split: Split expr?;
-when: When expr;
-place: At coords reference;
-orientation: Rotated coords reference;
-groupref: Group Identifier;
-extend: Extend UnparsedBlock;
-jump: (Jump jumpname (When|Iterate) expr)+;
-jumpname: Previous ('(' IntegerLiteral ')')? | Myself | Next ('(' IntegerLiteral ')')? | Identifier;
+extend: Extend unparsed_block;
+metadata: MetaData mime=(Identifier | StringLiteral) name=(Identifier | StringLiteral) unparsed_block;
 
 
-metadata
-  : MetaData Identifier Identifier UnparsedBlock       #MetadataIdId
-  | MetaData Identifier StringLiteral UnparsedBlock    #MetadataIdStr
-  | MetaData StringLiteral Identifier UnparsedBlock    #MetadataStrId
-  | MetaData StringLiteral StringLiteral UnparsedBlock #MetadataStrStr
-  ;
 
-initializerlist: '{' expr (Comma expr)* '}';
+initializerlist: '{' values+=expr (Comma values+=expr)* '}';
 
 assignment: Identifier Assign expr; // Not used in McCode, but *could* be used to enable, e.g., loops or other simple control
 
 expr
-  : Identifier '[' expr ']'      #ExpressionArrayAccess
-  | Identifier '(' expr ')'      #ExpressionFunctionCall
-  | ('+' | '-') expr             #ExpressionUnaryPM
-  | <assoc=right> expr '^' expr  #ExpressionExponentiation
-  | expr ('*' | '/') expr        #ExpressionBinaryMD
-  | expr ('+' | '-') expr        #ExpressionBinaryPM
-  | '(' expr ')'                 #ExpressionGrouping
-  | Identifier                   #ExpressionIdentifier
-  | FloatingLiteral              #ExpressionFloat
-  | IntegerLiteral               #ExpressionInteger
+  : Identifier '[' expr ']'                    #ExpressionArrayAccess
+  | Identifier '(' expr ')'                    #ExpressionFunctionCall
+  | '(' expr ')'                               #ExpressionGrouping
+  | ('+' | '-') expr                           #ExpressionUnaryPM
+  | <assoc=right> base=expr '^' exponent=expr  #ExpressionExponentiation
+  | left=expr ('*' | '/') right=expr           #ExpressionBinaryMD
+  | left=expr ('+' | '-') right=expr           #ExpressionBinaryPM
+  | Identifier                                 #ExpressionIdentifier
+  | FloatingLiteral                            #ExpressionFloat
+  | IntegerLiteral                             #ExpressionInteger
   ;
 
 shell: Shell StringLiteral;
@@ -72,6 +88,8 @@ search
   : Search StringLiteral       #SearchPath
   | Search Shell StringLiteral #SearchShell
   ;
+
+unparsed_block: '%{' (|content=.*) '%}';
 
 // Common lexer tokens
 /* The McCode grammar _is_ case sensitive, but should it be? Is there any benefit to allowing lowercase keywords? */
@@ -116,7 +134,7 @@ MetaData: 'METADATA'; // | 'MetaData' | 'metadata';
 String: 'string';  // McCode string-literal instrument/component parameter type; always(?) equivalent to `char *`
 Vector: 'vector';  // McCode (double) array component parameter type -- does or does not allow initializer lists?
 Symbol: 'symbol';  // McCode ???? type ????!?!?!
-UnparsedBlock: '%{' (.)*? '%}'; // Used for raw C code blocks and metadata, etc.
+//UnparsedBlock: '%{' (.)*? '%}'; // Used for raw C code blocks and metadata, etc.
 Include: '%include';
 
 Null: 'NULL'; // remove if we switch to underlying C grammar?

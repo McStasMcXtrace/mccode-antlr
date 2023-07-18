@@ -1,4 +1,4 @@
-# Generated from /home/gst/PycharmProjects/mccode4/mccode/grammar/McComp.g4 by ANTLR 4.13.0
+# Generated from /home/g/Code/mccode-antlr/mccode/grammar/McComp.g4 by ANTLR 4.13.0
 from antlr4 import *
 if "." in __name__:
     from .McCompParser import McCompParser
@@ -174,63 +174,13 @@ class McCompVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by McCompParser#split.
-    def visitSplit(self, ctx:McCompParser.SplitContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by McCompParser#when.
-    def visitWhen(self, ctx:McCompParser.WhenContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by McCompParser#place.
-    def visitPlace(self, ctx:McCompParser.PlaceContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by McCompParser#orientation.
-    def visitOrientation(self, ctx:McCompParser.OrientationContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by McCompParser#groupref.
-    def visitGroupref(self, ctx:McCompParser.GrouprefContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by McCompParser#extend.
     def visitExtend(self, ctx:McCompParser.ExtendContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by McCompParser#jump.
-    def visitJump(self, ctx:McCompParser.JumpContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by McCompParser#jumpname.
-    def visitJumpname(self, ctx:McCompParser.JumpnameContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by McCompParser#MetadataIdId.
-    def visitMetadataIdId(self, ctx:McCompParser.MetadataIdIdContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by McCompParser#MetadataIdStr.
-    def visitMetadataIdStr(self, ctx:McCompParser.MetadataIdStrContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by McCompParser#MetadataStrId.
-    def visitMetadataStrId(self, ctx:McCompParser.MetadataStrIdContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by McCompParser#MetadataStrStr.
-    def visitMetadataStrStr(self, ctx:McCompParser.MetadataStrStrContext):
+    # Visit a parse tree produced by McCompParser#metadata.
+    def visitMetadata(self, ctx:McCompParser.MetadataContext):
         return self.visitChildren(ctx)
 
 
@@ -306,6 +256,11 @@ class McCompVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by McCompParser#SearchShell.
     def visitSearchShell(self, ctx:McCompParser.SearchShellContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by McCompParser#unparsed_block.
+    def visitUnparsed_block(self, ctx:McCompParser.Unparsed_blockContext):
         return self.visitChildren(ctx)
 
 

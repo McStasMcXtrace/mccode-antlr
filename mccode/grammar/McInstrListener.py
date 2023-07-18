@@ -1,4 +1,4 @@
-# Generated from /home/gst/PycharmProjects/mccode4/mccode/grammar/McInstr.g4 by ANTLR 4.13.0
+# Generated from /home/g/Code/mccode-antlr/mccode/grammar/McInstr.g4 by ANTLR 4.13.0
 from antlr4 import *
 if "." in __name__:
     from .McInstrParser import McInstrParser
@@ -161,6 +161,69 @@ class McInstrListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by McInstrParser#split.
+    def enterSplit(self, ctx:McInstrParser.SplitContext):
+        pass
+
+    # Exit a parse tree produced by McInstrParser#split.
+    def exitSplit(self, ctx:McInstrParser.SplitContext):
+        pass
+
+
+    # Enter a parse tree produced by McInstrParser#when.
+    def enterWhen(self, ctx:McInstrParser.WhenContext):
+        pass
+
+    # Exit a parse tree produced by McInstrParser#when.
+    def exitWhen(self, ctx:McInstrParser.WhenContext):
+        pass
+
+
+    # Enter a parse tree produced by McInstrParser#place.
+    def enterPlace(self, ctx:McInstrParser.PlaceContext):
+        pass
+
+    # Exit a parse tree produced by McInstrParser#place.
+    def exitPlace(self, ctx:McInstrParser.PlaceContext):
+        pass
+
+
+    # Enter a parse tree produced by McInstrParser#orientation.
+    def enterOrientation(self, ctx:McInstrParser.OrientationContext):
+        pass
+
+    # Exit a parse tree produced by McInstrParser#orientation.
+    def exitOrientation(self, ctx:McInstrParser.OrientationContext):
+        pass
+
+
+    # Enter a parse tree produced by McInstrParser#groupref.
+    def enterGroupref(self, ctx:McInstrParser.GrouprefContext):
+        pass
+
+    # Exit a parse tree produced by McInstrParser#groupref.
+    def exitGroupref(self, ctx:McInstrParser.GrouprefContext):
+        pass
+
+
+    # Enter a parse tree produced by McInstrParser#jump.
+    def enterJump(self, ctx:McInstrParser.JumpContext):
+        pass
+
+    # Exit a parse tree produced by McInstrParser#jump.
+    def exitJump(self, ctx:McInstrParser.JumpContext):
+        pass
+
+
+    # Enter a parse tree produced by McInstrParser#jumpname.
+    def enterJumpname(self, ctx:McInstrParser.JumpnameContext):
+        pass
+
+    # Exit a parse tree produced by McInstrParser#jumpname.
+    def exitJumpname(self, ctx:McInstrParser.JumpnameContext):
+        pass
+
+
     # Enter a parse tree produced by McInstrParser#component_ref.
     def enterComponent_ref(self, ctx:McInstrParser.Component_refContext):
         pass
@@ -314,51 +377,6 @@ class McInstrListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by McInstrParser#split.
-    def enterSplit(self, ctx:McInstrParser.SplitContext):
-        pass
-
-    # Exit a parse tree produced by McInstrParser#split.
-    def exitSplit(self, ctx:McInstrParser.SplitContext):
-        pass
-
-
-    # Enter a parse tree produced by McInstrParser#when.
-    def enterWhen(self, ctx:McInstrParser.WhenContext):
-        pass
-
-    # Exit a parse tree produced by McInstrParser#when.
-    def exitWhen(self, ctx:McInstrParser.WhenContext):
-        pass
-
-
-    # Enter a parse tree produced by McInstrParser#place.
-    def enterPlace(self, ctx:McInstrParser.PlaceContext):
-        pass
-
-    # Exit a parse tree produced by McInstrParser#place.
-    def exitPlace(self, ctx:McInstrParser.PlaceContext):
-        pass
-
-
-    # Enter a parse tree produced by McInstrParser#orientation.
-    def enterOrientation(self, ctx:McInstrParser.OrientationContext):
-        pass
-
-    # Exit a parse tree produced by McInstrParser#orientation.
-    def exitOrientation(self, ctx:McInstrParser.OrientationContext):
-        pass
-
-
-    # Enter a parse tree produced by McInstrParser#groupref.
-    def enterGroupref(self, ctx:McInstrParser.GrouprefContext):
-        pass
-
-    # Exit a parse tree produced by McInstrParser#groupref.
-    def exitGroupref(self, ctx:McInstrParser.GrouprefContext):
-        pass
-
-
     # Enter a parse tree produced by McInstrParser#extend.
     def enterExtend(self, ctx:McInstrParser.ExtendContext):
         pass
@@ -368,57 +386,12 @@ class McInstrListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by McInstrParser#jump.
-    def enterJump(self, ctx:McInstrParser.JumpContext):
+    # Enter a parse tree produced by McInstrParser#metadata.
+    def enterMetadata(self, ctx:McInstrParser.MetadataContext):
         pass
 
-    # Exit a parse tree produced by McInstrParser#jump.
-    def exitJump(self, ctx:McInstrParser.JumpContext):
-        pass
-
-
-    # Enter a parse tree produced by McInstrParser#jumpname.
-    def enterJumpname(self, ctx:McInstrParser.JumpnameContext):
-        pass
-
-    # Exit a parse tree produced by McInstrParser#jumpname.
-    def exitJumpname(self, ctx:McInstrParser.JumpnameContext):
-        pass
-
-
-    # Enter a parse tree produced by McInstrParser#MetadataIdId.
-    def enterMetadataIdId(self, ctx:McInstrParser.MetadataIdIdContext):
-        pass
-
-    # Exit a parse tree produced by McInstrParser#MetadataIdId.
-    def exitMetadataIdId(self, ctx:McInstrParser.MetadataIdIdContext):
-        pass
-
-
-    # Enter a parse tree produced by McInstrParser#MetadataIdStr.
-    def enterMetadataIdStr(self, ctx:McInstrParser.MetadataIdStrContext):
-        pass
-
-    # Exit a parse tree produced by McInstrParser#MetadataIdStr.
-    def exitMetadataIdStr(self, ctx:McInstrParser.MetadataIdStrContext):
-        pass
-
-
-    # Enter a parse tree produced by McInstrParser#MetadataStrId.
-    def enterMetadataStrId(self, ctx:McInstrParser.MetadataStrIdContext):
-        pass
-
-    # Exit a parse tree produced by McInstrParser#MetadataStrId.
-    def exitMetadataStrId(self, ctx:McInstrParser.MetadataStrIdContext):
-        pass
-
-
-    # Enter a parse tree produced by McInstrParser#MetadataStrStr.
-    def enterMetadataStrStr(self, ctx:McInstrParser.MetadataStrStrContext):
-        pass
-
-    # Exit a parse tree produced by McInstrParser#MetadataStrStr.
-    def exitMetadataStrStr(self, ctx:McInstrParser.MetadataStrStrContext):
+    # Exit a parse tree produced by McInstrParser#metadata.
+    def exitMetadata(self, ctx:McInstrParser.MetadataContext):
         pass
 
 
@@ -554,6 +527,15 @@ class McInstrListener(ParseTreeListener):
 
     # Exit a parse tree produced by McInstrParser#SearchShell.
     def exitSearchShell(self, ctx:McInstrParser.SearchShellContext):
+        pass
+
+
+    # Enter a parse tree produced by McInstrParser#unparsed_block.
+    def enterUnparsed_block(self, ctx:McInstrParser.Unparsed_blockContext):
+        pass
+
+    # Exit a parse tree produced by McInstrParser#unparsed_block.
+    def exitUnparsed_block(self, ctx:McInstrParser.Unparsed_blockContext):
         pass
 
 

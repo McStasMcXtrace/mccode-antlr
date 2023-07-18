@@ -1,5 +1,9 @@
-from reader import Reader
+from .reader import Reader
+from .registry import Registry, LocalRegistry, RemoteRegistry
 
 __all__ = [
-    'Reader'
+    'Reader',
+    'Registry',
+    'LocalRegistry',
+    'RemoteRegistry'
 ]

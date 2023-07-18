@@ -1,4 +1,4 @@
-# Generated from /home/gst/PycharmProjects/mccode4/mccode/grammar/McInstr.g4 by ANTLR 4.13.0
+# Generated from /home/g/Code/mccode-antlr/mccode/grammar/McInstr.g4 by ANTLR 4.13.0
 from antlr4 import *
 if "." in __name__:
     from .McInstrParser import McInstrParser
@@ -94,6 +94,41 @@ class McInstrVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by McInstrParser#split.
+    def visitSplit(self, ctx:McInstrParser.SplitContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by McInstrParser#when.
+    def visitWhen(self, ctx:McInstrParser.WhenContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by McInstrParser#place.
+    def visitPlace(self, ctx:McInstrParser.PlaceContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by McInstrParser#orientation.
+    def visitOrientation(self, ctx:McInstrParser.OrientationContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by McInstrParser#groupref.
+    def visitGroupref(self, ctx:McInstrParser.GrouprefContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by McInstrParser#jump.
+    def visitJump(self, ctx:McInstrParser.JumpContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by McInstrParser#jumpname.
+    def visitJumpname(self, ctx:McInstrParser.JumpnameContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by McInstrParser#component_ref.
     def visitComponent_ref(self, ctx:McInstrParser.Component_refContext):
         return self.visitChildren(ctx)
@@ -179,63 +214,13 @@ class McInstrVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by McInstrParser#split.
-    def visitSplit(self, ctx:McInstrParser.SplitContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by McInstrParser#when.
-    def visitWhen(self, ctx:McInstrParser.WhenContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by McInstrParser#place.
-    def visitPlace(self, ctx:McInstrParser.PlaceContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by McInstrParser#orientation.
-    def visitOrientation(self, ctx:McInstrParser.OrientationContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by McInstrParser#groupref.
-    def visitGroupref(self, ctx:McInstrParser.GrouprefContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by McInstrParser#extend.
     def visitExtend(self, ctx:McInstrParser.ExtendContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by McInstrParser#jump.
-    def visitJump(self, ctx:McInstrParser.JumpContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by McInstrParser#jumpname.
-    def visitJumpname(self, ctx:McInstrParser.JumpnameContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by McInstrParser#MetadataIdId.
-    def visitMetadataIdId(self, ctx:McInstrParser.MetadataIdIdContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by McInstrParser#MetadataIdStr.
-    def visitMetadataIdStr(self, ctx:McInstrParser.MetadataIdStrContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by McInstrParser#MetadataStrId.
-    def visitMetadataStrId(self, ctx:McInstrParser.MetadataStrIdContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by McInstrParser#MetadataStrStr.
-    def visitMetadataStrStr(self, ctx:McInstrParser.MetadataStrStrContext):
+    # Visit a parse tree produced by McInstrParser#metadata.
+    def visitMetadata(self, ctx:McInstrParser.MetadataContext):
         return self.visitChildren(ctx)
 
 
@@ -311,6 +296,11 @@ class McInstrVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by McInstrParser#SearchShell.
     def visitSearchShell(self, ctx:McInstrParser.SearchShellContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by McInstrParser#unparsed_block.
+    def visitUnparsed_block(self, ctx:McInstrParser.Unparsed_blockContext):
         return self.visitChildren(ctx)
 
 

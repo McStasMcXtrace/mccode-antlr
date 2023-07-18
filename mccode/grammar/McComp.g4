@@ -48,7 +48,7 @@ component_definition
       component_trace save? finally_? display? End                               #ComponentDefineCopy
     ;
 
-component_trace: Trace UnparsedBlock;
+component_trace: Trace unparsed_block;
 
 component_parameter_set: component_define_parameters? component_set_parameters? component_out_parameters?;
 component_define_parameters: Definition Parameters component_parameters;

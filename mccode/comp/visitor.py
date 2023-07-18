@@ -1,4 +1,4 @@
-from ..grammar import McCompLexer, McCompParser as Parser, McCompVisitor
+from ..grammar import McCompParser as Parser, McCompVisitor
 from .comp import Comp
 from ..common import ComponentParameter, Value, MetaData
 
@@ -59,65 +59,6 @@ def context_initializer_list_to_tuple(a: Parser.InitializerlistContext):
     return tuple(context_expr_to_value(x) for x in a.expr())
 
 
-def context_to_component_parameter(a: Parser.Component_parameterContext):
-    name = str(a.Identifer(0))
-    default = None
-    if isinstance(a, Parser.ComponentParameterDoubleContext):
-        if a.Assign() is not None:
-            default = context_expr_to_value(a.expr())
-        value = Value(Value.Type.float, default)
-    elif isinstance(a, Parser.ComponentParameterIntegerContext):
-        if a.Assign() is not None:
-            default = context_expr_to_value(a.expr())
-        value = Value(Value.Type.int, default)
-    elif isinstance(a, Parser.ComponentParameterStringContext):
-        if a.Assign() is not None:
-            default = 'NULL' if a.StringLiteral() is None else a.StringLiteral()
-        value = Value(Value.Type.str, default)
-    elif isinstance(a, (Parser.ComponentParameterVectorContext, Parser.ComponentParameterDoubleArrayContext)):
-        if a.Assign() is not None:
-            if a.Identifier() is not None:
-                default = a.Identifer()
-            elif a.initializerlist() is not None:
-                default = context_initializer_list_to_tuple(a.initializerlist())
-            else:
-                default = "NULL"
-        value = Value(Value.Type.float_array, default)
-    elif isinstance(a, Parser.ComponentParameterIntArrayContext):
-        if a.Assign() is not None:
-            if a.Identifer() is not None:
-                default = a.Identifer()
-            elif a.initializerlist() is not None:
-                default = context_initializer_list_to_tuple(a.initializerlist())
-            else:
-                default = "NULL"
-        value = Value(Value.Type.int_array, default)
-    else:
-        raise RuntimeError(f"Unhandled context type {type(a)}")
-    return ComponentParameter(name=name, value=value)
-
-
-def context_to_component_parameters(a: Parser.Component_parametersContext):
-    return [context_to_component_parameter(x) for x in a.component_parameter()]
-
-
-def context_to_component_metadata(component_name: str, a: Parser.MetadataContext):
-    mimetype, name = None, None
-    if isinstance(a, Parser.MetadataIdIdContext):
-        mimetype, name = [str(x) for x in a.Identifier()]
-    elif isinstance(a, Parser.MetadataIdStrContext):
-        mimetype = str(a.Identifer())
-        name = str(a.StringLiteral())
-    elif isinstance(a, Parser.MetadataStrIdContext):
-        mimetype = str(a.StringLiteral())
-        name = str(a.StringLiteral())
-    elif isinstance(a, Parser.MetaDataStrStrContext):
-        mimetype, name = [str(x) for x in a.StringLiteral()]
-    else:
-        raise RuntimeError(f"Unsupported Metadata context type {type(a)}")
-    return MetaData.from_component_tokens(component_name, mimetype, name, str(a.UnparsedBlock()))
-
-
 class CompVisitor(McCompVisitor):
     def __init__(self, parent):
         self.parent = parent  # the instrument (handler?) that wanted to read this component
@@ -125,74 +66,173 @@ class CompVisitor(McCompVisitor):
 
     def visitComponentDefineNew(self, ctx: Parser.ComponentDefineNewContext):
         self.state.name = str(ctx.Identifer())
-        self._fillComponentDefineState(ctx)
+        if ctx.NoAcc() is not None:
+            self.state.no_acc()
+        self.visitChildren(ctx)  # Use the visitor methods to fill in details of the state
         return self.state
 
     def visitComponentDefineCopy(self, ctx: Parser.ComponentDefinecopyContext):
         from copy import deepcopy
         new_name, copy_from = [str(x) for x in ctx.Identifer()]
-        # ... find and parse the component named in copy_from ... TODO Implement this in instr.visitor(?)
         if self.parent is None:
             raise RuntimeError("Can not copy a component definition without a parent instrument")
-        copy_from_comp = self.parent.get_named_component_from_definition(copy_from)
+        copy_from_comp = self.parent.get_named_component(copy_from)
         # pull from that component ... deepcopy _just_ in case
         self.state = deepcopy(copy_from_comp)
         # update the name to match what we're going to call this component
         self.state.name = new_name
-        # add parameters, overwrite unparsed blocks
-        self._fillComponentDefineState(ctx)
-        return self.state
-
-    def _fillComponentDefineState(self, ctx):
-
-        sets = ctx.component_parameter_set()
-        # DEFINE PARAMETER
-        for par in context_to_component_parameters(sets.define_parameters().component_parameters()):
-            self.state.add_parameter(par)
-        # DEFINE SETTING
-        for par in context_to_component_parameters(sets.set_parameters().component_parameters()):
-            self.state.add_setting(par)
-        # DEFINE OUTPUT
-        for par in context_to_component_parameters(sets.out_parameters().component_parameters()):
-            self.state.add_output(par)
-
-        if ctx.metadata() is not None:
-            self.state.metadata = tuple(context_to_component_metadata(self.state.name, x) for x in ctx.metadata())
-
-        if ctx.shell() is not None:
-            print(f"Implement executing shell scripts like\n\t{str(ctx.shell().StringLiteral())}")
-
-        if ctx.dependency() is not None:
-            self.state.dependency = ctx.dependency().StringLiteral()
-
+        # add parameters, overwrite all provided details
         if ctx.NoAcc() is not None:
             self.state.no_acc()
+        self.visitChildren(ctx)  # Use the visitor methods to overwrite details of the state
+        return self.state
 
-        if ctx.share() is not None:
-            self.state.SHARE(ctx.share().UnparsedBlock())
+    def visitComponent_define_parameters(self, ctx: Parser.Component_define_parametersContext):
+        for parameter in self.visit(ctx.component_parameters()):
+            self.state.add_parameter(parameter)
 
-        if ctx.uservars() is not None:
-            self.state.USERVARS(ctx.uservars().UnparsedBlock())
+    def visitComponent_set_parameters(self, ctx: Parser.Component_set_parametersContext):
+        for parameter in self.visit(ctx.component_parameters()):
+            self.state.add_setting(parameter)
 
-        if ctx.declare() is not None:
-            self.state.DECLARE(ctx.declare().UnparsedBlock())
+    def visitComponent_out_parameters(self, ctx: Parser.Component_out_parametersContext):
+        for parameter in self.visit(ctx.component_parameters()):
+            self.state.add_output(parameter)
 
-        if ctx.initialize() is not None:
-            self.state.INITIALIZE(ctx.initialize().UnparsedBlock())
+    def visitComponent_parameters(self, ctx: Parser.Component_parametersContext):
+        return [self.visit(x) for x in ctx.component_parameter()]
 
-        if ctx.component_trace() is not None:
-            self.state.TRACE(ctx.component_trace().UnparsedBlock())
+    def visitComponentParameterDouble(self, ctx: Parser.ComponentParameterDoubleContext):
+        name = str(ctx.Identifier())
+        value = Value(Value.Type.float, None if ctx.Assign() is None else self.visit(ctx.expr()))
+        return ComponentParameter(name=name, value=value)
 
-        if ctx.save() is not None:
-            self.state.SAVE(ctx.save().UnparsedBlock())
+    def visitComponentParameterInteger(self, ctx: Parser.ComponentParameterIntegerContext):
+        name = str(ctx.Identifier())
+        value = Value(Value.Type.int, None if ctx.Assign() is None else self.visit(ctx.expr()))
+        return ComponentParameter(name=name, value=value)
 
-        if ctx.finally_() is not None:
-            self.state.FINALLY(ctx.finally_().UnparsedBlock())
+    def visitComponentParameterString(self, ctx: Parser.ComponentParameterStringContext):
+        name = str(ctx.Identifier())
+        default = None
+        if ctx.Assign() is not None:
+            default = 'NULL' if ctx.StringLiteral() is None else self.visit(ctx.StringLiteral())
+        return ComponentParameter(name=name, value=Value(Value.Type.str, default))
 
-        if ctx.display() is not None:
-            self.state.DISPLAY(ctx.display().UnparsedBlock())
+    def visitComponentParameterVector(self, ctx: Parser.ComponentParameterVectorContext):
+        name = str(ctx.Identifier(0))
+        default = None
+        if ctx.assign() is not None:
+            default = "NULL"
+            if ctx.Identifier(1) is not None:
+                default = str(ctx.Identifier(1))
+            elif ctx.initializerlist() is not None:
+                default = self.visit(ctx.initializerlist())
+        return ComponentParameter(name=name, value=Value(Value.Type.float_array, default))
 
+    def visitComponentParameterSymbol(self, ctx: Parser.ComponentParameterSymbolContext):
+        raise RuntimeError("McCode symbol parameter type not supported yet")
 
+    def visitComponentParameterDoubleArray(self, ctx: Parser.ComponentParameterDoubleArrayContext):
+        # 'vector' is really just an alias for 'double *', right?
+        return self.visitComponentParameterVector(ctx)
 
+    def visitComponentParameterIntegerArray(self, ctx: Parser.ComponentParameterIntegerArrayContext):
+        name = str(ctx.Identifier(0))
+        default = None
+        if ctx.assign() is not None:
+            default = "NULL"
+            if ctx.Identifier(1) is not None:
+                default = str(ctx.Identifier(1))
+            elif ctx.initializerlist() is not None:
+                default = self.visit(ctx.initializerlist())
+        return ComponentParameter(name=name, value=Value(Value.Type.int_array, default))
 
+    def visitDependency(self, ctx: Parser.DependencyContext):
+        self.parent.add_cflags(self.visit(ctx.StringLiteral()))
 
+    def visitDeclareBlock(self, ctx: Parser.DeclareBlockContext):
+        self.state.DECLARE(self.visit(ctx.unparsed_block()))
+
+    def visitDeclareBlockCopy(self, ctx: Parser.DeclareBlockCopyContext):
+        copy_from = self.parent.get_named_component(str(ctx.Identifier()))
+        self.state.DECLARE(copy_from.declare + '\n' + self.visit(ctx.unparsed_block()))
+
+    def visitShareBlock(self, ctx: Parser.ShareBlockContext):
+        self.state.SHARE(self.visit(ctx.unparsed_block()))
+
+    def visitShareBlockCopy(self, ctx: Parser.ShareBlockCopyContext):
+        copy_from = self.parent.get_named_component(str(ctx.Identifier()))
+        self.state.SHARE(copy_from.share + '\n' + self.visit(ctx.unparsed_block()))
+
+    def visitInitialzieBlock(self, ctx: Parser.InitializeBlockContext):
+        self.state.INITIALIZE(self.visit(ctx.unparsed_block()))
+
+    def visitInitializeBlockCopy(self, ctx: Parser.InitializeBlockCopyContext):
+        copy_from = self.parent.get_named_component(str(ctx.Identifier()))
+        self.state.INITIALIZE(copy_from.initialize + '\n' + self.visit(ctx.unparsed_block()))
+
+    def visitUservars(self, ctx: Parser.UservarsContext):
+        self.state.USERVARS(self.visit(ctx.unparsed_block()))
+
+    def visitSaveBlock(self, ctx: Parser.SaveBlockContext):
+        self.state.SAVE(self.visit(ctx.unparsed_block()))
+
+    def visitSaveBlockCopy(self, ctx: Parser.SaveBlockCopyContext):
+        copy_from = self.parent.get_named_component(str(ctx.Identifier()))
+        self.state.SAVE(copy_from.save + '\n' + self.visit(ctx.unparsed_block()))
+
+    def visitFinallyBlock(self, ctx: Parser.FinallyBlockContext):
+        self.state.FINALLY(self.visit(ctx.unparsed_block()))
+
+    def visitFinallyBlockCopy(self, ctx: Parser.FinallyBlockCopyContext):
+        copy_from = self.parent.get_named_component(str(ctx.Identifier()))
+        self.state.FINALLY(copy_from.final + '\n' + self.visit(ctx.unparsed_block()))
+
+    def visitDisplayBlock(self, ctx: Parser.DisplayBlockContext):
+        self.state.DISPLAY(self.visit(ctx.unparsed_block()))
+
+    def visitDisplayBlockCopy(self, ctx: Parser.DisplayBlockCopyContext):
+        copy_from = self.parent.get_named_component(str(ctx.Identifier()))
+        self.state.DISPLAY(copy_from.display + '\n' + self.visit(ctx.unparsed_block()))
+
+    def visitMetadata(self, ctx: Parser.MetadataContext):
+        metadata = self.visit(ctx.unparsed_block())
+        self.state.add_metadata(MetaData.from_component_tokens(self.state.name, str(ctx.mime), str(ctx.name), metadata))
+
+    def visitUnparsed_block(self, ctx: Parser.Unparsed_blockContext):
+        return "" if ctx.content is None else str(ctx.content)
+
+# TODO Implement all of these visitors
+    def visitExpressionUnaryPM(self, ctx: Parser.ExpressionUnaryPMContext):
+        return self.visitChildren(ctx)
+
+    def visitExpressionGrouping(self, ctx: Parser.ExpressionGroupingContext):
+        return self.visitChildren(ctx)
+
+    def visitExpressionFloat(self, ctx: Parser.ExpressionFloatContext):
+        return self.visitChildren(ctx)
+
+    def visitExpressionArrayAccess(self, ctx: Parser.ExpressionArrayAccessContext):
+        return self.visitChildren(ctx)
+
+    def visitExpressionIdentifier(self, ctx: Parser.ExpressionIdentifierContext):
+        return self.visitChildren(ctx)
+
+    def visitExpressionInteger(self, ctx: Parser.ExpressionIntegerContext):
+        return self.visitChildren(ctx)
+
+    def visitExpressionExponentiation(self, ctx: Parser.ExpressionExponentiationContext):
+        return self.visitChildren(ctx)
+
+    def visitExpressionBinaryPM(self, ctx: Parser.ExpressionBinaryPMContext):
+        return self.visitChildren(ctx)
+
+    def visitExpressionFunctionCall(self, ctx: Parser.ExpressionFunctionCallContext):
+        return self.visitChildren(ctx)
+
+    def visitExpressionBinaryMD(self, ctx: Parser.ExpressionBinaryMDContext):
+        return self.visitChildren(ctx)
+
+    def visitInitializerlist(self, ctx: Parser.InitializerlistContext):
+        return self.visitChildren(ctx)

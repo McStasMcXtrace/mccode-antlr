@@ -105,3 +105,8 @@ class Comp:
         if '%{' == block[:2] and '%}' == block[-2:]:
             block = block[2:-2]
         self.display = block
+
+    def add_metadata(self, m: MetaData):
+        if any([x.name == m.name for x in self.metadata]):
+            self.metadata = tuple([x for x in self.metadata if x.name != m.name])
+        self.metadata += (m, )

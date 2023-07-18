@@ -1,4 +1,4 @@
-# Generated from /home/gst/PycharmProjects/mccode4/mccode/grammar/McComp.g4 by ANTLR 4.13.0
+# Generated from /home/g/Code/mccode-antlr/mccode/grammar/McComp.g4 by ANTLR 4.13.0
 from antlr4 import *
 if "." in __name__:
     from .McCompParser import McCompParser
@@ -305,51 +305,6 @@ class McCompListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by McCompParser#split.
-    def enterSplit(self, ctx:McCompParser.SplitContext):
-        pass
-
-    # Exit a parse tree produced by McCompParser#split.
-    def exitSplit(self, ctx:McCompParser.SplitContext):
-        pass
-
-
-    # Enter a parse tree produced by McCompParser#when.
-    def enterWhen(self, ctx:McCompParser.WhenContext):
-        pass
-
-    # Exit a parse tree produced by McCompParser#when.
-    def exitWhen(self, ctx:McCompParser.WhenContext):
-        pass
-
-
-    # Enter a parse tree produced by McCompParser#place.
-    def enterPlace(self, ctx:McCompParser.PlaceContext):
-        pass
-
-    # Exit a parse tree produced by McCompParser#place.
-    def exitPlace(self, ctx:McCompParser.PlaceContext):
-        pass
-
-
-    # Enter a parse tree produced by McCompParser#orientation.
-    def enterOrientation(self, ctx:McCompParser.OrientationContext):
-        pass
-
-    # Exit a parse tree produced by McCompParser#orientation.
-    def exitOrientation(self, ctx:McCompParser.OrientationContext):
-        pass
-
-
-    # Enter a parse tree produced by McCompParser#groupref.
-    def enterGroupref(self, ctx:McCompParser.GrouprefContext):
-        pass
-
-    # Exit a parse tree produced by McCompParser#groupref.
-    def exitGroupref(self, ctx:McCompParser.GrouprefContext):
-        pass
-
-
     # Enter a parse tree produced by McCompParser#extend.
     def enterExtend(self, ctx:McCompParser.ExtendContext):
         pass
@@ -359,57 +314,12 @@ class McCompListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by McCompParser#jump.
-    def enterJump(self, ctx:McCompParser.JumpContext):
+    # Enter a parse tree produced by McCompParser#metadata.
+    def enterMetadata(self, ctx:McCompParser.MetadataContext):
         pass
 
-    # Exit a parse tree produced by McCompParser#jump.
-    def exitJump(self, ctx:McCompParser.JumpContext):
-        pass
-
-
-    # Enter a parse tree produced by McCompParser#jumpname.
-    def enterJumpname(self, ctx:McCompParser.JumpnameContext):
-        pass
-
-    # Exit a parse tree produced by McCompParser#jumpname.
-    def exitJumpname(self, ctx:McCompParser.JumpnameContext):
-        pass
-
-
-    # Enter a parse tree produced by McCompParser#MetadataIdId.
-    def enterMetadataIdId(self, ctx:McCompParser.MetadataIdIdContext):
-        pass
-
-    # Exit a parse tree produced by McCompParser#MetadataIdId.
-    def exitMetadataIdId(self, ctx:McCompParser.MetadataIdIdContext):
-        pass
-
-
-    # Enter a parse tree produced by McCompParser#MetadataIdStr.
-    def enterMetadataIdStr(self, ctx:McCompParser.MetadataIdStrContext):
-        pass
-
-    # Exit a parse tree produced by McCompParser#MetadataIdStr.
-    def exitMetadataIdStr(self, ctx:McCompParser.MetadataIdStrContext):
-        pass
-
-
-    # Enter a parse tree produced by McCompParser#MetadataStrId.
-    def enterMetadataStrId(self, ctx:McCompParser.MetadataStrIdContext):
-        pass
-
-    # Exit a parse tree produced by McCompParser#MetadataStrId.
-    def exitMetadataStrId(self, ctx:McCompParser.MetadataStrIdContext):
-        pass
-
-
-    # Enter a parse tree produced by McCompParser#MetadataStrStr.
-    def enterMetadataStrStr(self, ctx:McCompParser.MetadataStrStrContext):
-        pass
-
-    # Exit a parse tree produced by McCompParser#MetadataStrStr.
-    def exitMetadataStrStr(self, ctx:McCompParser.MetadataStrStrContext):
+    # Exit a parse tree produced by McCompParser#metadata.
+    def exitMetadata(self, ctx:McCompParser.MetadataContext):
         pass
 
 
@@ -545,6 +455,15 @@ class McCompListener(ParseTreeListener):
 
     # Exit a parse tree produced by McCompParser#SearchShell.
     def exitSearchShell(self, ctx:McCompParser.SearchShellContext):
+        pass
+
+
+    # Enter a parse tree produced by McCompParser#unparsed_block.
+    def enterUnparsed_block(self, ctx:McCompParser.Unparsed_blockContext):
+        pass
+
+    # Exit a parse tree produced by McCompParser#unparsed_block.
+    def exitUnparsed_block(self, ctx:McCompParser.Unparsed_blockContext):
         pass
 
 

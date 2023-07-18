@@ -84,3 +84,11 @@ instance_parameters: '(' (instance_parameter (',' instance_parameter)*)? ')';
 instance_parameter: Identifier Assign expr;
 
 
+
+split: Split expr?;
+when: When expr;
+place: At coords reference;
+orientation: Rotated coords reference;
+groupref: Group Identifier;
+jump: (Jump jumpname (When|Iterate) expr)+;
+jumpname: Previous ('(' IntegerLiteral ')')? | Myself | Next ('(' IntegerLiteral ')')? | Identifier;
