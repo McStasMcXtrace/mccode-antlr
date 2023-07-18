@@ -1,3 +1,5 @@
 *.interp
 *.tokens
 *.java
+*/__pycache__/*
+*.pyc

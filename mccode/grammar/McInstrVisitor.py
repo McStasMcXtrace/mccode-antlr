@@ -219,13 +219,23 @@ class McInstrVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by McInstrParser#MetadataSimpleName.
-    def visitMetadataSimpleName(self, ctx:McInstrParser.MetadataSimpleNameContext):
+    # Visit a parse tree produced by McInstrParser#MetadataIdId.
+    def visitMetadataIdId(self, ctx:McInstrParser.MetadataIdIdContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by McInstrParser#MetadataStringName.
-    def visitMetadataStringName(self, ctx:McInstrParser.MetadataStringNameContext):
+    # Visit a parse tree produced by McInstrParser#MetadataIdStr.
+    def visitMetadataIdStr(self, ctx:McInstrParser.MetadataIdStrContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by McInstrParser#MetadataStrId.
+    def visitMetadataStrId(self, ctx:McInstrParser.MetadataStrIdContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by McInstrParser#MetadataStrStr.
+    def visitMetadataStrStr(self, ctx:McInstrParser.MetadataStrStrContext):
         return self.visitChildren(ctx)
 
 
@@ -234,48 +244,58 @@ class McInstrVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by McInstrParser#SimpleExpressionUnaryPM.
-    def visitSimpleExpressionUnaryPM(self, ctx:McInstrParser.SimpleExpressionUnaryPMContext):
+    # Visit a parse tree produced by McInstrParser#assignment.
+    def visitAssignment(self, ctx:McInstrParser.AssignmentContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by McInstrParser#SimpleExpressionGrouping.
-    def visitSimpleExpressionGrouping(self, ctx:McInstrParser.SimpleExpressionGroupingContext):
+    # Visit a parse tree produced by McInstrParser#ExpressionUnaryPM.
+    def visitExpressionUnaryPM(self, ctx:McInstrParser.ExpressionUnaryPMContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by McInstrParser#SimpleExpressionBinaryMD.
-    def visitSimpleExpressionBinaryMD(self, ctx:McInstrParser.SimpleExpressionBinaryMDContext):
+    # Visit a parse tree produced by McInstrParser#ExpressionGrouping.
+    def visitExpressionGrouping(self, ctx:McInstrParser.ExpressionGroupingContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by McInstrParser#SimpleExpressionBinaryPM.
-    def visitSimpleExpressionBinaryPM(self, ctx:McInstrParser.SimpleExpressionBinaryPMContext):
+    # Visit a parse tree produced by McInstrParser#ExpressionFloat.
+    def visitExpressionFloat(self, ctx:McInstrParser.ExpressionFloatContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by McInstrParser#SimpleExpressionArrayAccess.
-    def visitSimpleExpressionArrayAccess(self, ctx:McInstrParser.SimpleExpressionArrayAccessContext):
+    # Visit a parse tree produced by McInstrParser#ExpressionArrayAccess.
+    def visitExpressionArrayAccess(self, ctx:McInstrParser.ExpressionArrayAccessContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by McInstrParser#SimpleExpressionInteger.
-    def visitSimpleExpressionInteger(self, ctx:McInstrParser.SimpleExpressionIntegerContext):
+    # Visit a parse tree produced by McInstrParser#ExpressionIdentifier.
+    def visitExpressionIdentifier(self, ctx:McInstrParser.ExpressionIdentifierContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by McInstrParser#SimpleExpressionFunctionCall.
-    def visitSimpleExpressionFunctionCall(self, ctx:McInstrParser.SimpleExpressionFunctionCallContext):
+    # Visit a parse tree produced by McInstrParser#ExpressionInteger.
+    def visitExpressionInteger(self, ctx:McInstrParser.ExpressionIntegerContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by McInstrParser#SimpleExpressionIdentifier.
-    def visitSimpleExpressionIdentifier(self, ctx:McInstrParser.SimpleExpressionIdentifierContext):
+    # Visit a parse tree produced by McInstrParser#ExpressionExponentiation.
+    def visitExpressionExponentiation(self, ctx:McInstrParser.ExpressionExponentiationContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by McInstrParser#SimpleExpressionFloat.
-    def visitSimpleExpressionFloat(self, ctx:McInstrParser.SimpleExpressionFloatContext):
+    # Visit a parse tree produced by McInstrParser#ExpressionBinaryPM.
+    def visitExpressionBinaryPM(self, ctx:McInstrParser.ExpressionBinaryPMContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by McInstrParser#ExpressionFunctionCall.
+    def visitExpressionFunctionCall(self, ctx:McInstrParser.ExpressionFunctionCallContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by McInstrParser#ExpressionBinaryMD.
+    def visitExpressionBinaryMD(self, ctx:McInstrParser.ExpressionBinaryMDContext):
         return self.visitChildren(ctx)
 
 

@@ -41,10 +41,10 @@ END
 */
 component_definition
     : Define Component Identifier component_parameter_set
-      metadata? shell? dependency? NoAcc? share? uservars? declare? initialize?
+      metadata* shell? dependency? NoAcc? share? uservars? declare? initialize?
       component_trace save? finally_? display? End                               #ComponentDefineNew
     | Define Component Identifier Copy Identifier component_parameter_set
-      metadata? shell? dependency? NoAcc? share? uservars? declare? initialize?
+      metadata* shell? dependency? NoAcc? share? uservars? declare? initialize?
       component_trace save? finally_? display? End                               #ComponentDefineCopy
     ;
 
@@ -58,10 +58,11 @@ component_out_parameters: (Output | Private) Parameters component_parameters;
 
 component_parameters: '(' (component_parameter (Comma component_parameter)*)? ')';
 component_parameter
-    : Double? Identifier (Assign FloatingLiteral)?                               #ComponentParameterDouble
-    | Int Identifier (Assign IntegerLiteral)?                                    #ComponentParameterInteger
-    | (String | (Char Star)) Identifier (Assign (StringLiteral | Null | '0'))?   #ComponentParameterString
-    | Vector Identifier (Assign (Identifier | initializerlist | Null | '0'))?    #ComponentParameterVector
-    | Double '*' Identifier (Assign (Null | '0'))?                               #ComponentParameterDoubleArray
-    | Int '*' Identifier (Assign (Null | '0'))?                                  #ComponentParameterIntegerArray
+    : Double? Identifier (Assign expr)?                                            #ComponentParameterDouble
+    | Int Identifier (Assign expr)?                                                #ComponentParameterInteger
+    | (String | (Char Star)) Identifier (Assign (StringLiteral | Null | '0'))?     #ComponentParameterString
+    | Vector Identifier (Assign (Identifier | initializerlist | Null | '0'))?      #ComponentParameterVector
+    | Symbol Identifier (Assign expr)                                              #ComponentParameterSymbol
+    | Double '*' Identifier (Assign (Identifier | initializerlist | Null | '0'))?  #ComponentParameterDoubleArray
+    | Int '*' Identifier (Assign (Identifier | initializerlist | Null | '0'))?     #ComponentParameterIntegerArray
     ;

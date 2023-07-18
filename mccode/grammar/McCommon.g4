@@ -4,7 +4,7 @@ import cpp;
 // Common parsing rules
 
 component_ref: Previous (LeftParen IntegerLiteral RightParen)? | Identifier;
-coords: LeftParen simple_expression Comma simple_expression Comma simple_expression RightParen;
+coords: LeftParen expr Comma expr Comma expr RightParen;
 reference: Absolute | Relative (Absolute | component_ref);
 
 dependency: Dependency StringLiteral;
@@ -33,42 +33,45 @@ display
   : McDisplay UnparsedBlock                           #DisplayBlock
   | McDisplay Copy Identifier (Extend UnparsedBlock)? #DisplayBlockCopy
   ;
-split: Split simple_expression?;
-when: When simple_expression;
+split: Split expr?;
+when: When expr;
 place: At coords reference;
 orientation: Rotated coords reference;
 groupref: Group Identifier;
 extend: Extend UnparsedBlock;
-jump: (Jump jumpname (When|Iterate) simple_expression)+;
+jump: (Jump jumpname (When|Iterate) expr)+;
 jumpname: Previous ('(' IntegerLiteral ')')? | Myself | Next ('(' IntegerLiteral ')')? | Identifier;
 
 
 metadata
-    : MetaData (Identifier|StringLiteral) Identifier UnparsedBlock    #MetadataSimpleName
-    | MetaData (Identifier|StringLiteral) StringLiteral UnparsedBlock #MetadataStringName
-    ;
+  : MetaData Identifier Identifier UnparsedBlock       #MetadataIdId
+  | MetaData Identifier StringLiteral UnparsedBlock    #MetadataIdStr
+  | MetaData StringLiteral Identifier UnparsedBlock    #MetadataStrId
+  | MetaData StringLiteral StringLiteral UnparsedBlock #MetadataStrStr
+  ;
 
-initializerlist: '{' (simple_expression Comma)*? simple_expression '}';
+initializerlist: '{' expr (Comma expr)* '}';
 
-simple_expression
-    : ('+' | '-') simple_expression                     #SimpleExpressionUnaryPM
-    | <assoc=right> simple_expression '^' simple_expression #SimpleExpressionExponentiation
-    | simple_expression ('*' | '/') simple_expression   #SimpleExpressionBinaryMD
-    | simple_expression ('+' | '-') simple_expression   #SimpleExpressionBinaryPM
-    | '(' simple_expression ')'                         #SimpleExpressionGrouping
-    | Identifier                                        #SimpleExpressionIdentifier
-    | Identifier '[' simple_expression ']'              #SimpleExpressionArrayAccess
-    | Identifier '(' simple_expression ')'              #SimpleExpressionFunctionCall
-    | FloatingLiteral                                   #SimpleExpressionFloat
-    | IntegerLiteral                                    #SimpleExpressionInteger
-    ;
+assignment: Identifier Assign expr; // Not used in McCode, but *could* be used to enable, e.g., loops or other simple control
+
+expr
+  : Identifier '[' expr ']'      #ExpressionArrayAccess
+  | Identifier '(' expr ')'      #ExpressionFunctionCall
+  | ('+' | '-') expr             #ExpressionUnaryPM
+  | <assoc=right> expr '^' expr  #ExpressionExponentiation
+  | expr ('*' | '/') expr        #ExpressionBinaryMD
+  | expr ('+' | '-') expr        #ExpressionBinaryPM
+  | '(' expr ')'                 #ExpressionGrouping
+  | Identifier                   #ExpressionIdentifier
+  | FloatingLiteral              #ExpressionFloat
+  | IntegerLiteral               #ExpressionInteger
+  ;
 
 shell: Shell StringLiteral;
 search
   : Search StringLiteral       #SearchPath
   | Search Shell StringLiteral #SearchShell
   ;
-
 
 // Common lexer tokens
 /* The McCode grammar _is_ case sensitive, but should it be? Is there any benefit to allowing lowercase keywords? */
@@ -112,6 +115,7 @@ MetaData: 'METADATA'; // | 'MetaData' | 'metadata';
 
 String: 'string';  // McCode string-literal instrument/component parameter type; always(?) equivalent to `char *`
 Vector: 'vector';  // McCode (double) array component parameter type -- does or does not allow initializer lists?
+Symbol: 'symbol';  // McCode ???? type ????!?!?!
 UnparsedBlock: '%{' (.)*? '%}'; // Used for raw C code blocks and metadata, etc.
 Include: '%include';
 

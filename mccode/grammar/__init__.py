@@ -24,7 +24,7 @@ def rebuild_language(grammar_file):
         print(out, end='')
 
 
-def language_present_and_up_to_date(grammar_file):
+def language_present_and_up_to_date(grammar_file, newest):
     from pathlib import Path
     if not isinstance(grammar_file, Path):
         grammar_file = Path(grammar_file)
@@ -43,19 +43,22 @@ def language_present_and_up_to_date(grammar_file):
     if not all(x.exists() for x in generated_files):
         return False
 
-    grammar_time = grammar_file.stat().st_mtime
-    if any(x.stat().st_mtime < grammar_time for x in generated_files):
+    if any(x.stat().st_mtime < newest for x in generated_files):
         return False
 
     return True
 
 
-def _ensure_antlr_files_up_to_date_on_import(grammar):
+def _ensure_antlr_files_up_to_date_on_import(grammar, deps=None):
     """Run on import of this (sub)module. Ensure the ANTLR parsed language files are up-to-date."""
     from pathlib import Path
     grammar_file = Path(__file__).parent.joinpath(f'{grammar}.g4')
 
-    if not language_present_and_up_to_date(grammar_file):
+    newest = grammar_file.stat().st_mtime
+    for dep in deps:
+        newest = max(newest, Path(__file__).parent.joinpath(f'{dep}.g4').stat().st_mtime)
+
+    if not language_present_and_up_to_date(grammar_file, newest):
         rebuild_language(grammar_file)
 
 
@@ -66,6 +69,7 @@ def _import_component_language():
     from .McCompVisitor import McCompVisitor
     return McCompLexer, McCompParser, McCompListener, McCompVisitor
 
+
 def _import_instrument_language():
     from .McInstrLexer import McInstrLexer
     from .McInstrParser import McInstrParser
@@ -75,8 +79,8 @@ def _import_instrument_language():
 
 
 # Run the language file check and (re)build the files if necessary
-_ensure_antlr_files_up_to_date_on_import('McComp')
-_ensure_antlr_files_up_to_date_on_import('McInstr')
+_ensure_antlr_files_up_to_date_on_import('McComp', deps=('McCommon', 'cpp'))
+_ensure_antlr_files_up_to_date_on_import('McInstr', deps=('McCommon', 'cpp'))
 
 # Import the classes defined in the language files
 McCompLexer, McCompParser, McCompListener, McCompVisitor = _import_component_language()

@@ -37,8 +37,8 @@ The general format of an instrument paraemter in the instr file is
 */
 instrument_parameters: '(' (instrument_parameter (',' instrument_parameter)*)? ')';
 instrument_parameter
-  : Double? Identifier (Div StringLiteral)? (Assign simple_expression)?            #InstrumentParameterDouble
-  | Int Identifier (Div StringLiteral)? (Assign simple_expression)?                #InstrumentParameterInteger
+  : Double? Identifier (Div StringLiteral)? (Assign expr)?                         #InstrumentParameterDouble
+  | Int Identifier (Div StringLiteral)? (Assign expr)?                             #InstrumentParameterInteger
   | (String | (Char Star)) Identifier (Div StringLiteral)? (Assign StringLiteral)? #InstrumentParameterString
   ;
 
@@ -81,6 +81,6 @@ component_type
 They are expected to be an appropriate value matching the component definition file.
 */
 instance_parameters: '(' (instance_parameter (',' instance_parameter)*)? ')';
-instance_parameter: Identifier Assign simple_expression;
+instance_parameter: Identifier Assign expr;
 
 

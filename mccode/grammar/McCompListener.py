@@ -125,6 +125,15 @@ class McCompListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by McCompParser#ComponentParameterSymbol.
+    def enterComponentParameterSymbol(self, ctx:McCompParser.ComponentParameterSymbolContext):
+        pass
+
+    # Exit a parse tree produced by McCompParser#ComponentParameterSymbol.
+    def exitComponentParameterSymbol(self, ctx:McCompParser.ComponentParameterSymbolContext):
+        pass
+
+
     # Enter a parse tree produced by McCompParser#ComponentParameterDoubleArray.
     def enterComponentParameterDoubleArray(self, ctx:McCompParser.ComponentParameterDoubleArrayContext):
         pass
@@ -368,21 +377,39 @@ class McCompListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by McCompParser#MetadataSimpleName.
-    def enterMetadataSimpleName(self, ctx:McCompParser.MetadataSimpleNameContext):
+    # Enter a parse tree produced by McCompParser#MetadataIdId.
+    def enterMetadataIdId(self, ctx:McCompParser.MetadataIdIdContext):
         pass
 
-    # Exit a parse tree produced by McCompParser#MetadataSimpleName.
-    def exitMetadataSimpleName(self, ctx:McCompParser.MetadataSimpleNameContext):
+    # Exit a parse tree produced by McCompParser#MetadataIdId.
+    def exitMetadataIdId(self, ctx:McCompParser.MetadataIdIdContext):
         pass
 
 
-    # Enter a parse tree produced by McCompParser#MetadataStringName.
-    def enterMetadataStringName(self, ctx:McCompParser.MetadataStringNameContext):
+    # Enter a parse tree produced by McCompParser#MetadataIdStr.
+    def enterMetadataIdStr(self, ctx:McCompParser.MetadataIdStrContext):
         pass
 
-    # Exit a parse tree produced by McCompParser#MetadataStringName.
-    def exitMetadataStringName(self, ctx:McCompParser.MetadataStringNameContext):
+    # Exit a parse tree produced by McCompParser#MetadataIdStr.
+    def exitMetadataIdStr(self, ctx:McCompParser.MetadataIdStrContext):
+        pass
+
+
+    # Enter a parse tree produced by McCompParser#MetadataStrId.
+    def enterMetadataStrId(self, ctx:McCompParser.MetadataStrIdContext):
+        pass
+
+    # Exit a parse tree produced by McCompParser#MetadataStrId.
+    def exitMetadataStrId(self, ctx:McCompParser.MetadataStrIdContext):
+        pass
+
+
+    # Enter a parse tree produced by McCompParser#MetadataStrStr.
+    def enterMetadataStrStr(self, ctx:McCompParser.MetadataStrStrContext):
+        pass
+
+    # Exit a parse tree produced by McCompParser#MetadataStrStr.
+    def exitMetadataStrStr(self, ctx:McCompParser.MetadataStrStrContext):
         pass
 
 
@@ -395,84 +422,102 @@ class McCompListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by McCompParser#SimpleExpressionUnaryPM.
-    def enterSimpleExpressionUnaryPM(self, ctx:McCompParser.SimpleExpressionUnaryPMContext):
+    # Enter a parse tree produced by McCompParser#assignment.
+    def enterAssignment(self, ctx:McCompParser.AssignmentContext):
         pass
 
-    # Exit a parse tree produced by McCompParser#SimpleExpressionUnaryPM.
-    def exitSimpleExpressionUnaryPM(self, ctx:McCompParser.SimpleExpressionUnaryPMContext):
-        pass
-
-
-    # Enter a parse tree produced by McCompParser#SimpleExpressionGrouping.
-    def enterSimpleExpressionGrouping(self, ctx:McCompParser.SimpleExpressionGroupingContext):
-        pass
-
-    # Exit a parse tree produced by McCompParser#SimpleExpressionGrouping.
-    def exitSimpleExpressionGrouping(self, ctx:McCompParser.SimpleExpressionGroupingContext):
+    # Exit a parse tree produced by McCompParser#assignment.
+    def exitAssignment(self, ctx:McCompParser.AssignmentContext):
         pass
 
 
-    # Enter a parse tree produced by McCompParser#SimpleExpressionBinaryMD.
-    def enterSimpleExpressionBinaryMD(self, ctx:McCompParser.SimpleExpressionBinaryMDContext):
+    # Enter a parse tree produced by McCompParser#ExpressionUnaryPM.
+    def enterExpressionUnaryPM(self, ctx:McCompParser.ExpressionUnaryPMContext):
         pass
 
-    # Exit a parse tree produced by McCompParser#SimpleExpressionBinaryMD.
-    def exitSimpleExpressionBinaryMD(self, ctx:McCompParser.SimpleExpressionBinaryMDContext):
-        pass
-
-
-    # Enter a parse tree produced by McCompParser#SimpleExpressionBinaryPM.
-    def enterSimpleExpressionBinaryPM(self, ctx:McCompParser.SimpleExpressionBinaryPMContext):
-        pass
-
-    # Exit a parse tree produced by McCompParser#SimpleExpressionBinaryPM.
-    def exitSimpleExpressionBinaryPM(self, ctx:McCompParser.SimpleExpressionBinaryPMContext):
+    # Exit a parse tree produced by McCompParser#ExpressionUnaryPM.
+    def exitExpressionUnaryPM(self, ctx:McCompParser.ExpressionUnaryPMContext):
         pass
 
 
-    # Enter a parse tree produced by McCompParser#SimpleExpressionArrayAccess.
-    def enterSimpleExpressionArrayAccess(self, ctx:McCompParser.SimpleExpressionArrayAccessContext):
+    # Enter a parse tree produced by McCompParser#ExpressionGrouping.
+    def enterExpressionGrouping(self, ctx:McCompParser.ExpressionGroupingContext):
         pass
 
-    # Exit a parse tree produced by McCompParser#SimpleExpressionArrayAccess.
-    def exitSimpleExpressionArrayAccess(self, ctx:McCompParser.SimpleExpressionArrayAccessContext):
-        pass
-
-
-    # Enter a parse tree produced by McCompParser#SimpleExpressionInteger.
-    def enterSimpleExpressionInteger(self, ctx:McCompParser.SimpleExpressionIntegerContext):
-        pass
-
-    # Exit a parse tree produced by McCompParser#SimpleExpressionInteger.
-    def exitSimpleExpressionInteger(self, ctx:McCompParser.SimpleExpressionIntegerContext):
+    # Exit a parse tree produced by McCompParser#ExpressionGrouping.
+    def exitExpressionGrouping(self, ctx:McCompParser.ExpressionGroupingContext):
         pass
 
 
-    # Enter a parse tree produced by McCompParser#SimpleExpressionFunctionCall.
-    def enterSimpleExpressionFunctionCall(self, ctx:McCompParser.SimpleExpressionFunctionCallContext):
+    # Enter a parse tree produced by McCompParser#ExpressionFloat.
+    def enterExpressionFloat(self, ctx:McCompParser.ExpressionFloatContext):
         pass
 
-    # Exit a parse tree produced by McCompParser#SimpleExpressionFunctionCall.
-    def exitSimpleExpressionFunctionCall(self, ctx:McCompParser.SimpleExpressionFunctionCallContext):
-        pass
-
-
-    # Enter a parse tree produced by McCompParser#SimpleExpressionIdentifier.
-    def enterSimpleExpressionIdentifier(self, ctx:McCompParser.SimpleExpressionIdentifierContext):
-        pass
-
-    # Exit a parse tree produced by McCompParser#SimpleExpressionIdentifier.
-    def exitSimpleExpressionIdentifier(self, ctx:McCompParser.SimpleExpressionIdentifierContext):
+    # Exit a parse tree produced by McCompParser#ExpressionFloat.
+    def exitExpressionFloat(self, ctx:McCompParser.ExpressionFloatContext):
         pass
 
 
-    # Enter a parse tree produced by McCompParser#SimpleExpressionFloat.
-    def enterSimpleExpressionFloat(self, ctx:McCompParser.SimpleExpressionFloatContext):
+    # Enter a parse tree produced by McCompParser#ExpressionArrayAccess.
+    def enterExpressionArrayAccess(self, ctx:McCompParser.ExpressionArrayAccessContext):
         pass
 
-    # Exit a parse tree produced by McCompParser#SimpleExpressionFloat.
-    def exitSimpleExpressionFloat(self, ctx:McCompParser.SimpleExpressionFloatContext):
+    # Exit a parse tree produced by McCompParser#ExpressionArrayAccess.
+    def exitExpressionArrayAccess(self, ctx:McCompParser.ExpressionArrayAccessContext):
+        pass
+
+
+    # Enter a parse tree produced by McCompParser#ExpressionIdentifier.
+    def enterExpressionIdentifier(self, ctx:McCompParser.ExpressionIdentifierContext):
+        pass
+
+    # Exit a parse tree produced by McCompParser#ExpressionIdentifier.
+    def exitExpressionIdentifier(self, ctx:McCompParser.ExpressionIdentifierContext):
+        pass
+
+
+    # Enter a parse tree produced by McCompParser#ExpressionInteger.
+    def enterExpressionInteger(self, ctx:McCompParser.ExpressionIntegerContext):
+        pass
+
+    # Exit a parse tree produced by McCompParser#ExpressionInteger.
+    def exitExpressionInteger(self, ctx:McCompParser.ExpressionIntegerContext):
+        pass
+
+
+    # Enter a parse tree produced by McCompParser#ExpressionExponentiation.
+    def enterExpressionExponentiation(self, ctx:McCompParser.ExpressionExponentiationContext):
+        pass
+
+    # Exit a parse tree produced by McCompParser#ExpressionExponentiation.
+    def exitExpressionExponentiation(self, ctx:McCompParser.ExpressionExponentiationContext):
+        pass
+
+
+    # Enter a parse tree produced by McCompParser#ExpressionBinaryPM.
+    def enterExpressionBinaryPM(self, ctx:McCompParser.ExpressionBinaryPMContext):
+        pass
+
+    # Exit a parse tree produced by McCompParser#ExpressionBinaryPM.
+    def exitExpressionBinaryPM(self, ctx:McCompParser.ExpressionBinaryPMContext):
+        pass
+
+
+    # Enter a parse tree produced by McCompParser#ExpressionFunctionCall.
+    def enterExpressionFunctionCall(self, ctx:McCompParser.ExpressionFunctionCallContext):
+        pass
+
+    # Exit a parse tree produced by McCompParser#ExpressionFunctionCall.
+    def exitExpressionFunctionCall(self, ctx:McCompParser.ExpressionFunctionCallContext):
+        pass
+
+
+    # Enter a parse tree produced by McCompParser#ExpressionBinaryMD.
+    def enterExpressionBinaryMD(self, ctx:McCompParser.ExpressionBinaryMDContext):
+        pass
+
+    # Exit a parse tree produced by McCompParser#ExpressionBinaryMD.
+    def exitExpressionBinaryMD(self, ctx:McCompParser.ExpressionBinaryMDContext):
         pass
 
 
