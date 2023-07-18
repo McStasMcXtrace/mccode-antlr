@@ -3,62 +3,6 @@ from .comp import Comp
 from ..common import ComponentParameter, Value, MetaData
 
 
-def context_expr_to_value(a: Parser.ExprContext, memory: dict = None):
-    if memory is None:
-        memory = dict()
-    if isinstance(a, Parser.ExpressionIdentifierContext):
-        ident = str(a.Identifier())
-        if ident in memory:
-            return memory[ident]
-        return ident
-    if isinstance(a, Parser.ExpressionFloatContext):
-        return float(str(a.FloatingLiteral()))
-    if isinstance(a, Parser.ExpressionIntegerContext):
-        return int(str(a.IntegerLitera()))
-    if isinstance(a, Parser.ExpressionGroupingContext):
-        value = context_expr_to_value(a.expr(), memory)
-        if isinstance(value, str):
-            if any(x in value for x in ('+', '-', ' ', '^')):
-                return '(' + value + ')'
-        return value
-    if isinstance(a, Parser.ExpressionBinaryPMContext):
-        left, right = [context_expr_to_value(x, memory) for x in a.expr()]
-        op = '+' if a.Plus() is not None else '-'
-        if isinstance(left, str) or isinstance(right, str):
-            return f'{left} {op} {right}'
-        return left + right if op == '+' else left - right
-    if isinstance(a, Parser.ExpressionBinaryMDContext):
-        left, right = [context_expr_to_value(x, memory) for x in a.expr()]
-        op = '*' if a.Star() is not None else '/'
-        if isinstance(left, str) or isinstance(right, str):
-            return f'{left} {op} {right}'
-        return left * right if op == '*' else left / right
-    if isinstance(a, Parser.ExpressionExponentiationContext):
-        left, right = [context_expr_to_value(x, memory) for x in a.expr()]
-        if isinstance(left, str) or isinstance(right, str):
-            return f'powf({left}, {right})'
-        return left ** right
-    if isinstance(a, Parser.ExpressionUnaryPMContext):
-        right = context_expr_to_value(a.expr(), memory)
-        if isinstance(right, str):
-            return '-' + right if a.Plus() is None else right
-        return -right if a.Plus() is None else right
-    if isinstance(a, Parser.ExpressionFunctionCallContext):
-        argument = context_expr_to_value(a.expr(), memory)
-        if a.Identifer() not in memory:
-            return f'{a.Identifer()}({argument})'
-        return memory[a.Identifer()](argument)
-    if isinstance(a, Parser.EpressionArrayAccessContext):
-        argument = context_expr_to_value(a.expr(), memory)
-        if a.Identifer() not in memory:
-            return f'{a.Identifer()}[{argument}]'
-        return memory[a.Identifier()][argument]
-
-
-def context_initializer_list_to_tuple(a: Parser.InitializerlistContext):
-    return tuple(context_expr_to_value(x) for x in a.expr())
-
-
 class CompVisitor(McCompVisitor):
     def __init__(self, parent):
         self.parent = parent  # the instrument (handler?) that wanted to read this component
@@ -86,6 +30,9 @@ class CompVisitor(McCompVisitor):
             self.state.no_acc()
         self.visitChildren(ctx)  # Use the visitor methods to overwrite details of the state
         return self.state
+
+    def visitComponent_trace(self, ctx: Parser.Component_traceContext):
+        self.state.TRACE(self.visit(ctx.unparsed_block()))
 
     def visitComponent_define_parameters(self, ctx: Parser.Component_define_parametersContext):
         for parameter in self.visit(ctx.component_parameters()):
@@ -204,35 +151,54 @@ class CompVisitor(McCompVisitor):
         return "" if ctx.content is None else str(ctx.content)
 
 # TODO Implement all of these visitors
+    # FIXME There *are* no statements in McCode, so all identifiers always produce un-parsable values.
+    # TODO (maybe) Add control and statements into McCode, requiring some form of global stack.
     def visitExpressionUnaryPM(self, ctx: Parser.ExpressionUnaryPMContext):
-        return self.visitChildren(ctx)
+        right = self.visit(ctx.expr())
+        if isinstance(right, str):
+            return '-' + right if ctx.Plus() is None else right
+        return -right if ctx.Plus() is None else right
 
     def visitExpressionGrouping(self, ctx: Parser.ExpressionGroupingContext):
-        return self.visitChildren(ctx)
+        return self.visit(ctx.expr())
 
     def visitExpressionFloat(self, ctx: Parser.ExpressionFloatContext):
-        return self.visitChildren(ctx)
+        return float(str(ctx.FloatingLiteral()))
 
     def visitExpressionArrayAccess(self, ctx: Parser.ExpressionArrayAccessContext):
-        return self.visitChildren(ctx)
+        return f'{ctx.Identifier()}[{self.visit(ctx.expr())}]'
 
     def visitExpressionIdentifier(self, ctx: Parser.ExpressionIdentifierContext):
-        return self.visitChildren(ctx)
+        return str(ctx.Identifier())
 
     def visitExpressionInteger(self, ctx: Parser.ExpressionIntegerContext):
-        return self.visitChildren(ctx)
+        return int(str(ctx.Identifier()))
 
     def visitExpressionExponentiation(self, ctx: Parser.ExpressionExponentiationContext):
-        return self.visitChildren(ctx)
+        base = self.visit(ctx.base)
+        exponent = self.visit(ctx.exponent)
+        if isinstance(base, str) or isinstance(exponent, str):
+            return f'powf({base}, {exponent})'
+        return base ** exponent
 
     def visitExpressionBinaryPM(self, ctx: Parser.ExpressionBinaryPMContext):
-        return self.visitChildren(ctx)
+        left = self.visit(ctx.left)
+        right = self.visit(ctx.right)
+        if isinstance(left, str) or isinstance(right, str):
+            return f"{left} {'+' if ctx.Minus() is None else '-'} {right}"
+        return left + right if ctx.Minus() is None else left - right
 
     def visitExpressionFunctionCall(self, ctx: Parser.ExpressionFunctionCallContext):
-        return self.visitChildren(ctx)
+        return f'{ctx.Identifier()}({self.visit(ctx.expr())}'
 
     def visitExpressionBinaryMD(self, ctx: Parser.ExpressionBinaryMDContext):
-        return self.visitChildren(ctx)
+        left, right = self.visit(ctx.left), self.visit(ctx.right)
+        if isinstance(left, str) or isinstance(right, str):
+            return f"{left} {'*' if ctx.Div() is None else '/'} {right}"
+        return left * right if ctx.Div() is None else left / right
 
     def visitInitializerlist(self, ctx: Parser.InitializerlistContext):
-        return self.visitChildren(ctx)
+        values = [self.visit(x) for x in ctx.values()]
+        if any(isinstance(x, str) for x in values):
+            return '{' + ','.join([str(x) for x in values]) + '}'
+        return tuple(values)
