@@ -47,17 +47,23 @@ class Reader:
         from antlr4 import FileStream
         return FileStream(str(self.locate(name, which=which).resolve()))
 
-    def get_named_component(self, name: str):
+    def add_component(self, name: str):
+        if name in self.components:
+            raise RuntimeError("The named component is already known.")
+        from antlr4 import CommonTokenStream, FileStream
+        from ..grammar import McCompLexer, McCompParser
+        from ..comp import CompVisitor
+        filename = str(self.locate(name).resolve())
+        lexer = McCompLexer(FileStream(filename))
+        tokens = CommonTokenStream(lexer)
+        parser = McCompParser(tokens)
+        visitor = CompVisitor(self, filename)  # The visitor needs to be able to call *this* method
+        res = visitor.visitProg(parser.prog())
+        if not isinstance(res, Comp):
+            raise RuntimeError('Parsing a component file must produce a component object!')
+        self.components[name] = res
+
+    def get_component(self, name: str):
         if name not in self.components:
-            from antlr4 import CommonTokenStream
-            from ..grammar import McCompLexer, McCompParser
-            from ..comp import CompVisitor
-            lexer = McCompLexer(self.stream(name))
-            tokens = CommonTokenStream(lexer)
-            parser = McCompParser(tokens)
-            visitor = CompVisitor(self)  # The visitor needs to be able to call  this method
-            res = visitor.visitProg(parser.prog())
-            if not isinstance(res, Comp):
-                raise RuntimeError('Parsing a component file must produce a component object!')
-            self.components[name] = res
+            self.add_component(name)
         return self.components[name]

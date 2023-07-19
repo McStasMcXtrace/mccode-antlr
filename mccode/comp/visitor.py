@@ -4,8 +4,9 @@ from ..common import ComponentParameter, Value, MetaData
 
 
 class CompVisitor(McCompVisitor):
-    def __init__(self, parent):
+    def __init__(self, parent, filename):
         self.parent = parent  # the instrument (handler?) that wanted to read this component
+        self.filename = filename
         self.state = Comp()
 
     def visitComponentDefineNew(self, ctx: Parser.ComponentDefineNewContext):
@@ -20,7 +21,7 @@ class CompVisitor(McCompVisitor):
         new_name, copy_from = [str(x) for x in ctx.Identifer()]
         if self.parent is None:
             raise RuntimeError("Can not copy a component definition without a parent instrument")
-        copy_from_comp = self.parent.get_named_component(copy_from)
+        copy_from_comp = self.parent.get_component(copy_from)
         # pull from that component ... deepcopy _just_ in case
         self.state = deepcopy(copy_from_comp)
         # update the name to match what we're going to call this component
@@ -102,22 +103,22 @@ class CompVisitor(McCompVisitor):
         self.state.DECLARE(self.visit(ctx.unparsed_block()))
 
     def visitDeclareBlockCopy(self, ctx: Parser.DeclareBlockCopyContext):
-        copy_from = self.parent.get_named_component(str(ctx.Identifier()))
-        self.state.DECLARE(copy_from.declare + '\n' + self.visit(ctx.unparsed_block()))
+        copy_from = self.parent.get_component(str(ctx.Identifier()))
+        self.state.DECLARE(copy_from.declare, self.visit(ctx.unparsed_block()))
 
     def visitShareBlock(self, ctx: Parser.ShareBlockContext):
         self.state.SHARE(self.visit(ctx.unparsed_block()))
 
     def visitShareBlockCopy(self, ctx: Parser.ShareBlockCopyContext):
-        copy_from = self.parent.get_named_component(str(ctx.Identifier()))
-        self.state.SHARE(copy_from.share + '\n' + self.visit(ctx.unparsed_block()))
+        copy_from = self.parent.get_component(str(ctx.Identifier()))
+        self.state.SHARE(copy_from.share, self.visit(ctx.unparsed_block()))
 
     def visitInitialzieBlock(self, ctx: Parser.InitializeBlockContext):
         self.state.INITIALIZE(self.visit(ctx.unparsed_block()))
 
     def visitInitializeBlockCopy(self, ctx: Parser.InitializeBlockCopyContext):
-        copy_from = self.parent.get_named_component(str(ctx.Identifier()))
-        self.state.INITIALIZE(copy_from.initialize + '\n' + self.visit(ctx.unparsed_block()))
+        copy_from = self.parent.get_component(str(ctx.Identifier()))
+        self.state.INITIALIZE(copy_from.initialize, self.visit(ctx.unparsed_block()))
 
     def visitUservars(self, ctx: Parser.UservarsContext):
         self.state.USERVARS(self.visit(ctx.unparsed_block()))
@@ -126,29 +127,32 @@ class CompVisitor(McCompVisitor):
         self.state.SAVE(self.visit(ctx.unparsed_block()))
 
     def visitSaveBlockCopy(self, ctx: Parser.SaveBlockCopyContext):
-        copy_from = self.parent.get_named_component(str(ctx.Identifier()))
-        self.state.SAVE(copy_from.save + '\n' + self.visit(ctx.unparsed_block()))
+        copy_from = self.parent.get_component(str(ctx.Identifier()))
+        self.state.SAVE(copy_from.save, self.visit(ctx.unparsed_block()))
 
     def visitFinallyBlock(self, ctx: Parser.FinallyBlockContext):
         self.state.FINALLY(self.visit(ctx.unparsed_block()))
 
     def visitFinallyBlockCopy(self, ctx: Parser.FinallyBlockCopyContext):
-        copy_from = self.parent.get_named_component(str(ctx.Identifier()))
-        self.state.FINALLY(copy_from.final + '\n' + self.visit(ctx.unparsed_block()))
+        copy_from = self.parent.get_component(str(ctx.Identifier()))
+        self.state.FINALLY(copy_from.final, self.visit(ctx.unparsed_block()))
 
     def visitDisplayBlock(self, ctx: Parser.DisplayBlockContext):
         self.state.DISPLAY(self.visit(ctx.unparsed_block()))
 
     def visitDisplayBlockCopy(self, ctx: Parser.DisplayBlockCopyContext):
-        copy_from = self.parent.get_named_component(str(ctx.Identifier()))
-        self.state.DISPLAY(copy_from.display + '\n' + self.visit(ctx.unparsed_block()))
+        copy_from = self.parent.get_component(str(ctx.Identifier()))
+        self.state.DISPLAY(copy_from.display, self.visit(ctx.unparsed_block()))
 
     def visitMetadata(self, ctx: Parser.MetadataContext):
-        metadata = self.visit(ctx.unparsed_block())
+        filename, line_number, metadata = self.visit(ctx.unparsed_block())
         self.state.add_metadata(MetaData.from_component_tokens(self.state.name, str(ctx.mime), str(ctx.name), metadata))
 
     def visitUnparsed_block(self, ctx: Parser.Unparsed_blockContext):
-        return "" if ctx.content is None else str(ctx.content)
+        # We want to extract the source-file line number (and filename) for use in the C-preprocessor
+        # via `#file {number} "{filename}"` directives, for more expressive error handling
+        line_number = None if ctx.start is None else ctx.start.line
+        return self.filename, line_number, "" if ctx.content is None else str(ctx.content)
 
 # TODO Implement all of these visitors
     # FIXME There *are* no statements in McCode, so all identifiers always produce un-parsable values.
