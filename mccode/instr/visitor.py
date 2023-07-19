@@ -83,7 +83,10 @@ class InstrVisitor(McInstrVisitor):
         name = self.visit(ctx.instance_name())
         comp = self.visit(ctx.component_type())
         at = self.visit(ctx.place())
-        rotate = ((0, 0, 0), None) if ctx.orientation() is None else self.visit(ctx.orientation())
+        if ctx.orientation() is not None:
+            rotate = self.visit(ctx.orientation())
+        else:
+            rotate = ((Value.int(0), Value.int(0), Value.int(0)), None)
         instance = Instance(name, comp, at, rotate)
         if ctx.instance_parameters() is not None:
             for param_name, param_value in self.visit(ctx.instance_parameters()):
@@ -240,7 +243,7 @@ class InstrVisitor(McInstrVisitor):
         # We want to extract the source-file line number (and filename) for use in the C-preprocessor
         # via `#file {number} "{filename}"` directives, for more expressive error handling
         line_number = None if ctx.start is None else ctx.start.line
-        return self.filename, line_number, "" if ctx.content is None else str(ctx.content)
+        return self.filename, line_number,  str(ctx.UnparsedBlock())[2:-2]
 
     def visitShell(self, ctx: McInstrParser.ShellContext):
         from subprocess import run
@@ -283,7 +286,7 @@ class InstrVisitor(McInstrVisitor):
         return str(ctx.Identifier())
 
     def visitExpressionInteger(self, ctx: McInstrParser.ExpressionIntegerContext):
-        return int(str(ctx.Identifier()))
+        return int(str(ctx.IntegerLiteral()))
 
     def visitExpressionExponentiation(self, ctx: McInstrParser.ExpressionExponentiationContext):
         base = self.visit(ctx.base)

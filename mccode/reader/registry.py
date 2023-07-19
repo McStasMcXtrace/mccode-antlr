@@ -136,11 +136,9 @@ def registry_from_specification(spec: str):
 
     The first two variants make a LocalRegistry, which searches the provided directory for files.
     The last makes a RemoteRegistry using pooch. The resolvable file path should point at a  Pooch registry file.
-
-    Note:
-        At present, no check is performed on the Pooch URL before attempting to locate a file.
-        This could lead to delayed runtime errors.
     """
+    from urllib.parse import urlparse
+
     if isinstance(spec, Registry):
         return spec
     parts = spec.split()
@@ -152,6 +150,21 @@ def registry_from_specification(spec: str):
         p1, p2, p3 = parts[0], parts[1], None if len(parts) < 3 else parts[2]
     if Path(p2).exists() and Path(p2).is_dir():
         return LocalRegistry(p1, str(Path(p2).resolve()))
+
+    # (simple) URL validation:
+    if not isinstance(p2, str):
+        return False
+    try:
+        result = urlparse(p2)
+    except AttributeError:
+        return False
+    if not result.scheme:
+        return False
+    if result.scheme == 'file':
+        print("Constructing a RemoteRegistry for a file:// URL will likely duplicate files!")
+    if result.scheme != 'file' and not result.netloc:
+        return False
+
     if Path(p3).exists() and Path(p3).is_file():
         return RemoteRegistry(p1, p2, Path(p3).resolve())
     return None

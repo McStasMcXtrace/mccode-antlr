@@ -59,6 +59,10 @@ class Value:
             return '{' + ','.join([str(x) for x in self.value]) + '}'
         return '' if self.value is None else str(self.value)
 
+    def __repr__(self):
+        return f'{self.data_type}' if self.holds_array else f'{self.data_type} {self.value}'
+
+
     @staticmethod
     def _handle_return_value(value):
         if isinstance(value, str):

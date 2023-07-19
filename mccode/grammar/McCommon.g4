@@ -55,7 +55,8 @@ search
   | Search Shell StringLiteral #SearchShell
   ;
 
-unparsed_block: '%{' (|content=.*) '%}';
+//unparsed_block: '%{' (.)*? '%}';
+unparsed_block: UnparsedBlock;
 
 // Common lexer tokens
 /* The McCode grammar _is_ case sensitive, but should it be? Is there any benefit to allowing lowercase keywords? */
@@ -100,7 +101,7 @@ MetaData: 'METADATA'; // | 'MetaData' | 'metadata';
 String: 'string';  // McCode string-literal instrument/component parameter type; always(?) equivalent to `char *`
 Vector: 'vector';  // McCode (double) array component parameter type -- does or does not allow initializer lists?
 Symbol: 'symbol';  // McCode ???? type ????!?!?!
-//UnparsedBlock: '%{' (.)*? '%}'; // Used for raw C code blocks and metadata, etc.
+UnparsedBlock: '%{' (.)*? '%}'; // Used for raw C code blocks and metadata, etc.
 Include: '%include';
 
 Null: 'NULL'; // remove if we switch to underlying C grammar?

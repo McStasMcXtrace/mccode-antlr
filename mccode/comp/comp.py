@@ -3,8 +3,6 @@ from dataclasses import dataclass, field
 from ..common import ComponentParameter, MetaData, parameter_name_present, RawC, blocks_to_raw_c
 
 
-
-
 # Could this be replaced by a subclassed 'name' class? E.g., Slit.comp <=> class McCompSlit(McComp)?
 @dataclass
 class Comp:
@@ -60,28 +58,28 @@ class Comp:
 
     # Meta programming these block setting methods is more pain than its worth:
     def SHARE(self, *blocks):
-        self.share += blocks_to_raw_c(blocks)
+        self.share += blocks_to_raw_c(*blocks)
 
     def USERVARS(self, *blocks):
-        self.user += blocks_to_raw_c(blocks)
+        self.user += blocks_to_raw_c(*blocks)
 
     def DECLARE(self, *blocks):
-        self.declare += blocks_to_raw_c(blocks)
+        self.declare += blocks_to_raw_c(*blocks)
 
     def INITIALIZE(self, *blocks):
-        self.initialize += blocks_to_raw_c(blocks)
+        self.initialize += blocks_to_raw_c(*blocks)
 
     def TRACE(self, *blocks):
-        self.trace += blocks_to_raw_c(blocks)
+        self.trace += blocks_to_raw_c(*blocks)
 
     def SAVE(self, *blocks):
-        self.save += blocks_to_raw_c(blocks)
+        self.save += blocks_to_raw_c(*blocks)
 
     def FINALLY(self, *blocks):
-        self.final += blocks_to_raw_c(blocks)
+        self.final += blocks_to_raw_c(*blocks)
 
     def DISPLAY(self, *blocks):
-        self.display += blocks_to_raw_c(blocks)
+        self.display += blocks_to_raw_c(*blocks)
 
     def add_metadata(self, m: MetaData):
         if any([x.name == m.name for x in self.metadata]):

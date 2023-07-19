@@ -55,7 +55,7 @@ class Instance:
         self.group = name
 
     def EXTEND(self, *blocks):
-        self.group += blocks_to_raw_c(blocks)
+        self.group += blocks_to_raw_c(*blocks)
 
     def JUMP(self, *jumps):
         self.jump += jumps

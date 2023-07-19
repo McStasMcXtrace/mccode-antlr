@@ -15,7 +15,7 @@ class CompVisitor(McCompVisitor):
         return self.state
 
     def visitComponentDefineNew(self, ctx: Parser.ComponentDefineNewContext):
-        self.state.name = str(ctx.Identifer())
+        self.state.name = str(ctx.Identifier())
         if ctx.NoAcc() is not None:
             self.state.no_acc()
         self.visitChildren(ctx)  # Use the visitor methods to fill in details of the state
@@ -155,7 +155,8 @@ class CompVisitor(McCompVisitor):
         # We want to extract the source-file line number (and filename) for use in the C-preprocessor
         # via `#file {number} "{filename}"` directives, for more expressive error handling
         line_number = None if ctx.start is None else ctx.start.line
-        return self.filename, line_number, "" if ctx.content is None else str(ctx.content)
+        content = str(ctx.UnparsedBlock())[2:-2]
+        return self.filename, line_number, content
 
     # TODO Make this and the identical list of visitors in instr/visitor.py a single definition ... somehow
     # FIXME There *are* no statements in McCode, so all identifiers always produce un-parsable values.
@@ -183,7 +184,7 @@ class CompVisitor(McCompVisitor):
         return str(ctx.Identifier())
 
     def visitExpressionInteger(self, ctx: Parser.ExpressionIntegerContext):
-        return int(str(ctx.Identifier()))
+        return int(str(ctx.IntegerLiteral()))
 
     def visitExpressionExponentiation(self, ctx: Parser.ExpressionExponentiationContext):
         base = self.visit(ctx.base)

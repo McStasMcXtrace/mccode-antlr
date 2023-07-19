@@ -23,12 +23,12 @@ class Instr:
     def add_component(self, a: Instance):
         if any(x.name == a.name for x in self.components):
             raise RuntimeError(f"A component instance named {a.name} is already present in the instrument")
-        a.components = (*a.components, a) if len(a.components) else (a, )
+        self.components += (a,)
 
     def add_parameter(self, a: InstrumentParameter):
         if parameter_name_present(self.parameters, a.name):
             raise RuntimeError(f"An instrument parameter named {a.name} is already present in the instrument")
-        a.parameters = (*a.parameters, a) if len(a.parameters) else (a, )
+        self.parameters += (a,)
 
     def last_component(self, count: int = 1, removable_ok: bool = True):
         if len(self.components) <= count:
@@ -50,19 +50,19 @@ class Instr:
         self.included += (name, )
 
     def USERVARS(self, *blocks):
-        self.user += blocks_to_raw_c(blocks)
+        self.user += blocks_to_raw_c(*blocks)
 
     def DECLARE(self, *blocks):
-        self.declare += blocks_to_raw_c(blocks)
+        self.declare += blocks_to_raw_c(*blocks)
 
     def INITIALIZE(self, *blocks):
-        self.initialize += blocks_to_raw_c(blocks)
+        self.initialize += blocks_to_raw_c(*blocks)
 
     def SAVE(self, *blocks):
-        self.save += blocks_to_raw_c(blocks)
+        self.save += blocks_to_raw_c(*blocks)
 
     def FINALLY(self, *blocks):
-        self.final += blocks_to_raw_c(blocks)
+        self.final += blocks_to_raw_c(*blocks)
 
     def add_metadata(self, m: MetaData):
         if any([x.name == m.name for x in self.metadata]):
