@@ -1,9 +1,10 @@
 from .reader import Reader
-from .registry import Registry, LocalRegistry, RemoteRegistry
+from .registry import Registry, LocalRegistry, RemoteRegistry, MCSTAS_REGISTRY
 
 __all__ = [
     'Reader',
     'Registry',
     'LocalRegistry',
-    'RemoteRegistry'
+    'RemoteRegistry',
+    'MCSTAS_REGISTRY'
 ]

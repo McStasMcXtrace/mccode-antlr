@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from .registry import Registry, MCSTAS_REGISTRY, registries_match, registry_from_specification
 from ..comp import Comp
+from ..instr import Instr
 
 
 @dataclass
@@ -68,10 +69,38 @@ class Reader:
         visitor = CompVisitor(self, filename)  # The visitor needs to be able to call *this* method
         res = visitor.visitProg(parser.prog())
         if not isinstance(res, Comp):
-            raise RuntimeError('Parsing a component file must produce a component object!')
+            raise RuntimeError(f'Parsing component file {filename} did not produce a component object!')
         self.components[name] = res
 
     def get_component(self, name: str):
         if name not in self.components:
             self.add_component(name)
         return self.components[name]
+
+    def get_instrument(self, name: str):
+        """Load and parse an instr Instrument definition file
+
+        In McCode3 fashion, the instrument file *should* be in the current working directory.
+        In new-fashion, the registry/registries will be checked if it is not.
+        """
+        from pathlib import Path
+        from antlr4 import CommonTokenStream, FileStream
+        from ..grammar import McInstrParser, McInstrLexer
+        from ..instr import InstrVisitor
+        path = Path(name)
+        if path.suffix != '.instr':
+            path = Path(f'{name}.instr')
+        if not path.exists() and path.is_file():
+            path = self.locate(path.name)  # include the .instr for the search
+        if not path.exists() and path.is_file():
+            raise RuntimeError(f'Can not locate instr file for {name}.')
+        filename = str(path.resolve())
+        lexer = McInstrLexer(FileStream(filename))
+        tokens = CommonTokenStream(lexer)
+        parser = McInstrParser(tokens)
+        visitor = InstrVisitor(self, filename)
+        res = visitor.visitProg(parser.prog())
+        if not isinstance(res, Instr):
+            raise RuntimeError(f'Parsing instrument file {filename} did not produce an Instr object')
+        return res
+

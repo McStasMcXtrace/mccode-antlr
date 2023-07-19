@@ -1,6 +1,5 @@
 from dataclasses import dataclass, field
 from ..common import Value
-from .instance import Instance
 
 
 def _value_float_tuple(n, v=0.):
@@ -83,23 +82,6 @@ class Orientation:
 
 def from_at_rotated(at: tuple[Value, Value, Value], rotated: tuple[Value, Value, Value]):
     return Orientation.from_at_rotated(at, rotated)
-
-
-def from_at_relative_rotated_relative(at: tuple[Value, Value, Value], at_relative: Instance,
-                                      rotated: tuple[Value, Value, Value], rotated_relative: Instance):
-    if at_relative is None or at_relative.orientation is None:
-        global_at = at
-    else:
-        rat = at_relative.orientation.position
-        global_at = at[0] + rat[0], at[1] + rat[1], at[2] + rat[2]
-
-    if rotated_relative is None or rotated_relative.orientation is None:
-        global_rot = rotated
-    else:
-        rot_rel = rotated_relative.orientation.angles
-        global_rot = rotated[0] + rot_rel[0], rotated[1] + rot_rel[1], rotated[2] + rot_rel[2]
-
-    return Orientation.from_at_rotated(global_at, global_rot)
 
 
 def matrix_det_2(m: tuple[Value, Value, Value, Value]):

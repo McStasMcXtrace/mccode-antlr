@@ -19,4 +19,5 @@ mcstas4 = "mccode.mcstas:mcstas_script"
 [tool.setuptools_scm]
 
 [tool.setuptools.packages.find]
-where = ["mccode"]
+where = ["."]
+include = ["mccode*"]

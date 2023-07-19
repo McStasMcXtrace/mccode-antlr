@@ -20,7 +20,7 @@ class CompVisitor(McCompVisitor):
             self.state.no_acc()
         self.visitChildren(ctx)  # Use the visitor methods to fill in details of the state
 
-    def visitComponentDefineCopy(self, ctx: Parser.ComponentDefinecopyContext):
+    def visitComponentDefineCopy(self, ctx: Parser.ComponentDefineCopyContext):
         from copy import deepcopy
         new_name, copy_from = [str(x) for x in ctx.Identifer()]
         if self.parent is None:

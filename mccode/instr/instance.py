@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from typing import Self
 from ..comp import Comp
 from ..common import ComponentParameter, Value, MetaData, parameter_name_present, RawC, blocks_to_raw_c
-from .orientation import Orientation, from_at_relative_rotated_relative
+from .orientation import Orientation, from_at_rotated
 from .jump import Jump
 
 @dataclass
@@ -64,3 +64,20 @@ class Instance:
         if any([x.name == m.name for x in self.metadata]):
             self.metadata = tuple([x for x in self.metadata if x.name != m.name])
         self.metadata += (m, )
+
+
+def from_at_relative_rotated_relative(at: tuple[Value, Value, Value], at_relative: Instance,
+                                      rotated: tuple[Value, Value, Value], rotated_relative: Instance):
+    if at_relative is None or at_relative.orientation is None:
+        global_at = at
+    else:
+        rat = at_relative.orientation.position
+        global_at = at[0] + rat[0], at[1] + rat[1], at[2] + rat[2]
+
+    if rotated_relative is None or rotated_relative.orientation is None:
+        global_rot = rotated
+    else:
+        rot_rel = rotated_relative.orientation.angles
+        global_rot = rotated[0] + rot_rel[0], rotated[1] + rot_rel[1], rotated[2] + rot_rel[2]
+
+    return Orientation.from_at_rotated(global_at, global_rot)
