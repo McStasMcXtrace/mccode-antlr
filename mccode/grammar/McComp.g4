@@ -66,3 +66,13 @@ component_parameter
     | Double '*' Identifier (Assign (Identifier | initializerlist | Null | '0'))?  #ComponentParameterDoubleArray
     | Int '*' Identifier (Assign (Identifier | initializerlist | Null | '0'))?     #ComponentParameterIntegerArray
     ;
+
+// Similar to `declare`, `uservars`, `initialize`, `save`, `finally_`, but only used in Comp(onent) definitions
+share
+  : Share unparsed_block                           #ShareBlock
+  | Share Copy Identifier (Extend unparsed_block)  #ShareBlockCopy
+  ;
+display
+  : McDisplay unparsed_block                           #DisplayBlock
+  | McDisplay Copy Identifier (Extend unparsed_block)? #DisplayBlockCopy
+  ;

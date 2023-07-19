@@ -189,28 +189,31 @@ class InstrumentParameter:
     unit: str
     value: Value
 
-    # @staticmethod
-    # def from_tokens(data_type: str, name: str, unit: str = None, value: str = None):
-    #     mv = Value.from_tokens(data_type, value)
-    #     if mv.is_a(Value.Type.float_array) or mv.is_a(Value.Type.int_array):
-    #         raise RuntimeError(f"Unsupported data type {data_type} for McInstrumentParameter")
-    #     return InstrumentParameter(name, unit, mv)
-
 
 @dataclass
 class ComponentParameter:
     name: str
     value: Value
 
-    #
-    # @staticmethod
-    # def from_tokens(data_type: str, name: str, value: str):
-    #     return ComponentParameter(name, Value.from_tokens(data_type, value))
+    def compatible_value(self, value):
+        vt = value.data_type if isinstance(value, Value) else value_type(type(value))
+        vv = value.value if isinstance(value, Value) else value
+        dt = self.value.data_type
+        if vt == dt:
+            return True
+        if dt == Value.Type.int and vt == Value.Type.float:
+            return vv.is_integer()
+        if dt == Value.Type.float and vt == Value.Type.int:
+            return True
+        # allow un-parsable values to remain string-valued
+        if vt == Value.Type.str:
+            return True
+        return False
 
 
 def parameter_name_present(parameters: tuple[Union[InstrumentParameter, ComponentParameter]],
-                           parameter: Union[InstrumentParameter, ComponentParameter]) -> bool:
-    return any(parameter.name == x.name for x in parameters)
+                           name: str) -> bool:
+    return any(name == x.name for x in parameters)
 
 
 def value_type(s: str):

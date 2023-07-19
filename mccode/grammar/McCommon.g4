@@ -8,41 +8,10 @@ coords: LeftParen expr Comma expr Comma expr RightParen;
 reference: Absolute | Relative (Absolute | component_ref);
 
 dependency: Dependency StringLiteral;
-//declare
-//  : Declare UnparsedBlock                           #DeclareBlock
-//  | Declare Copy Identifier (Extend UnparsedBlock)? #DeclareBlockCopy
-//  ;
-//share
-//  : Share UnparsedBlock                           #ShareBlock
-//  | Share Copy Identifier (Extend UnparsedBlock)  #ShareBlockCopy
-//  ;
-//uservars: UserVars UnparsedBlock;
-//initialize
-//  : Initialize UnparsedBlock                           #InitializeBlock
-//  | Initialize Copy Identifier (Extend UnparsedBlock)? #InitializeBlockCopy
-//  ;
-//save
-//  : Save UnparsedBlock                            #SaveBlock
-//  | Save Copy Identifier (Extend UnparsedBlock)?  #SaveBlockCopy
-//  ;
-//finally_
-//  : Finally UnparsedBlock                           #FinallyBlock
-//  | Finally Copy Identifier (Extend UnparsedBlock)? #FinallyBlockCopy
-//  ;
-//display
-//  : McDisplay UnparsedBlock                           #DisplayBlock
-//  | McDisplay Copy Identifier (Extend UnparsedBlock)? #DisplayBlockCopy
-//  ;
-//extend: Extend UnparsedBlock;
-//metadata: MetaData mime=(Identifier | StringLiteral) name=(Identifier | StringLiteral) UnparsedBlock;
 
 declare
   : Declare unparsed_block                           #DeclareBlock
   | Declare Copy Identifier (Extend unparsed_block)? #DeclareBlockCopy
-  ;
-share
-  : Share unparsed_block                           #ShareBlock
-  | Share Copy Identifier (Extend unparsed_block)  #ShareBlockCopy
   ;
 uservars: UserVars unparsed_block;
 initialize
@@ -57,11 +26,8 @@ finally_
   : Finally unparsed_block                           #FinallyBlock
   | Finally Copy Identifier (Extend unparsed_block)? #FinallyBlockCopy
   ;
-display
-  : McDisplay unparsed_block                           #DisplayBlock
-  | McDisplay Copy Identifier (Extend unparsed_block)? #DisplayBlockCopy
-  ;
-extend: Extend unparsed_block;
+
+
 metadata: MetaData mime=(Identifier | StringLiteral) name=(Identifier | StringLiteral) unparsed_block;
 
 

@@ -19,7 +19,7 @@ prog: instrument_definition EOF;
 
 instrument_definition
   : Define Instrument Identifier instrument_parameters
-    shell? search? dependency? declare? uservars? initialize?
+    shell? search? instrument_metadata? dependency? declare? uservars? initialize?
     instrument_trace
     save? finally_?
     End
@@ -35,7 +35,7 @@ A default value may be specified for each parameter.
 The general format of an instrument paraemter in the instr file is
     {data type} {parameter name} [/ "{unit}"] [= {default value}]
 */
-instrument_parameters: '(' (instrument_parameter (',' instrument_parameter)*)? ')';
+instrument_parameters: '(' (params+=instrument_parameter (',' params+=instrument_parameter)*)? ')';
 instrument_parameter
   : Double? Identifier (Div StringLiteral)? (Assign expr)?                         #InstrumentParameterDouble
   | Int Identifier (Div StringLiteral)? (Assign expr)?                             #InstrumentParameterInteger
@@ -43,6 +43,8 @@ instrument_parameter
   ;
 
 instrument_trace: Trace ((component_instance | search | instrument_trace_include)+)?;
+
+instrument_metadata: metadata+;
 
 // Insert components from another instr file `%include "filename.instr"`
 instrument_trace_include: Include StringLiteral;
@@ -56,15 +58,14 @@ AT {place} RELATIVE {reference}
 TODO: Think about specifying AFFINE ((xx, xy, xz), (yx, yy, yz), (zx, zy, zz)), (x0, y0, z0)
 */
 component_instance:
-  Removable? Cpu? split? Component instance_name Assign component_type
-  when? place orientation? groupref? extend? jump? metadata?;
+  Removable? Cpu? split? Component instance_name Assign component_type instance_parameters?
+  when? place orientation? groupref? extend? jumps? metadata*;
 
 // There are three special forms of component instance names.
 // Typically a user-defined valid identifier is given.
 instance_name
   : Copy '(' Identifier ')'  #InstanceNameCopyIdentifier
-  | Myself                   #InstanceNameMyself
-  | Copy                     #InstanceNameCopy
+  | (Myself | Copy )         #InstanceNameCopy
   | Identifier               #InstanceNameIdentifier
   ;
 
@@ -73,14 +74,14 @@ instance_name
  instance parameters override those copied from the earlier instantiated component.
 */
 component_type
-  : Copy LeftParen component_ref RightParen instance_parameters  #ComponentTypeCopy
-  | Identifier instance_parameters                               #ComponentTypeIdentifier
+  : Copy LeftParen component_ref RightParen   #ComponentTypeCopy
+  | Identifier                                #ComponentTypeIdentifier
   ;
 
 /* Instance parameters do not specify their type or unit.
 They are expected to be an appropriate value matching the component definition file.
 */
-instance_parameters: '(' (instance_parameter (',' instance_parameter)*)? ')';
+instance_parameters: '(' (params+=instance_parameter (',' params+=instance_parameter)*)? ')';
 instance_parameter: Identifier Assign expr;
 
 
@@ -90,5 +91,14 @@ when: When expr;
 place: At coords reference;
 orientation: Rotated coords reference;
 groupref: Group Identifier;
-jump: (Jump jumpname (When|Iterate) expr)+;
-jumpname: Previous ('(' IntegerLiteral ')')? | Myself | Next ('(' IntegerLiteral ')')? | Identifier;
+jumps: jump+;
+jump: Jump jumpname (When|Iterate) expr;
+jumpname
+  : Previous ('(' IntegerLiteral ')')?  #JumpPrevious
+  | Myself                              #JumpMyself
+  | Next ('(' IntegerLiteral ')')?      #JumpNext
+  | Identifier                          #JumpIdentifier
+  ;
+
+// Component instance post-trace C code statements
+extend: Extend unparsed_block;  // Original McCode3 erroneously identified EXTEND as common grammar

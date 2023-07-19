@@ -50,6 +50,10 @@ class MetaData:
     def from_instance_tokens(source: str, mimetype: str, name: str, value: str):
         return MetaData.partial_from_tokens(DataSource(DataSource.Type.Instance, source), name, mimetype, value)
 
+    @staticmethod
+    def from_instrument_tokens(source: str, mimetype: str, name: str, value: str):
+        return MetaData.partial_from_tokens(DataSource(DataSource.Type.Instrument, source), name, mimetype, value)
+
     # output to metadata_table_struct initializer list
     def to_table_row(self):
         from .utilities import escape_str_for_c as c

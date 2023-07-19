@@ -152,6 +152,42 @@ class McCompListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by McCompParser#ShareBlock.
+    def enterShareBlock(self, ctx:McCompParser.ShareBlockContext):
+        pass
+
+    # Exit a parse tree produced by McCompParser#ShareBlock.
+    def exitShareBlock(self, ctx:McCompParser.ShareBlockContext):
+        pass
+
+
+    # Enter a parse tree produced by McCompParser#ShareBlockCopy.
+    def enterShareBlockCopy(self, ctx:McCompParser.ShareBlockCopyContext):
+        pass
+
+    # Exit a parse tree produced by McCompParser#ShareBlockCopy.
+    def exitShareBlockCopy(self, ctx:McCompParser.ShareBlockCopyContext):
+        pass
+
+
+    # Enter a parse tree produced by McCompParser#DisplayBlock.
+    def enterDisplayBlock(self, ctx:McCompParser.DisplayBlockContext):
+        pass
+
+    # Exit a parse tree produced by McCompParser#DisplayBlock.
+    def exitDisplayBlock(self, ctx:McCompParser.DisplayBlockContext):
+        pass
+
+
+    # Enter a parse tree produced by McCompParser#DisplayBlockCopy.
+    def enterDisplayBlockCopy(self, ctx:McCompParser.DisplayBlockCopyContext):
+        pass
+
+    # Exit a parse tree produced by McCompParser#DisplayBlockCopy.
+    def exitDisplayBlockCopy(self, ctx:McCompParser.DisplayBlockCopyContext):
+        pass
+
+
     # Enter a parse tree produced by McCompParser#component_ref.
     def enterComponent_ref(self, ctx:McCompParser.Component_refContext):
         pass
@@ -203,24 +239,6 @@ class McCompListener(ParseTreeListener):
 
     # Exit a parse tree produced by McCompParser#DeclareBlockCopy.
     def exitDeclareBlockCopy(self, ctx:McCompParser.DeclareBlockCopyContext):
-        pass
-
-
-    # Enter a parse tree produced by McCompParser#ShareBlock.
-    def enterShareBlock(self, ctx:McCompParser.ShareBlockContext):
-        pass
-
-    # Exit a parse tree produced by McCompParser#ShareBlock.
-    def exitShareBlock(self, ctx:McCompParser.ShareBlockContext):
-        pass
-
-
-    # Enter a parse tree produced by McCompParser#ShareBlockCopy.
-    def enterShareBlockCopy(self, ctx:McCompParser.ShareBlockCopyContext):
-        pass
-
-    # Exit a parse tree produced by McCompParser#ShareBlockCopy.
-    def exitShareBlockCopy(self, ctx:McCompParser.ShareBlockCopyContext):
         pass
 
 
@@ -284,33 +302,6 @@ class McCompListener(ParseTreeListener):
 
     # Exit a parse tree produced by McCompParser#FinallyBlockCopy.
     def exitFinallyBlockCopy(self, ctx:McCompParser.FinallyBlockCopyContext):
-        pass
-
-
-    # Enter a parse tree produced by McCompParser#DisplayBlock.
-    def enterDisplayBlock(self, ctx:McCompParser.DisplayBlockContext):
-        pass
-
-    # Exit a parse tree produced by McCompParser#DisplayBlock.
-    def exitDisplayBlock(self, ctx:McCompParser.DisplayBlockContext):
-        pass
-
-
-    # Enter a parse tree produced by McCompParser#DisplayBlockCopy.
-    def enterDisplayBlockCopy(self, ctx:McCompParser.DisplayBlockCopyContext):
-        pass
-
-    # Exit a parse tree produced by McCompParser#DisplayBlockCopy.
-    def exitDisplayBlockCopy(self, ctx:McCompParser.DisplayBlockCopyContext):
-        pass
-
-
-    # Enter a parse tree produced by McCompParser#extend.
-    def enterExtend(self, ctx:McCompParser.ExtendContext):
-        pass
-
-    # Exit a parse tree produced by McCompParser#extend.
-    def exitExtend(self, ctx:McCompParser.ExtendContext):
         pass
 
 

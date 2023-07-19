@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from .registry import Registry, MCSTAS_REGISTRY
+from .registry import Registry, MCSTAS_REGISTRY, registries_match, registry_from_specification
 from ..comp import Comp
 
 
@@ -7,7 +7,7 @@ from ..comp import Comp
 class Reader:
     registries: list[Registry] = field(default_factory=list)
     components: dict[str, Comp] = field(default_factory=dict)
-    cflags: list[str] = field(default_factor=list)
+    c_flags: list[str] = field(default_factory=list)
 
     def __post_init__(self):
         if len(self.registries) == 0:
@@ -19,8 +19,16 @@ class Reader:
     def append_registry(self, reg: Registry):
         self.registries.append(reg)
 
-    def add_cflags(self, flags):
-        self.cflags.append(flags)
+    def handle_search_keyword(self, spec: str):
+        if not any(registries_match(reg, spec) for reg in self.registries):
+            reg = registry_from_specification(spec)
+            if reg is not None:
+                self.prepend_registry(reg)
+            else:
+                raise RuntimeError(f"Registry specification {spec} did not specify a valid registry!")
+
+    def add_c_flags(self, flags):
+        self.c_flags.append(flags)
 
     def locate(self, name: str, which: str = None):
         registries = self.registries if which is None else [x for x in self.registries if x.name in which]

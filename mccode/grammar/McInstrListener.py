@@ -71,6 +71,15 @@ class McInstrListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by McInstrParser#instrument_metadata.
+    def enterInstrument_metadata(self, ctx:McInstrParser.Instrument_metadataContext):
+        pass
+
+    # Exit a parse tree produced by McInstrParser#instrument_metadata.
+    def exitInstrument_metadata(self, ctx:McInstrParser.Instrument_metadataContext):
+        pass
+
+
     # Enter a parse tree produced by McInstrParser#instrument_trace_include.
     def enterInstrument_trace_include(self, ctx:McInstrParser.Instrument_trace_includeContext):
         pass
@@ -95,15 +104,6 @@ class McInstrListener(ParseTreeListener):
 
     # Exit a parse tree produced by McInstrParser#InstanceNameCopyIdentifier.
     def exitInstanceNameCopyIdentifier(self, ctx:McInstrParser.InstanceNameCopyIdentifierContext):
-        pass
-
-
-    # Enter a parse tree produced by McInstrParser#InstanceNameMyself.
-    def enterInstanceNameMyself(self, ctx:McInstrParser.InstanceNameMyselfContext):
-        pass
-
-    # Exit a parse tree produced by McInstrParser#InstanceNameMyself.
-    def exitInstanceNameMyself(self, ctx:McInstrParser.InstanceNameMyselfContext):
         pass
 
 
@@ -206,6 +206,15 @@ class McInstrListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by McInstrParser#jumps.
+    def enterJumps(self, ctx:McInstrParser.JumpsContext):
+        pass
+
+    # Exit a parse tree produced by McInstrParser#jumps.
+    def exitJumps(self, ctx:McInstrParser.JumpsContext):
+        pass
+
+
     # Enter a parse tree produced by McInstrParser#jump.
     def enterJump(self, ctx:McInstrParser.JumpContext):
         pass
@@ -215,12 +224,48 @@ class McInstrListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by McInstrParser#jumpname.
-    def enterJumpname(self, ctx:McInstrParser.JumpnameContext):
+    # Enter a parse tree produced by McInstrParser#JumpPrevious.
+    def enterJumpPrevious(self, ctx:McInstrParser.JumpPreviousContext):
         pass
 
-    # Exit a parse tree produced by McInstrParser#jumpname.
-    def exitJumpname(self, ctx:McInstrParser.JumpnameContext):
+    # Exit a parse tree produced by McInstrParser#JumpPrevious.
+    def exitJumpPrevious(self, ctx:McInstrParser.JumpPreviousContext):
+        pass
+
+
+    # Enter a parse tree produced by McInstrParser#JumpMyself.
+    def enterJumpMyself(self, ctx:McInstrParser.JumpMyselfContext):
+        pass
+
+    # Exit a parse tree produced by McInstrParser#JumpMyself.
+    def exitJumpMyself(self, ctx:McInstrParser.JumpMyselfContext):
+        pass
+
+
+    # Enter a parse tree produced by McInstrParser#JumpNext.
+    def enterJumpNext(self, ctx:McInstrParser.JumpNextContext):
+        pass
+
+    # Exit a parse tree produced by McInstrParser#JumpNext.
+    def exitJumpNext(self, ctx:McInstrParser.JumpNextContext):
+        pass
+
+
+    # Enter a parse tree produced by McInstrParser#JumpIdentifier.
+    def enterJumpIdentifier(self, ctx:McInstrParser.JumpIdentifierContext):
+        pass
+
+    # Exit a parse tree produced by McInstrParser#JumpIdentifier.
+    def exitJumpIdentifier(self, ctx:McInstrParser.JumpIdentifierContext):
+        pass
+
+
+    # Enter a parse tree produced by McInstrParser#extend.
+    def enterExtend(self, ctx:McInstrParser.ExtendContext):
+        pass
+
+    # Exit a parse tree produced by McInstrParser#extend.
+    def exitExtend(self, ctx:McInstrParser.ExtendContext):
         pass
 
 
@@ -275,24 +320,6 @@ class McInstrListener(ParseTreeListener):
 
     # Exit a parse tree produced by McInstrParser#DeclareBlockCopy.
     def exitDeclareBlockCopy(self, ctx:McInstrParser.DeclareBlockCopyContext):
-        pass
-
-
-    # Enter a parse tree produced by McInstrParser#ShareBlock.
-    def enterShareBlock(self, ctx:McInstrParser.ShareBlockContext):
-        pass
-
-    # Exit a parse tree produced by McInstrParser#ShareBlock.
-    def exitShareBlock(self, ctx:McInstrParser.ShareBlockContext):
-        pass
-
-
-    # Enter a parse tree produced by McInstrParser#ShareBlockCopy.
-    def enterShareBlockCopy(self, ctx:McInstrParser.ShareBlockCopyContext):
-        pass
-
-    # Exit a parse tree produced by McInstrParser#ShareBlockCopy.
-    def exitShareBlockCopy(self, ctx:McInstrParser.ShareBlockCopyContext):
         pass
 
 
@@ -356,33 +383,6 @@ class McInstrListener(ParseTreeListener):
 
     # Exit a parse tree produced by McInstrParser#FinallyBlockCopy.
     def exitFinallyBlockCopy(self, ctx:McInstrParser.FinallyBlockCopyContext):
-        pass
-
-
-    # Enter a parse tree produced by McInstrParser#DisplayBlock.
-    def enterDisplayBlock(self, ctx:McInstrParser.DisplayBlockContext):
-        pass
-
-    # Exit a parse tree produced by McInstrParser#DisplayBlock.
-    def exitDisplayBlock(self, ctx:McInstrParser.DisplayBlockContext):
-        pass
-
-
-    # Enter a parse tree produced by McInstrParser#DisplayBlockCopy.
-    def enterDisplayBlockCopy(self, ctx:McInstrParser.DisplayBlockCopyContext):
-        pass
-
-    # Exit a parse tree produced by McInstrParser#DisplayBlockCopy.
-    def exitDisplayBlockCopy(self, ctx:McInstrParser.DisplayBlockCopyContext):
-        pass
-
-
-    # Enter a parse tree produced by McInstrParser#extend.
-    def enterExtend(self, ctx:McInstrParser.ExtendContext):
-        pass
-
-    # Exit a parse tree produced by McInstrParser#extend.
-    def exitExtend(self, ctx:McInstrParser.ExtendContext):
         pass
 
 

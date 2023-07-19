@@ -9,12 +9,16 @@ class CompVisitor(McCompVisitor):
         self.filename = filename
         self.state = Comp()
 
+    def visitProg(self, ctx: Parser.ProgContext):
+        self.state = Comp()
+        self.visit(ctx.component_definition())
+        return self.state
+
     def visitComponentDefineNew(self, ctx: Parser.ComponentDefineNewContext):
         self.state.name = str(ctx.Identifer())
         if ctx.NoAcc() is not None:
             self.state.no_acc()
         self.visitChildren(ctx)  # Use the visitor methods to fill in details of the state
-        return self.state
 
     def visitComponentDefineCopy(self, ctx: Parser.ComponentDefinecopyContext):
         from copy import deepcopy
@@ -30,7 +34,6 @@ class CompVisitor(McCompVisitor):
         if ctx.NoAcc() is not None:
             self.state.no_acc()
         self.visitChildren(ctx)  # Use the visitor methods to overwrite details of the state
-        return self.state
 
     def visitComponent_trace(self, ctx: Parser.Component_traceContext):
         self.state.TRACE(self.visit(ctx.unparsed_block()))
@@ -97,7 +100,7 @@ class CompVisitor(McCompVisitor):
         return ComponentParameter(name=name, value=Value(Value.Type.int_array, default))
 
     def visitDependency(self, ctx: Parser.DependencyContext):
-        self.parent.add_cflags(self.visit(ctx.StringLiteral()))
+        self.parent.add_c_flags(self.visit(ctx.StringLiteral()))
 
     def visitDeclareBlock(self, ctx: Parser.DeclareBlockContext):
         self.state.DECLARE(self.visit(ctx.unparsed_block()))
@@ -154,8 +157,12 @@ class CompVisitor(McCompVisitor):
         line_number = None if ctx.start is None else ctx.start.line
         return self.filename, line_number, "" if ctx.content is None else str(ctx.content)
 
-# TODO Implement all of these visitors
+    # TODO Make this and the identical list of visitors in instr/visitor.py a single definition ... somehow
     # FIXME There *are* no statements in McCode, so all identifiers always produce un-parsable values.
+    def visitAssignment(self, ctx: Parser.AssignmentContext):
+        line_number = None if ctx.start is None else ctx.start.line
+        raise RuntimeError(f"{self.filename}: {line_number} -- assignment statements are not (yet) supported")
+
     # TODO (maybe) Add control and statements into McCode, requiring some form of global stack.
     def visitExpressionUnaryPM(self, ctx: Parser.ExpressionUnaryPMContext):
         right = self.visit(ctx.expr())

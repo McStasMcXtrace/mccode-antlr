@@ -89,6 +89,26 @@ class McCompVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by McCompParser#ShareBlock.
+    def visitShareBlock(self, ctx:McCompParser.ShareBlockContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by McCompParser#ShareBlockCopy.
+    def visitShareBlockCopy(self, ctx:McCompParser.ShareBlockCopyContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by McCompParser#DisplayBlock.
+    def visitDisplayBlock(self, ctx:McCompParser.DisplayBlockContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by McCompParser#DisplayBlockCopy.
+    def visitDisplayBlockCopy(self, ctx:McCompParser.DisplayBlockCopyContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by McCompParser#component_ref.
     def visitComponent_ref(self, ctx:McCompParser.Component_refContext):
         return self.visitChildren(ctx)
@@ -116,16 +136,6 @@ class McCompVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by McCompParser#DeclareBlockCopy.
     def visitDeclareBlockCopy(self, ctx:McCompParser.DeclareBlockCopyContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by McCompParser#ShareBlock.
-    def visitShareBlock(self, ctx:McCompParser.ShareBlockContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by McCompParser#ShareBlockCopy.
-    def visitShareBlockCopy(self, ctx:McCompParser.ShareBlockCopyContext):
         return self.visitChildren(ctx)
 
 
@@ -161,21 +171,6 @@ class McCompVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by McCompParser#FinallyBlockCopy.
     def visitFinallyBlockCopy(self, ctx:McCompParser.FinallyBlockCopyContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by McCompParser#DisplayBlock.
-    def visitDisplayBlock(self, ctx:McCompParser.DisplayBlockContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by McCompParser#DisplayBlockCopy.
-    def visitDisplayBlockCopy(self, ctx:McCompParser.DisplayBlockCopyContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by McCompParser#extend.
-    def visitExtend(self, ctx:McCompParser.ExtendContext):
         return self.visitChildren(ctx)
 
 

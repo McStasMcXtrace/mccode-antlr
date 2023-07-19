@@ -44,6 +44,11 @@ class McInstrVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by McInstrParser#instrument_metadata.
+    def visitInstrument_metadata(self, ctx:McInstrParser.Instrument_metadataContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by McInstrParser#instrument_trace_include.
     def visitInstrument_trace_include(self, ctx:McInstrParser.Instrument_trace_includeContext):
         return self.visitChildren(ctx)
@@ -56,11 +61,6 @@ class McInstrVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by McInstrParser#InstanceNameCopyIdentifier.
     def visitInstanceNameCopyIdentifier(self, ctx:McInstrParser.InstanceNameCopyIdentifierContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by McInstrParser#InstanceNameMyself.
-    def visitInstanceNameMyself(self, ctx:McInstrParser.InstanceNameMyselfContext):
         return self.visitChildren(ctx)
 
 
@@ -119,13 +119,38 @@ class McInstrVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by McInstrParser#jumps.
+    def visitJumps(self, ctx:McInstrParser.JumpsContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by McInstrParser#jump.
     def visitJump(self, ctx:McInstrParser.JumpContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by McInstrParser#jumpname.
-    def visitJumpname(self, ctx:McInstrParser.JumpnameContext):
+    # Visit a parse tree produced by McInstrParser#JumpPrevious.
+    def visitJumpPrevious(self, ctx:McInstrParser.JumpPreviousContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by McInstrParser#JumpMyself.
+    def visitJumpMyself(self, ctx:McInstrParser.JumpMyselfContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by McInstrParser#JumpNext.
+    def visitJumpNext(self, ctx:McInstrParser.JumpNextContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by McInstrParser#JumpIdentifier.
+    def visitJumpIdentifier(self, ctx:McInstrParser.JumpIdentifierContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by McInstrParser#extend.
+    def visitExtend(self, ctx:McInstrParser.ExtendContext):
         return self.visitChildren(ctx)
 
 
@@ -156,16 +181,6 @@ class McInstrVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by McInstrParser#DeclareBlockCopy.
     def visitDeclareBlockCopy(self, ctx:McInstrParser.DeclareBlockCopyContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by McInstrParser#ShareBlock.
-    def visitShareBlock(self, ctx:McInstrParser.ShareBlockContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by McInstrParser#ShareBlockCopy.
-    def visitShareBlockCopy(self, ctx:McInstrParser.ShareBlockCopyContext):
         return self.visitChildren(ctx)
 
 
@@ -201,21 +216,6 @@ class McInstrVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by McInstrParser#FinallyBlockCopy.
     def visitFinallyBlockCopy(self, ctx:McInstrParser.FinallyBlockCopyContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by McInstrParser#DisplayBlock.
-    def visitDisplayBlock(self, ctx:McInstrParser.DisplayBlockContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by McInstrParser#DisplayBlockCopy.
-    def visitDisplayBlockCopy(self, ctx:McInstrParser.DisplayBlockCopyContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by McInstrParser#extend.
-    def visitExtend(self, ctx:McInstrParser.ExtendContext):
         return self.visitChildren(ctx)
 
 
