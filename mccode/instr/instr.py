@@ -7,7 +7,13 @@ from .group import Group
 
 @dataclass
 class Instr:
+    """Intermediate representation of a McCode instrument
+
+    Read from a .instr file -- possibly including more .comp and .instr file sources
+    For output to a runtime source file
+    """
     name: str = None             # Instrument name, e.g. {name}.instr (typically)
+    source: str = None           # Instrument *file* name
     parameters: tuple[InstrumentParameter] = field(default_factory=tuple)  # runtime-set instrument parameters
     metadata: tuple[MetaData] = field(default_factory=tuple)               # metadata for use by simulation consumers
     dependency: str = None       # compile-time dependency

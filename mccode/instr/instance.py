@@ -2,11 +2,16 @@ from dataclasses import dataclass, field
 from typing import Self
 from ..comp import Comp
 from ..common import ComponentParameter, Value, MetaData, parameter_name_present, RawC, blocks_to_raw_c
-from .orientation import Orientation, from_at_rotated
+from .orientation import Orientation
 from .jump import Jump
 
 @dataclass
 class Instance:
+    """Intermediate representation of a McCode component instance
+
+    Read from a .instr file TRACE section, using one or more .comp sources
+    For output to a runtime source file
+    """
     name: str
     type: Comp
     at_relative: tuple[tuple[Value, Value, Value], Self]

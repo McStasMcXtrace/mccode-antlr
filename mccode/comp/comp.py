@@ -6,6 +6,11 @@ from ..common import ComponentParameter, MetaData, parameter_name_present, RawC,
 # Could this be replaced by a subclassed 'name' class? E.g., Slit.comp <=> class McCompSlit(McComp)?
 @dataclass
 class Comp:
+    """Intermediate representation of a McCode component definition
+
+    Read from a .comp file
+    For output to a runtime source file
+    """
     name: str = None           # Component *type* name, e.g. {name}.comp
     parameters: tuple[ComponentParameter] = field(default_factory=tuple)  # instance-set component parameters
     settings: tuple[ComponentParameter] = field(default_factory=tuple)    # ??? 'setting' parameters
