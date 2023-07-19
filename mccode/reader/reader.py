@@ -102,5 +102,6 @@ class Reader:
         res = visitor.visitProg(parser.prog())
         if not isinstance(res, Instr):
             raise RuntimeError(f'Parsing instrument file {filename} did not produce an Instr object')
+        res.source = filename
         return res
 
