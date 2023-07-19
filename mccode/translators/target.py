@@ -5,16 +5,19 @@ from ..comp import Comp
 MCSTAS_GENERATOR = dict(project=1, name="mcstas", fancy="McStas", url='http://www.mcstas.org')
 MCXTRACE_GENERATOR = dict(project=2, name='mcxtrace', fancy='McXtrace', url='http://www.mcxtrace.org')
 
+CONFIG = dict(default_main=True, enable_trace=True, portable=True)
 
 # Follow the logic of codegen.c(.in) from McCode-3, but make use of visitor semantics for possible alternate runtimes
 class TargetVisitor:
-    def __init__(self, instr: Instr, generate: dict = None, verbose=False):
+    def __init__(self, instr: Instr, generate: dict = None, config: dict = None, verbose=False):
         self.runtime = MCSTAS_GENERATOR if generate is None else generate
+        self.config = CONFIG if config is None else config
         self.source = instr
         self.sink = None
         self.output = None
         self.verbose = verbose
         self.warnings = 0
+        self.uservars = ()
 
     def out(self, value):
         if self.output is None:
