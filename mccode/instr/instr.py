@@ -81,3 +81,6 @@ class Instr:
                 if inst.group not in self.groups:
                     self.groups[inst.group] = Group(inst.group, len(self.groups))
                 self.groups[inst.group].add(id, inst)
+
+    def component_types(self):
+        return set(inst.type for inst in self.components)

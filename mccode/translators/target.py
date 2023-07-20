@@ -5,10 +5,15 @@ from ..comp import Comp
 MCSTAS_GENERATOR = dict(project=1, name="mcstas", fancy="McStas", url='http://www.mcstas.org')
 MCXTRACE_GENERATOR = dict(project=2, name='mcxtrace', fancy='McXtrace', url='http://www.mcxtrace.org')
 
-CONFIG = dict(default_main=True, enable_trace=True, portable=True)
+# These _should_ be set in a call to, e.g., `mcstas4`,
+# They were previously set in the yacc generated main function
+CONFIG = dict(default_main=True, enable_trace=True, portable=True, include_runtime=True,
+              embed_instrument_file=False,)
 
 # Follow the logic of codegen.c(.in) from McCode-3, but make use of visitor semantics for possible alternate runtimes
 class TargetVisitor:
+    target_language = 'undefined'
+
     def __init__(self, instr: Instr, generate: dict = None, config: dict = None, verbose=False):
         self.runtime = MCSTAS_GENERATOR if generate is None else generate
         self.config = CONFIG if config is None else config
@@ -18,6 +23,28 @@ class TargetVisitor:
         self.verbose = verbose
         self.warnings = 0
         self.uservars = ()
+
+    def library_path(self, filename=None):
+        from importlib.resources import files
+        from pathlib import Path
+        traversable = files('mccode').joinpath('libraries')
+        location = Path(traversable).joinpath(self.target_language)
+        if filename:
+            location.joinpath(filename)
+        if (filename and not location.is_file()) or not location.is_dir():
+            raise RuntimeError(f"Expected library location {location} is not a valid.")
+        return location
+
+    def embed_file(self, filename):
+        """Reads the library file, even if embedded in a module archive, writes to the output IO Stream"""
+        from importlib.resources import as_file
+        with as_file(self.library_path(filename)) as file_at:
+            with open(file_at, 'r') as file:
+                self.output.write(file.read())
+
+    def include_path(self, filename=None):
+        #TODO figure out what to do if the module lives in a Zip file
+        return self.library_path(filename)
 
     def out(self, value):
         if self.output is None:
@@ -52,7 +79,7 @@ class TargetVisitor:
         self.output.close()
 
     def detect_skipable_transforms(self):
-        # TODO implement this here
+        # TODO implement this here (or move it into Instr itself, more likely)
         pass
 
     def enter_trace(self):
