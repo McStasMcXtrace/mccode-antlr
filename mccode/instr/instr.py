@@ -84,3 +84,10 @@ class Instr:
 
     def component_types(self):
         return set(inst.type for inst in self.components)
+
+    def collect_metadata(self):
+        """Component definitions and instances can define metadata too, collect it all together here"""
+        # Metadata defined in an instance overrides that defined in a component.
+        # Metadata defined for an instrument is added to the collected list
+        return tuple(m for inst in self.components for m in inst.collect_metadata()) + self.metadata
+

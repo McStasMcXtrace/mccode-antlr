@@ -70,6 +70,14 @@ class Instance:
             self.metadata = tuple([x for x in self.metadata if x.name != m.name])
         self.metadata += (m, )
 
+    def collect_metadata(self):
+        # A component declaration and instance can define metadata with the same name
+        # When they do, the metadata from *the instance* should take precedence
+        md = {m.name: m for m in self.type.collect_metadata()}
+        md.update({m.name: m for m in self.metadata})
+        return tuple(md.values())
+
+
 
 def from_at_relative_rotated_relative(at: tuple[Value, Value, Value], at_relative: Instance,
                                       rotated: tuple[Value, Value, Value], rotated_relative: Instance):

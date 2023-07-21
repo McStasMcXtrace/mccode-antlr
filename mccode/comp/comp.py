@@ -90,3 +90,6 @@ class Comp:
         if any([x.name == m.name for x in self.metadata]):
             self.metadata = tuple([x for x in self.metadata if x.name != m.name])
         self.metadata += (m, )
+
+    def collect_metadata(self):
+        return self.metadata

@@ -21,6 +21,14 @@ class Value:
         return self.data_type == data_type
 
     @property
+    def mccode_c_type(self):
+        return mccode_c_type_name(self.data_type)
+
+    @property
+    def mccode_c_type_name(self):
+        return mccode_c_type_name_string(self.data_type)
+
+    @property
     def has_value(self):
         return self.value is not None
 
@@ -228,3 +236,31 @@ def value_type(s: str):
     elif s == 'int':
         return Value.Type.int
     raise RuntimeError(f'How do I handle {s} to Value.Type conversion?')
+
+
+def mccode_c_type_name(vt: Value.Type):
+    if vt == Value.Type.float:
+        return "double"
+    if vt == Value.Type.int:
+        return "int"
+    if vt == Value.Type.str:
+        return "char *"
+    if vt == Value.Type.float_array:
+        return "double *"
+    if vt == Value.Type.int_array:
+        return "int *"
+    raise RuntimeError(f"No known conversion from {vt} to McCode C type")
+
+
+def mccode_c_type_name_string(vt: Value.Type):
+    if vt == Value.Type.float:
+        return "instr_type_double"
+    if vt == Value.Type.int:
+        return "instr_type_int"
+    if vt == Value.Type.str:
+        return "instr_type_string"
+    if vt == Value.Type.float_array:
+        return "instr_type_vector"
+    if vt == Value.Type.int_array:
+        return "instr_type_vector"
+    raise RuntimeError(f"No known conversion from {vt} to McCode C type")

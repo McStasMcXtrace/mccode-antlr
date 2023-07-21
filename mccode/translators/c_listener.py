@@ -78,7 +78,7 @@ class DeclaresCListener(CListener):
         self.last_value = literal_string(ctx)
 
 
-def extract_c_declared_variables(block: str, user_types: list = None):
+def extract_c_declared_variables_and_defined_types(block: str, user_types: list = None):
     from antlr4 import InputStream, CommonTokenStream
     from antlr4 import ParseTreeWalker
     from ..grammar.CLexer import CLexer
@@ -90,5 +90,15 @@ def extract_c_declared_variables(block: str, user_types: list = None):
     listener = DeclaresCListener(user_types)
     walker = ParseTreeWalker()
     walker.walk(listener, tree)
-    return listener.variables
+    return listener.variables, listener.typedefs
 
+
+def extract_c_declared_variables(block: str, user_types: list = None):
+    variables, types = extract_c_declared_variables_and_defined_types(block, user_types)
+    return variables
+
+
+def extract_c_defined_then_declared_variables(defined_in_block: str, declared_in_block):
+    _, defined_in_types = extract_c_declared_variables_and_defined_types(defined_in_block)
+    declared_in_variables, _ = extract_c_declared_variables(declared_in_block, user_types=defined_in_types)
+    return declared_in_variables

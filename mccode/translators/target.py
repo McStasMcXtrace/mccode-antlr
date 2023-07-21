@@ -14,7 +14,8 @@ CONFIG = dict(default_main=True, enable_trace=True, portable=True, include_runti
 class TargetVisitor:
     target_language = 'undefined'
 
-    def __init__(self, instr: Instr, generate: dict = None, config: dict = None, verbose=False):
+    def __init__(self, instr: Instr, generate: dict = None, config: dict = None, verbose=False,
+                 registries=None):
         self.runtime = MCSTAS_GENERATOR if generate is None else generate
         self.config = CONFIG if config is None else config
         self.source = instr
@@ -23,6 +24,13 @@ class TargetVisitor:
         self.verbose = verbose
         self.warnings = 0
         self.uservars = ()
+        self.registries = registries
+        self.libraries = []
+        self.typedefs = None
+        self.__post__init__()
+
+    def __post__init__(self):
+        pass
 
     def library_path(self, filename=None):
         from importlib.resources import files
@@ -34,6 +42,21 @@ class TargetVisitor:
         if (filename and not location.is_file()) or not location.is_dir():
             raise RuntimeError(f"Expected library location {location} is not a valid.")
         return location
+
+    def known(self, name: str, which: str = None):
+        if self.registries is None:
+            return False
+        registries = self.registries if which is None else [x for x in self.registries if x.name in which]
+        return any([reg.known(name) for reg in registries])
+
+    def locate(self, name: str, which: str = None):
+        registries = self.registries if which is None else [x for x in self.registries if x.name in which]
+        for reg in registries:
+            if reg.known(name):
+                return reg.path(name)
+        names = [reg.name for reg in registries]
+        msg = "registry " + names[0] if len(names) == 1 else 'registries: ' + ','.join(names)
+        raise RuntimeError(f'{name} not found in {msg}')
 
     def embed_file(self, filename):
         """Reads the library file, even if embedded in a module archive, writes to the output IO Stream"""

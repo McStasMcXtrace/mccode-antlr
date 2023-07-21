@@ -31,6 +31,17 @@ def mcstas_script_parse():
         print('All rights reserved\n\nComponents are (c) their authors, see component headers.')
         exit(1)
 
+    return args
+
+
+def mcstas_script():
+    from mccode.reader import Reader, MCSTAS_REGISTRY
+    from mccode.reader import LocalRegistry
+    from mccode.translators.c import CTargetVisitor
+    from mccode.translators.target import MCSTAS_GENERATOR
+
+    args = mcstas_script_parse()
+
     config = dict(default_main=(not args.no_main) if args.no_main is not None else True,
                   enable_trace=args.trace if args.trace is not None else False,
                   portable=args.portable if args.portable is not None else False,
@@ -40,23 +51,20 @@ def mcstas_script_parse():
                   output=args.output_file if args.output_file is not None else args.filename.with_suffix('.c')
                   )
 
-    return args.filename, config
+    # TODO somehow pull out extra search directories into LocalRegistries
+    registries = [MCSTAS_REGISTRY]
+    if args.search_dir is not None:
+        registries.append(LocalRegistry(args.searchdir.stem, args.searchdir))
 
+    reader = Reader(registries=registries)
 
-def mcstas_script():
-    from mccode.reader import Reader, MCSTAS_REGISTRY
-    from mccode.translators.c import CTargetVisitor
-    from mccode.translators.target import MCSTAS_GENERATOR
-    filename, config = mcstas_script_parse()
-
-    reader = Reader(registries=[MCSTAS_REGISTRY])
-
-    instrument = reader.get_instrument(filename)
+    instrument = reader.get_instrument(args.filename)
 
     # Now write out the translated instrument in the McStas runtime
     print(instrument)
 
-    visitor = CTargetVisitor(instrument, generate=MCSTAS_GENERATOR, config=config, verbose=config['verbose'])
+    visitor = CTargetVisitor(instrument, generate=MCSTAS_GENERATOR, config=config, verbose=config['verbose'],
+                             registries=reader.registries)
     # Go through the instrument, finish by writing the output file:
     visitor.translate(filename=config['output'])
 
