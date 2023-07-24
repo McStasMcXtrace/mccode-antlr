@@ -10,10 +10,9 @@ MCXTRACE_GENERATOR = dict(project=2, name='mcxtrace', fancy='McXtrace', url='htt
 CONFIG = dict(default_main=True, enable_trace=True, portable=True, include_runtime=True,
               embed_instrument_file=False,)
 
+
 # Follow the logic of codegen.c(.in) from McCode-3, but make use of visitor semantics for possible alternate runtimes
 class TargetVisitor:
-    target_language = 'undefined'
-
     def __init__(self, instr: Instr, generate: dict = None, config: dict = None, verbose=False,
                  registries=None):
         self.runtime = MCSTAS_GENERATOR if generate is None else generate
@@ -24,24 +23,23 @@ class TargetVisitor:
         self.verbose = verbose
         self.warnings = 0
         self.uservars = ()
-        self.registries = registries
+        self.registries = [] if registries is None else registries
         self.libraries = []
         self.typedefs = None
+        self.component_declared_parameters = dict()
+        self.ok_to_skip = None
+        #
         self.__post__init__()
+
+    def __init_subclass__(cls, **kwargs):
+        target_language = kwargs.get('target_language', 'none')
+        if 'target_language' in kwargs:
+            del kwargs['target_language']
+        super().__init_subclass__(**kwargs)
+        cls.target_language = target_language
 
     def __post__init__(self):
         pass
-
-    def library_path(self, filename=None):
-        from importlib.resources import files
-        from pathlib import Path
-        traversable = files('mccode').joinpath('libraries')
-        location = Path(traversable).joinpath(self.target_language)
-        if filename:
-            location.joinpath(filename)
-        if (filename and not location.is_file()) or not location.is_dir():
-            raise RuntimeError(f"Expected library location {location} is not a valid.")
-        return location
 
     def known(self, name: str, which: str = None):
         if self.registries is None:
@@ -58,6 +56,9 @@ class TargetVisitor:
         msg = "registry " + names[0] if len(names) == 1 else 'registries: ' + ','.join(names)
         raise RuntimeError(f'{name} not found in {msg}')
 
+    def library_path(self, filename=None):
+        return self.locate(filename)
+
     def embed_file(self, filename):
         """Reads the library file, even if embedded in a module archive, writes to the output IO Stream"""
         from importlib.resources import as_file
@@ -66,7 +67,6 @@ class TargetVisitor:
                 self.output.write(file.read())
 
     def include_path(self, filename=None):
-        #TODO figure out what to do if the module lives in a Zip file
         return self.library_path(filename)
 
     def out(self, value):
@@ -102,8 +102,28 @@ class TargetVisitor:
         self.output.close()
 
     def detect_skipable_transforms(self):
-        # TODO implement this here (or move it into Instr itself, more likely)
-        pass
+        def can_skip(comp):
+            # Any component with a TRACE or EXTEND can not be skipped
+            if any(not x.is_empty for x in comp.extend) or any(not x.is_empty for x in comp.type.trace):
+                return False
+            # Any component jumping elsewhere can not be skipped
+            if len(comp.jump):
+                return False
+
+        can_skip_transform = [can_skip(comp) for comp in self.source.components]
+
+        # Any component that is jumped *to* can not be skipped
+        for index, jumps in [(i, c.jump) for i, c in enumerate(self.source.components) if len(c.jump)]:
+            for jump in jumps:
+                # jump has ('target', 'index', iterate, condition) -- if index == 0, target is a component name or 'MYSELF'
+                # if index != 0 it is a relative component index compared to the current one
+                if jump.target_index == 0 and jump.target.lower() != 'myself':
+                    target_index = [i for i, c in self.source.components if jump.target == c.name][0]
+                else:
+                    target_index = index + jump.target_index
+                can_skip_transform[target_index] = False
+
+        self.ok_to_skip = can_skip_transform
 
     def enter_trace(self):
         """Walk the component instances definition(s) section..."""

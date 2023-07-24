@@ -1,12 +1,12 @@
 """Translates a McComp instrument from its intermediate form to a C runtime source file."""
+from ..reader import LIBC_REGISTRY
 from ..instr import Instr, Instance
 from .target import TargetVisitor
 from .c_listener import extract_c_declared_variables
 from ..common.utilities import escape_str_for_c
 
-class CTargetVisitor(TargetVisitor):
-    target_language = 'c'
 
+class CTargetVisitor(TargetVisitor, target_language='c'):
     def _file_contents(self, filename):
         # First try the McCode C runtime libraries:
         path = self.include_path(filename)
@@ -57,6 +57,10 @@ class CTargetVisitor(TargetVisitor):
         This could not be done earlier if the goal is to have a clear separation between the parsing and target
         languages. (A different target language would not include the same libraries in its raw blocks)
         """
+        # Make sure the registry list contains the C library registry, so that we can find and include files
+        if not any(reg == LIBC_REGISTRY for reg in self.registries):
+            self.registries.append(LIBC_REGISTRY)
+
         libraries = set()
         inst = self.source
         for grp in (inst.user, inst.declare, inst.initialize, inst.save, inst.final):
@@ -77,6 +81,13 @@ class CTargetVisitor(TargetVisitor):
         # search the library headers for type definitions:
         self._parse_libraries_for_typedefs()
 
+        # pull together the per-component-type defined parameters into a dictionary... since this is required
+        # in multiple places :/
+        for typ in inst.component_types():
+            declared_parameters = dict()
+            for block in typ.declare:
+                declared_parameters.update(extract_c_declared_variables(block.source, user_types=self.typedefs))
+            self.component_declared_parameters[typ.name] = declared_parameters
 
     def visit_header(self):
         from .c_header import header_pre_runtime, header_post_runtime
@@ -110,7 +121,7 @@ class CTargetVisitor(TargetVisitor):
         if self.verbose:
             print(f"Writing instrument '{self.source.name}' and components DECLARE")
         print('warnings += cogen_decls(instr)')
-        contents, warnings = declarations_pre_libraries(self.source, self.typedefs)
+        contents, warnings = declarations_pre_libraries(self.source, self.typedefs, self.component_declared_parameters)
         self.out(contents)
 
         if len(self.libraries):
@@ -128,6 +139,7 @@ class CTargetVisitor(TargetVisitor):
 
         self.out("/* User declarations from instrument definition. Can define functions. */")
         self.out('\n'.join([dec.to_c() for dec in self.source.declare]))
+        # FIXME I _think_ these macro undefines are not used (that is, they're never defined in the first place)
         self.out('#undef compcurname\n#undef compcurtype\n#undef compcurindex')
         self.out(f"/* end of instrument '{self.source.name}' and components DECLARE */")
 

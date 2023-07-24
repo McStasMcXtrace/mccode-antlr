@@ -56,6 +56,20 @@ class Value:
             return Value(Value.Type.str, None)
         return Value(Value.Type.str, value)
 
+    @staticmethod
+    def best(value):
+        if isinstance(value, float):
+            return Value.float(value)
+        if isinstance(value, int):
+            return Value.int(value)
+        if isinstance(value, str):
+            return Value.str(value)
+        if hasattr(value, '__len__') and all(isinstance(x, int) for x in value):
+            return Value(Value.Type.int_array, value)
+        if hasattr(value, '__len__') and all(isinstance(x, (float, int)) for x in value):
+            return Value(Value.Type.float_array, value)
+        raise RuntimeError('No best conversion to Value type')
+
     @property
     def holds_array(self):
         if self.data_type == Value.Type.float_array or self.data_type == Value.Type.int_array:
@@ -264,3 +278,4 @@ def mccode_c_type_name_string(vt: Value.Type):
     if vt == Value.Type.int_array:
         return "instr_type_vector"
     raise RuntimeError(f"No known conversion from {vt} to McCode C type")
+

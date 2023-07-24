@@ -12,7 +12,7 @@
 """
 
 
-def declarations_pre_libraries(source, typedefs: list):
+def declarations_pre_libraries(source, typedefs: list, component_declared_parameters: dict):
     warnings = 0
 
     def instrument_parameters_struct():
@@ -102,7 +102,8 @@ def declarations_pre_libraries(source, typedefs: list):
 
     def component_type_declarations():
         lines = ["/* ********************** component definition declarations. **************** */"]
-        lines.extend([component_type_declaration(comp, typedefs) for comp in source.component_types()])
+        lines.extend([component_type_declaration(comp, typedefs, component_declared_parameters[comp.name])
+                      for comp in source.component_types()])
         return '\n'.join(lines)
 
     def component_instance_declarations():
@@ -130,7 +131,7 @@ def declarations_pre_libraries(source, typedefs: list):
     return '\n'.join(contents), warnings
 
 
-def component_type_declaration(comp, typedefs: list):
+def component_type_declaration(comp, typedefs: list, declared_parameters: dict):
     """Declare the *component type* structures needed for component instances.
     Includes the component parameters structure and positioning code.
     """
@@ -168,12 +169,10 @@ def component_type_declaration(comp, typedefs: list):
             lines.append(f'  {par.value.mccode_c_type} {par.name};')
 
     lines.append(f'/* Component type {comp.name} private parameters */')
-    declared_parameters = dict()
-    # shared_definitions = '\n'.join(share.source for share in comp.share)  # Could define custom structs
-    for declare_block in comp.declare:
-        # declared_parameters.update(extract_c_defined_then_declared_variables(shared_definitions, declare_block.source))
-        declared_parameters.update(extract_c_declared_variables(declare_block.source, user_types=typedefs))
-
+    # declared_parameters = dict()
+    # for declare_block in comp.declare:
+    #     declared_parameters.update(extract_c_declared_variables(declare_block.source, user_types=typedefs))
+    #
     for name, (declared_type, initialized) in declared_parameters:
         lines.append(f'  {declared_type} {name}; /* {"Not initialized" if initialized is None else initialized} */')
 

@@ -42,6 +42,10 @@ class Instance:
         v = Value(p.value.data_type, value.value if isinstance(value, Value) else value)
         self.parameters += (ComponentParameter(p.name, v), )
 
+    def set_parameters(self, **kwargs):
+        for name, value in kwargs.items():
+            self.set_parameter(name, value)
+
     def REMOVABLE(self):
         self.removable = True
 
@@ -76,7 +80,6 @@ class Instance:
         md = {m.name: m for m in self.type.collect_metadata()}
         md.update({m.name: m for m in self.metadata})
         return tuple(md.values())
-
 
 
 def from_at_relative_rotated_relative(at: tuple[Value, Value, Value], at_relative: Instance,

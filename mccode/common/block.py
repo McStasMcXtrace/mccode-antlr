@@ -1,11 +1,16 @@
 from dataclasses import dataclass
-
+from utilities import escape_str_for_c
 
 @dataclass
 class RawC:
     filename: str
     line: int
     source: str
+
+    @property
+    def is_empty(self):
+        # this could also check for and exclude comments
+        return len(self.source.translate(str.maketrans('', '', ' \t\n'))) == 0
 
     @staticmethod
     def from_tuple(p: tuple):
@@ -21,6 +26,10 @@ class RawC:
     def to_c(self):
         """Use the preprocessor #line directive to aid in debugging produced C source code."""
         return f'#line {self.line} "{self.filename}"\n{self.source}'
+
+    @property
+    def fn(self):
+        return escape_str_for_c(self.filename), self.line
 
 
 def blocks_to_raw_c(*args):
