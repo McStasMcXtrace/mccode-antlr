@@ -172,15 +172,27 @@ def cogen_initialize(source, component_declared_parameters, ok_to_skip):
 
     # write the instrument main code, which calls component ones
     lines.extend([
-        f'int initialize(void) /* called by mccode_main for {source.name}:INITIALIZE',
+        f'int initialize(void) /* called by mccode_main for {source.name}:INITIALIZE */',
         '  DEBUG_INSTR()',
         '',
         '  /* code_main/parseoptions/readparams sets instrument parameters value */',
         f'  stracpy(instrument->_name, "{source.name}", {len(source.name)+1});',
     ])
 
-    # TODO insert user code from instrument definition
-    # including def/undef of instrument parameter macros
+    # insert user code from instrument definition
+    if len(source.initialize):
+        f, n = source.initialize[0].fn
+        lines.extend([
+            f'  /* Instrument {source.name} INITIALIZE */',
+            f'  SIG_MESSAGE("[{source.name} INITIALIZE [{f}:{n}]");'
+        ])
+        for par in source.parameters:
+            # ensure there's no conflict of names
+            lines.append(f'  #define {par.name} (instrument->_parameters.{par.name}')
+        for block in source.initialize:
+            lines.append(block.to_c())
+        for par in source.parameters:
+            lines.append(f'  #undef {par.name}')
 
     for comp in source.components:
         lines.append(f'  _{comp.name}_setpos(); /* type {comp.type.name} */')
@@ -204,7 +216,7 @@ def cogen_initialize(source, component_declared_parameters, ok_to_skip):
         '#endif',
         '',
         '  return(0);',
-        '} /* INITIALIZE */',
+        '} /* initialize */',
         ''
     ])
 
@@ -212,6 +224,9 @@ def cogen_initialize(source, component_declared_parameters, ok_to_skip):
 
 
 def cogen_comp_initialize_class(comp, declared_parameters):
+    if not len(comp.initialize):
+        return []
+
     lines = [f'_class_{comp.name} *class_{comp.name}_initialize(_class_{comp.name} *_comp) {{']
     for par in comp.parameters:
         lines.append(f'  #define {par.name} (_comp->_parameters.{par.name})')

@@ -1,5 +1,5 @@
 
-def cogen_section(instr: Instr, section: str)
+# def cogen_section(instr: Instr, section: str)
 
     # write out some macro stuff if this is DISPLAY
 

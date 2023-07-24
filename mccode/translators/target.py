@@ -127,6 +127,7 @@ class TargetVisitor:
 
     def enter_trace(self):
         """Walk the component instances definition(s) section..."""
+        self.visit_pre_trace()
         for instance in self.source.components:
             self.enter_instance(instance)
             
@@ -134,6 +135,13 @@ class TargetVisitor:
         """Walk the component instances deallocate section..."""
         for instance in self.source.components:
             self.leave_instance(instance)
+        self.visit_post_trace()
+
+    def visit_pre_trace(self):
+        pass
+
+    def visit_post_trace(self):
+        pass
 
     def visit_header(self):
         pass

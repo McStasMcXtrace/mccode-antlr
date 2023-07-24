@@ -146,7 +146,19 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
         self.warnings += warnings
 
     def visit_initialize(self):
+        from .c_initialise import cogen_initialize
         print('warnings += cogen_section(instr, "INITIALISE", "init", instr->inits)')
+        self.out(cogen_initialize(self.source, self.component_declared_parameters, self.ok_to_skip))
+
+    def visit_pre_trace(self):
+        from .c_trace import def_trace_section, cogen_trace_section
+        is_mcstas = self.runtime.get('project') == 1
+        self.out(def_trace_section(is_mcstas))
+        self.out(cogen_trace_section(is_mcstas, self.source, self.component_declared_parameters, self.typedefs))
+
+    def visit_post_trace(self):
+        from .c_trace import undef_trace_section
+        self.out(undef_trace_section(self.runtime.get('project') == 1))
 
     def enter_instance(self, instance: Instance):
         # replacing: warnings += cogen_trace_functions(instr)
@@ -172,13 +184,19 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
         print('warnings += cogen_rt_funnel(instr)')
 
     def visit_save(self):
+        from .c_save import cogen_save
         print('warnings += cogen_section(instr, "SAVE", "save", instr->saves)')
+        self.out(cogen_save(self.source, self.component_declared_parameters))
 
     def visit_finally(self):
+        from .c_finally import cogen_finally
         print('warnings += cogen_section(instr, "FINALLY", "finally", instr->finals)')
+        self.out(cogen_finally(self.source, self.component_declared_parameters))
 
     def visit_display(self):
+        from .c_display import cogen_display
         print('warnings += cogen_section(instr, "DISPLAY", "display", NULL)')
+        self.out(cogen_display(self.source, self.component_declared_parameters))
 
     def visit_macros(self):
         print('cogen_getvarpars_fct(instr)')
