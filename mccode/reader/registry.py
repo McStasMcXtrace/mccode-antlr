@@ -109,9 +109,6 @@ class LocalRegistry(Registry):
         return True
 
 
-MCSTAS_REGISTRY = RemoteRegistry('mcstas', 'https://github.com/g5t/mccode-mcstas-files/raw/main', 'mcstas-registry.txt')
-
-
 def registries_match(registry: Registry, spec):
     if isinstance(spec, Registry):
         return registry == spec
@@ -170,4 +167,11 @@ def registry_from_specification(spec: str):
     return None
 
 
-
+# Pre-defined registry files:
+REMOTE_REPOSITORY = 'https://github.com/g5t/mccode-files/raw/main'
+# McStas components, instruments, and translation-time include files
+MCSTAS_REGISTRY = RemoteRegistry('mcstas', f'{REMOTE_REPOSITORY}/mcstas', 'mcstas-registry.txt')
+# McXtrace components, instruments, and translation-time include files
+MCXTRACE_REGISTRY = RemoteRegistry('mcxtrace', f'{REMOTE_REPOSITORY}/mcxtrace', 'mcxtrace-registry.txt')
+# Common runtime components for C
+LIBC_REGISTRY = RemoteRegistry('libc', '{REMOTE_REPOSITORY}/runtime/libc', 'libc-registry.txt')
