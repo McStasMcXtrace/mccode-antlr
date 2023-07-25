@@ -71,12 +71,14 @@ def undef_trace_section(is_mcstas):
     return '\n'.join(lines)
 
 
-def cogen_trace_section(is_mcstas, source, declared_parameters, typedefs):
-    return '\n'.join([cogen_comp_trace_class(is_mcstas, c, source, declared_parameters[c], typedefs)
-                      for c in source.component_types])
+def cogen_trace_section(is_mcstas, source, declared_parameters, instrument_uservars, component_uservars):
+    return '\n'.join([
+        cogen_comp_trace_class(is_mcstas, c, source, declared_parameters[c],
+                               instrument_uservars, component_uservars[c]) for c in source.component_types
+    ])
 
 
-def cogen_comp_trace_class(is_mcstas, comp, source, declared_parameters, typedefs):
+def cogen_comp_trace_class(is_mcstas, comp, source, declared_parameters, instr_uservars, comp_uservars):
     # count matching component type instances which define an EXTEND block:
     extended = [(n, i) for n, i in enumerate(source.components) if i.type.name == comp.name and len(i.extend)]
 
@@ -129,26 +131,30 @@ def cogen_comp_trace_class(is_mcstas, comp, source, declared_parameters, typedef
     lines.extend([f'  if(isnan({x}) || isinf({x})) {long(x)};' for x in pars])
     lines.append('#endif')
 
-    def extract_declared_names(raw_c_obj):
-        from .c import extract_c_declared_variables
-        decs = extract_c_declared_variables(raw_c_obj.source, user_types=typedefs)
-        strip = str.maketrans('', '', '*[]')
-        return set([x.translate(strip).strip() for x in decs])
-
     if len(extended):
-        # extract parameter names from the user variables block(s) in the instrument *and* component
-        uvs = set()
-        for uv in source.user:
-            uvs.union(extract_declared_names(uv))
-        for uv in comp.user:
-            uvs.union(extract_declared_names(uv))
-        lines.extend([f'  #define {name} (_particle->{name})' for name in uvs])
+        # combine the USERVARS from the instrument and this component type blocks:
+        uvs = set().union(instr_uservars).union(comp_uservars)
+        # So that the EXTEND block(s) can access them
+        lines.extend([f'  #define {x.name} (_particle->{x.name})' for x in uvs])
+        # `index` was defined above to be the component index into the full instrument list
+        # TODO verify that _comp->_index is (now) zero-based.
         for index, inst in extended:
             lines.append(f'if (_comp->_index == {index}) {{ // EXTEND {inst.name}')
             for ext in inst.extend:
                 lines.append(ext.to_c())
             lines.append("}")
-        lines.extend(f'  #undef {name}' for name in uvs)
+        lines.extend(f'  #undef {x.name}' for x in uvs)
+
+    # undefine the parameter macros
+    for par in comp.parameters:
+        lines.append(f'  #undef {par.name}')
+    for par in declared_parameters:
+        lines.append(f'  #undef {par}')
+    # return the component
+    lines.extend([
+        '  return(_comp);',
+        f'}} /* class_{comp.name}_trace */ ',
+        ''
+    ])
 
     return '\n'.join(lines)
-

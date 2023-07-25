@@ -100,5 +100,4 @@ def extract_c_declared_variables(block: str, user_types: list = None):
 
 def extract_c_defined_then_declared_variables(defined_in_block: str, declared_in_block):
     _, defined_in_types = extract_c_declared_variables_and_defined_types(defined_in_block)
-    declared_in_variables, _ = extract_c_declared_variables(declared_in_block, user_types=defined_in_types)
-    return declared_in_variables
+    return extract_c_declared_variables(declared_in_block, user_types=defined_in_types)

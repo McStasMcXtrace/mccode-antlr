@@ -22,7 +22,8 @@ class TargetVisitor:
         self.output = None
         self.verbose = verbose
         self.warnings = 0
-        self.uservars = ()
+        self.instrument_uservars = ()
+        self.component_uservars = dict()
         self.registries = [] if registries is None else registries
         self.libraries = []
         self.typedefs = None
@@ -80,6 +81,7 @@ class TargetVisitor:
 
         self.visit_header()
         self.visit_declare()
+        self.set_jump_absolute_targets()
         self.detect_skipable_transforms()
         self.visit_initialize()
         self.enter_trace()
@@ -112,18 +114,24 @@ class TargetVisitor:
 
         can_skip_transform = [can_skip(comp) for comp in self.source.components]
 
-        # Any component that is jumped *to* can not be skipped
-        for index, jumps in [(i, c.jump) for i, c in enumerate(self.source.components) if len(c.jump)]:
-            for jump in jumps:
-                # jump has ('target', 'index', iterate, condition) -- if index == 0, target is a component name or 'MYSELF'
-                # if index != 0 it is a relative component index compared to the current one
-                if jump.target_index == 0 and jump.target.lower() != 'myself':
-                    target_index = [i for i, c in self.source.components if jump.target == c.name][0]
-                else:
-                    target_index = index + jump.target_index
-                can_skip_transform[target_index] = False
+        # Any component that is jumped *to* can not be skipped (set_jump_absolute_targets must be called before this)
+        for jump in [j for c in self.source.components for j in c.jump]:
+            can_skip_transform[jump.absolute_target] = False
 
         self.ok_to_skip = can_skip_transform
+
+    def set_jump_absolute_targets(self):
+        for index, jump in [(i, j) for i, c in enumerate(self.source.components) for j in c.jump]:
+            # jump is a dataclass with 'target', 'index', 'iterate', 'condition', and 'actual_target_index'
+            if jump.absolute_target > -1:
+                # Somewhere/something already set the actual target index -- we don't have a choice but to trust it
+                continue
+            if jump.relative_target == 0 and jump.target.lower() != 'myself':
+                # the target is another named component:
+                jump.absolute_target = [i for i, c in enumerate(self.source.components) if jump.target == c.name][0]
+                jump.relative_target = jump.absolute_target - index
+            else:
+                jump.absolute_target = index + jump.relative_target
 
     def enter_trace(self):
         """Walk the component instances definition(s) section..."""

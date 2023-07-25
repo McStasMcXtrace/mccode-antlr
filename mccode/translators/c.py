@@ -1,10 +1,12 @@
 """Translates a McComp instrument from its intermediate form to a C runtime source file."""
+from collections import namedtuple
 from ..reader import LIBC_REGISTRY
 from ..instr import Instr, Instance
 from .target import TargetVisitor
 from .c_listener import extract_c_declared_variables
-from ..common.utilities import escape_str_for_c
 
+# For use in keeping track of 'USERVAR' particle struct injections
+CDeclaration = namedtuple("CDeclaration", "name type init is_pointer is_array orig")
 
 class CTargetVisitor(TargetVisitor, target_language='c'):
     def _file_contents(self, filename):
@@ -50,7 +52,72 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
         for library in self.libraries:
             declares, defined_types = parse(self._file_contents(f'{library}.h'), user_types=list(typedefs))
             typedefs = typedefs.union(set(defined_types))
+        # types can also be defined in component 'SHARE' blocks:
+        for block in [share for comp in self.source.component_types() if len(comp.share) for share in comp.share]:
+            declares, defined_types = parse(block.source, user_types=list(typedefs))
+            typedefs = typedefs.union(set(defined_types))
         self.typedefs = list(typedefs)
+
+    def _determine_uservars(self):
+        """An instrument can define 'USERVARS' which thus far has been treated as an unparsed block of code.
+        We now must extract parameter declarations from this block (there should be *only* declarations, no
+        initialization is supported in McCode-3).
+        Each declaration *should* of the form
+            {type} {name};
+            {type} * {name};
+            {type} {name}[N];
+        Where {type} is a valid C typename _or_ a typename defined in any included libraries or 'SHARE' blocks.
+        A possible future extension could allow for valid instantiation in the USERVAR blocks.
+        This function extracts the parameter {name}, {type}, (scalar|pointer|array)-ness, and initializer if present
+        for the unique set of all variables added to the _particle struct by the user -- it checks for name clashes
+        between definitions as well (identical definitions are allowed but not equal named non-matching definitions)
+
+        Extracted values are stored in namedtuple `CDeclaration` objects for easier interaction.
+        """
+        def extract_declares(name, raw_c_obj):
+            from .c_listener import extract_c_declared_variables as parse
+            # decs is a dictionary {'variable_name': ('variable_type', ['initializer'|None])}
+            decs = parse(raw_c_obj.source, user_types=self.typedefs)
+            n = sum(init is not None for c, init in decs.values())
+            if n:
+                print(f'Warning USERVARS block from {name} contains {n} assignments (= sign).')
+                print('        Move them to an EXTEND section. May fail at compile')
+            # check if the variable name includes a pointer specification or is literal array
+            sc = str.maketrans('', '', '*[] ')  # for '* name' or '***** name' or 'name[]' -> 'name'
+            name_pointer_array = [(x.translate(sc), '*' in x, '[' in x and ']' in x) for x in decs]
+            return [CDeclaration(n, t, i, p, a, o) for (n, p, a), (o, (t, i)) in zip(name_pointer_array, decs.items())]
+
+        declares = set()  # will be (CDeclaration(name, type, init, is_pointer, is_array, orig), )
+        for raw_user_vars_c_block in self.source.user:
+            declares.union(extract_declares(self.source.name, raw_user_vars_c_block))
+
+        # Check for differing repeated declarations -- these are set elements with the same name:
+        if len(set([d.name for d in declares])) != len(declares):
+            raise RuntimeError(f"One or more instrument USERVARS repeated in {self.source.name}")
+
+        # Look for USERVAR section(s) in the set of component definitions too:
+        comp_declares = dict()
+        for component in self.source.component_types():
+            comp_declares[component.name] = set()
+            for raw_user_vars_c_block in component.user:
+                comp_declares[component.name].union(extract_declares(component.name, raw_user_vars_c_block))
+            # Check for differing repeated declarations in this component:
+            if len(set([d.name for d in comp_declares[component.name]])) != len(comp_declares[component.name]):
+                raise RuntimeError(f"One or more component USERVARS repeated in {component.name}")
+
+        # Check for name clashes *between* components
+        nd = set([x for dec in comp_declares.values() for x in dec])
+        if len(set([x.name for x in nd])) != len(nd):
+            culprits = [x.name for x in self.source.component_types() if len(comp_declares[x.name])]
+            raise RuntimeError(f'One or more component USERVARS repeated between components {culprits}')
+        # And between all components and the instrument
+        nd.union(declares)
+        if len(set([x.name for x in nd])) != len(nd):
+            culprits = [x.name for x in self.source.component_types() if len(comp_declares[x.name])]
+            raise RuntimeError(f'Conflicting USERVAR declarations between instrument {self.source.name} and {culprits}')
+
+        self.instrument_uservars = declares
+        self.component_uservars = comp_declares
 
     def __post_init__(self):
         """Before doing *anything* else. We need to search through all raw C code for %include statements.
@@ -89,6 +156,8 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
                 declared_parameters.update(extract_c_declared_variables(block.source, user_types=self.typedefs))
             self.component_declared_parameters[typ.name] = declared_parameters
 
+        self._determine_uservars()
+
     def visit_header(self):
         from .c_header import header_pre_runtime, header_post_runtime
         print('cogen_header(instr, output_name)')
@@ -97,7 +166,13 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
         if not is_mcstas and self.runtime.get('project') != 2:
             print(f'Unknown runtime for project index {self.runtime.get("project")}')
 
-        self.out(header_pre_runtime(is_mcstas, self.source, self.runtime, self.config, self.typedefs))
+        # Get the unique list of USERVAR declarations:
+        uuv = set()
+        uuv.union(self.instrument_uservars)
+        for x in self.component_uservars:
+            uuv.union(x)
+
+        self.out(header_pre_runtime(is_mcstas, self.source, self.runtime, self.config, self.typedefs, uuv))
         # runtime part
         if self.config.get('include_runtime'):
             self.out('#define MC_EMBEDDED_RUNTIME')
@@ -154,7 +229,8 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
         from .c_trace import def_trace_section, cogen_trace_section
         is_mcstas = self.runtime.get('project') == 1
         self.out(def_trace_section(is_mcstas))
-        self.out(cogen_trace_section(is_mcstas, self.source, self.component_declared_parameters, self.typedefs))
+        self.out(cogen_trace_section(is_mcstas, self.source, self.component_declared_parameters,
+                                     self.instrument_uservars, self.component_uservars))
 
     def visit_post_trace(self):
         from .c_trace import undef_trace_section
@@ -172,38 +248,59 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
         pass
 
     def enter_uservars(self):
-        print('def_uservars(instr)')
+        # After cogen_trace_section, the USERVAR particle struct members need to be defined for raytrace
+        uuv = set().union(self.instrument_uservars)
+        for x in self.component_uservars:
+            uuv.union(x)
+        self.out('\n'.join([f'#define {x.name} (_particle->{x.name})' for x in uuv]))
 
     def leave_uservars(self):
-        print('undef_uservars(instr)')
+        # following TRACE before undef_trace_section, the USERVAR particle struct members need to be undef'd
+        uuv = set().union(self.instrument_uservars)
+        for x in self.component_uservars:
+            uuv.union(x)
+        self.out('\n'.join([f'#undef {x.name}' for x in uuv]))
 
     def visit_raytrace(self):
-        print('warnings += cogen_raytrace(instr)')
+        from .c_raytrace import cogen_raytrace
+        self.out(cogen_raytrace(self.source, self.ok_to_skip))
 
     def visit_raytrace_funnel(self):
-        print('warnings += cogen_rt_funnel(instr)')
+        from .c_raytrace import cogen_funnel
+        self.out(cogen_funnel(self.source, self.ok_to_skip))
 
     def visit_save(self):
         from .c_save import cogen_save
-        print('warnings += cogen_section(instr, "SAVE", "save", instr->saves)')
         self.out(cogen_save(self.source, self.component_declared_parameters))
 
     def visit_finally(self):
         from .c_finally import cogen_finally
-        print('warnings += cogen_section(instr, "FINALLY", "finally", instr->finals)')
         self.out(cogen_finally(self.source, self.component_declared_parameters))
 
     def visit_display(self):
         from .c_display import cogen_display
-        print('warnings += cogen_section(instr, "DISPLAY", "display", NULL)')
         self.out(cogen_display(self.source, self.component_declared_parameters))
 
     def visit_macros(self):
+        from .c_macros import cogen_getvarpars_fct, cogen_getcompindex_fct, cogen_getparticlevar_fct
         print('cogen_getvarpars_fct(instr)')
+        self.out(cogen_getvarpars_fct(self.source))
+
         print('cogen_getparticlevar_fct(instr)')
+        uuv = set().union(self.instrument_uservars)
+        for x in self.component_uservars:
+            uuv.union(x)
+        self.out(cogen_getparticlevar_fct(uuv))
+
         print('cogen_getcompindex_fct(instr)')
-        print('embed_file("literals-r.c")')  # used to query and display instrument/component-defined literal strings
+        self.out(cogen_getcompindex_fct(self.source))
+
+        print('embed_file("metadata-r.c")')  # used to query and display instrument/component-defined literal strings
+        self.embed_file('metadata-r.c')
         print('embed_file("mccode_main.c")')
+        self.embed_file('mccode_main.c')
+
+        self.out(f'/* end of generated C code {self.sink} */')
 
 
 

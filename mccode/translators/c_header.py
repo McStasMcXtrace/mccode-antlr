@@ -1,4 +1,4 @@
-def header_pre_runtime(is_mcstas, source, runtime: dict, config: dict, typedefs: list):
+def header_pre_runtime(is_mcstas, source, runtime: dict, config: dict, typedefs: list, uservars: set):
     from datetime import datetime
     from .c_listener import extract_c_declared_variables
 
@@ -22,58 +22,37 @@ def header_pre_runtime(is_mcstas, source, runtime: dict, config: dict, typedefs:
     # Append variables from instr USERVARS block to particle struct
     # Also store these strings in the appropriate instrument list for later def/undef as state variables
 
-    # Use an ANTLR4 lexer/parser/listener to extract all validly-declared variables
-    # If there are user-declared types, they will not be identified at this point ...
-    # but since these are *INSTRUMENT* paremeters .... right? ... it's fine?
-    def extract_declares(name, raw_c_obj):
-        decs = extract_c_declared_variables(raw_c_obj.source, user_types=typedefs)
-        n = sum(init is not None for c, init in decs.values())
-        if n:
-            print(f'Warning USERVARS block from {name} contains {n} assignments (= sign).')
-            print('        Move them to an EXTEND section. May fail at compile')
-        return decs
-
-    declares = dict()  # will be {variable_name: (variable_type, [init_value|None])}
-    for raw_user_vars_c_block in source.user:
-        declares.update(extract_declares(source.name, raw_user_vars_c_block))
-    # Look for USERVAR section(s) in the set of component definitions too:
-    for component in source.component_types():
-        for raw_user_vars_c_block in component.user:
-            declares.update(extract_declares(component.name, raw_user_vars_c_block))
-
-    # translate the dictionary to a new one, which indicates if a named variable is an array
-    strip_array = str.maketrans('', '', '*[]')
-    stripped = {n.translate(strip_array).strip(): (c_type, '*[]' in n) for n, (c_type, _) in declares.items()}
-
-    uservar_string = '//user variables and comp - injections:' if len(declares) else ''
-    uservar_string += '\n'.join([f'  {c_type} {name};' for name, (c_type, _) in declares.items()])
+    uservar_string = '//user variables and comp - injections:' if len(uservars) else ''
+    uservar_string += '\n'.join([f'  {x.type} {x.name};' for x in uservars])
 
     # Shouldn't we exclude array-valued names here?
-    getvar = '\n'.join([f'  (!str_comp("{n}",name)){{rval=*((double*)(&(p->{n})));s=0;}}' for n in stripped])
+    getvar = '\n'.join([f'  (!str_comp("{x.name}",name)){{rval=*((double*)(&(p->{x.name})));s=0;}}' for x in uservars])
 
     # Array valued names seem OK here, since a user can type-cast correctly
-    getvar_void = '\n'.join([f'  if (!str_comp("{n}", name)){{rval=(void * ) & (p->{n});s=0;}}' for n in stripped])
+    getvar_void = '\n'.join(
+        [f'  if (!str_comp("{x.name}", name)){{rval=(void * ) & (p->{x.name});s=0;}}' for x in uservars])
 
     # For non-array values we can safely use memcpy (probably)
     setvar_void = '\n'.join(
-        [f'  if(!str_comp("{n}",name)){{memcpy(&(p->{n}), value, sizeof({t})); rval=0;}}'
-         for n, (t, a) in stripped.items() if not a])
+        [f'  if(!str_comp("{x.name}",name)){{memcpy(&(p->{x.name}), value, sizeof({x.type})); rval=0;}}'
+         for x in uservars if not x.is_array and not x.is_pointer])
 
     # an array -- need to know how many elements we're copying
     setvar_void_array = '\n'.join(
-        [f'  if(!str_comp("{n}",name)){{memcpy(&(p->{n}), value, elements * sizeof({t})); rval=0;}}'
-         for n, (t, a) in stripped.items() if a])
+        [f'  if(!str_comp("{x.name}",name)){{memcpy(&(p->{x.name}), value, elements * sizeof({x.type})); rval=0;}}'
+         for x in uservars if x.is_array or x.is_pointer])
 
     getuservar_byid = '\n'.join(
-        [f'  case{i}: {{rval*=( (double *)(&(p->{n})) ); s=0; break}}' for i, n in enumerate(stripped)])
+        [f'  case{i}: {{rval*=( (double *)(&(p->{x.name})) ); s=0; break}}' for i, x in enumerate(uservars)])
 
     uservar_init = ''
-    for name, (c_type, init_value) in declares.items():
-        if stripped[name][1] or (c_type not in ("double", "MCNUM", "int") and init_value is None):
-            print(f'\nWARNING:\n  --> USERVAR {name} is of type {c_type}{" array" if stripped[name][1] else ""}')
+    for x in uservars:
+        if (x.type not in ('double', 'MCNUM', 'int') and x.init is None) or x.is_pointer or x.is_array:
+            array_str = ' array' if x.is_pointer or x.is_array else ''
+            print(f'\nWARNING:\n --> USERVAR {x.name} is of type {x.type}{array_str}')
             print('  --> and may need specific per-particle initialization through an EXTEND block!\n')
         else:
-            uservar_init += f'\np->{name}={0 if init_value is None else init_value};'
+            uservar_init += f'\np->{x.name}={0 if x.init is None else x.init};'
 
     contents = f"""
 /* Automatically generated file. Do not edit.
