@@ -42,6 +42,13 @@ class TargetVisitor:
     def __post__init__(self):
         pass
 
+    @property
+    def is_mcstas(self):
+        index = self.runtime.get('project')
+        if index != 1 and index != 2:
+            raise RuntimeError(f'Unknown runtime for project index {index}')
+        return index == 1
+
     def known(self, name: str, which: str = None):
         if self.registries is None:
             return False
@@ -89,7 +96,7 @@ class TargetVisitor:
         self.visit_raytrace()
         self.visit_raytrace_funnel()
         self.leave_uservars()
-        self.exit_trace()
+        self.leave_trace()
         self.visit_save()
         self.visit_finally()
         self.visit_display()
@@ -134,21 +141,9 @@ class TargetVisitor:
                 jump.absolute_target = index + jump.relative_target
 
     def enter_trace(self):
-        """Walk the component instances definition(s) section..."""
-        self.visit_pre_trace()
-        for instance in self.source.components:
-            self.enter_instance(instance)
-            
-    def exit_trace(self):
-        """Walk the component instances deallocate section..."""
-        for instance in self.source.components:
-            self.leave_instance(instance)
-        self.visit_post_trace()
-
-    def visit_pre_trace(self):
         pass
-
-    def visit_post_trace(self):
+            
+    def leave_trace(self):
         pass
 
     def visit_header(self):
@@ -161,15 +156,6 @@ class TargetVisitor:
         # likely target dependent
         pass
 
-    def enter_instance(self, instance: Instance):
-        pass
-    
-    def leave_instance(self, instance: Instance):
-        pass
-
-    def visit_component(self, instance: Instance):
-        pass
-    
     def enter_uservars(self):
         pass
     

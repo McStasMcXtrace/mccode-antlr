@@ -160,18 +160,12 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
 
     def visit_header(self):
         from .c_header import header_pre_runtime, header_post_runtime
-        print('cogen_header(instr, output_name)')
-
-        is_mcstas = self.runtime.get('project') == 1
-        if not is_mcstas and self.runtime.get('project') != 2:
-            print(f'Unknown runtime for project index {self.runtime.get("project")}')
-
         # Get the unique list of USERVAR declarations:
-        uuv = set()
-        uuv.union(self.instrument_uservars)
+        uuv = set().union(self.instrument_uservars)
         for x in self.component_uservars:
             uuv.union(x)
 
+        is_mcstas = self.is_mcstas
         self.out(header_pre_runtime(is_mcstas, self.source, self.runtime, self.config, self.typedefs, uuv))
         # runtime part
         if self.config.get('include_runtime'):
@@ -195,7 +189,6 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
         from .c_decls import declarations_pre_libraries
         if self.verbose:
             print(f"Writing instrument '{self.source.name}' and components DECLARE")
-        print('warnings += cogen_decls(instr)')
         contents, warnings = declarations_pre_libraries(self.source, self.typedefs, self.component_declared_parameters)
         self.out(contents)
 
@@ -222,30 +215,17 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
 
     def visit_initialize(self):
         from .c_initialise import cogen_initialize
-        print('warnings += cogen_section(instr, "INITIALISE", "init", instr->inits)')
         self.out(cogen_initialize(self.source, self.component_declared_parameters, self.ok_to_skip))
 
-    def visit_pre_trace(self):
+    def enter_trace(self):
         from .c_trace import def_trace_section, cogen_trace_section
-        is_mcstas = self.runtime.get('project') == 1
-        self.out(def_trace_section(is_mcstas))
-        self.out(cogen_trace_section(is_mcstas, self.source, self.component_declared_parameters,
+        self.out(def_trace_section(self.is_mcstas))
+        self.out(cogen_trace_section(self.is_mcstas, self.source, self.component_declared_parameters,
                                      self.instrument_uservars, self.component_uservars))
 
-    def visit_post_trace(self):
+    def leave_trace(self):
         from .c_trace import undef_trace_section
-        self.out(undef_trace_section(self.runtime.get('project') == 1))
-
-    def enter_instance(self, instance: Instance):
-        # replacing: warnings += cogen_trace_functions(instr)
-        pass
-
-    def leave_instance(self, instance: Instance):
-        # replacing: undef_trace_section(instr)
-        pass
-
-    def visit_component(self, instance: Instance):
-        pass
+        self.out(undef_trace_section(self.is_mcstas))
 
     def enter_uservars(self):
         # After cogen_trace_section, the USERVAR particle struct members need to be defined for raytrace
@@ -283,24 +263,12 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
 
     def visit_macros(self):
         from .c_macros import cogen_getvarpars_fct, cogen_getcompindex_fct, cogen_getparticlevar_fct
-        print('cogen_getvarpars_fct(instr)')
         self.out(cogen_getvarpars_fct(self.source))
-
-        print('cogen_getparticlevar_fct(instr)')
         uuv = set().union(self.instrument_uservars)
         for x in self.component_uservars:
             uuv.union(x)
         self.out(cogen_getparticlevar_fct(uuv))
-
-        print('cogen_getcompindex_fct(instr)')
         self.out(cogen_getcompindex_fct(self.source))
-
-        print('embed_file("metadata-r.c")')  # used to query and display instrument/component-defined literal strings
         self.embed_file('metadata-r.c')
-        print('embed_file("mccode_main.c")')
         self.embed_file('mccode_main.c')
-
         self.out(f'/* end of generated C code {self.sink} */')
-
-
-
