@@ -231,26 +231,22 @@ def cogen_initialize(source, component_declared_parameters, ok_to_skip):
 
 
 def cogen_comp_initialize_class(comp, declared_parameters):
+    from .c_defines import cogen_parameter_define, cogen_parameter_undef
     if not len(comp.initialize):
         return []
 
-    lines = [f'_class_{comp.name} *class_{comp.name}_initialize(_class_{comp.name} *_comp) {{']
-    for par in comp.parameters:
-        lines.append(f'  #define {par.name} (_comp->_parameters.{par.name})')
-    for par in declared_parameters:
-        lines.append(f'  #define {par} (_comp->_parameters.{par})')
-
+    lines = [
+        f'_class_{comp.name} *class_{comp.name}_initialize(_class_{comp.name} *_comp) {{',
+        cogen_parameter_define(comp)
+    ]
     f, n = comp.initialize[0].fn if len(comp.initialize) else (comp.name, 0)
     lines.append(f'  SIG_MESSAGE("[_{comp.name}_initialize] component NULL={comp.name}() [{f}:{n}]");')
 
     for block in comp.initialize:
         lines.append(block.to_c())
 
-    for par in comp.parameters:
-        lines.append(f'  #undef {par.name}')
-    for par in declared_parameters:
-        lines.append(f'  #undef {par}')
     lines.extend([
+        cogen_parameter_undef(comp),
         '  return(_comp);',
         f'}} /* class_{comp.name}_initialize */',
         ''

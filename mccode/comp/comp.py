@@ -12,10 +12,10 @@ class Comp:
     For output to a runtime source file
     """
     name: str = None           # Component *type* name, e.g. {name}.comp
-    parameters: tuple[ComponentParameter] = field(default_factory=tuple)  # instance-set component parameters
-    settings: tuple[ComponentParameter] = field(default_factory=tuple)    # ??? 'setting' parameters
-    output: tuple[ComponentParameter] = field(default_factory=tuple)      # 'output' parameters
-    metadata: tuple[MetaData] = field(default_factory=tuple)              # metadata for use by simulation consumers
+    define: tuple[ComponentParameter] = field(default_factory=tuple)   # C #define'ed parameters
+    setting: tuple[ComponentParameter] = field(default_factory=tuple)  # Formal 'setting' parameters
+    output: tuple[ComponentParameter] = field(default_factory=tuple)   # 'output' parameters
+    metadata: tuple[MetaData] = field(default_factory=tuple)           # metadata for use by simulation consumers
     dependency: str = None     # compile-time dependency
     acc: bool = True           # False if this component *can not* work under OpenACC
     # literal strings writen into C source files
@@ -31,35 +31,43 @@ class Comp:
     def __hash__(self):
         return hash(repr(self))
 
+    # @property
+    # def parameters(self):
+    #     return self.define + self.setting
+
     def has_parameter(self, name: str):
-        return parameter_name_present(self.parameters, name)
+        return parameter_name_present(self.define, name) or parameter_name_present(self.setting, name)
 
     def get_parameter(self, name: str):
-        return [par for par in self.parameters if par.name == name][0]
+        if parameter_name_present(self.define, name):
+            return [par for par in self.define if par.name == name][0]
+        if parameter_name_present(self.setting, name):
+            return [par for par in self.setting if par.name == name][0]
+        return None
 
     def compatible_parameter_value(self, name: str, value):
         return self.get_parameter(name).compatible_value(value)
 
     def parameter_name_used(self, parameter_type: str, name: str):
         """Verify that a new parameter name is not already in use."""
-        if parameter_name_present(self.parameters, name):
+        if parameter_name_present(self.define, name):
             raise RuntimeError(f"{parameter_type} parameter {name} is already an instance parameter!")
-        if parameter_name_present(self.settings, name):
+        if parameter_name_present(self.setting, name):
             raise RuntimeError(f"{parameter_type} parameter {name} is already a setting parameter!")
         if parameter_name_present(self.output, name):
             raise RuntimeError(f"{parameter_type} parameter {name} is already an output parameter!")
 
-    def add_parameter(self, a: ComponentParameter):
-        self.parameter_name_used('Instance', a.name)
-        self.parameters = (*self.parameters, a) if len(self.parameters) else (a, )
+    def add_define(self, a: ComponentParameter):
+        self.parameter_name_used('DEFINE', a.name)
+        self.define += (a, )
 
     def add_setting(self, a: ComponentParameter):
-        self.parameter_name_used('Setting', a.name)
-        self.settings = (*self.settings, a) if len(self.settings) else (a,)
+        self.parameter_name_used('SETTING', a.name)
+        self.setting += (a, )
 
     def add_output(self, a: ComponentParameter):
-        self.parameter_name_used('Output', a.name)
-        self.output = (*self.output, a) if len(self.output) else (a,)
+        self.parameter_name_used('OUTPUT', a.name)
+        self.output += (a, )
 
     def no_acc(self):
         self.acc = False

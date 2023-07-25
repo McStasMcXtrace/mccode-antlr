@@ -32,7 +32,7 @@ class Instance:
             self.orientation = from_at_relative_rotated_relative(*self.at_relative, *self.rotate_relative)
 
     def set_parameter(self, name: str, value):
-        if not parameter_name_present(self.type.parameters, name):
+        if not parameter_name_present(self.type.define, name) and not parameter_name_present(self.type.setting, name):
             raise RuntimeError(f"Unknown parameter {name} for component type {self.type.name}")
         if parameter_name_present(self.parameters, name):
             raise RuntimeError(f"Multiple definitions of {name} in component instance {self.name}")

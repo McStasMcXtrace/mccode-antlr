@@ -79,6 +79,7 @@ def cogen_trace_section(is_mcstas, source, declared_parameters, instrument_userv
 
 
 def cogen_comp_trace_class(is_mcstas, comp, source, declared_parameters, instr_uservars, comp_uservars):
+    from .c_defines import cogen_parameter_define, cogen_parameter_undef
     # count matching component type instances which define an EXTEND block:
     extended = [(n, i) for n, i in enumerate(source.components) if i.type.name == comp.name and len(i.extend)]
 
@@ -89,21 +90,21 @@ def cogen_comp_trace_class(is_mcstas, comp, source, declared_parameters, instr_u
         '#pragma acc routine',
         f'_class_{comp.name} *class_{comp.name}_trace(_class_{comp.name} *_comp, _class_particle *_particle) {{',
         '  ABSORBED=SCATTERED=RESTORE=0;',
+        cogen_parameter_define(comp),
     ]
-    for par in comp.parameters:
-        lines.append(f'  #define {par.name} (_comp->_parameters.{par.name})')
-    for par in declared_parameters:
-        lines.append(f'  #define {par} (_comp->_parameters.{par})')
-
     f, n = comp.trace[0].fn if len(comp.trace) else (comp.name, 0)
     lines.append(f'  SIG_MESSAGE("[_{comp.name}_trace] component NULL={comp.name}() [{f}:{n}]");')
+
+    # FIXME This should be checking *only* for file.comp *formal* parameters specified with `symbol` as the typename
+    #       which is not yet supported in this translator. Only the formal parameters can have `instr_type_symbol`
+    #       and only in two specific situations: symbol {name}, symbol {name} = {expr}
 
     # Check if there are any user-defined parameter types ... (something which wasn't set previously?)
     # This is the 'symbol' type
     declared_types = [t for _, (t, _) in declared_parameters.items()]
     # there must be a better way than this
-    is_symbol = [t not in ('int', 'double', 'char', 'char *',) for t in declared_types]
-    # TODO FIXME Should this be looping through setting parameters? Or only USERVARs?
+    is_symbol = [t is 'symbol' for t in declared_types]
+    # TODO FIXME This should be looping through setting parameters. It is probably wrong.
     if any(is_symbol):
         for i, inst in [(i, inst) for i, inst in enumerate(source.components) if inst.type.name == comp.name]:
             lines.extend([
@@ -149,13 +150,9 @@ def cogen_comp_trace_class(is_mcstas, comp, source, declared_parameters, instr_u
             lines.append("}")
         lines.extend(f'  #undef {x.name}' for x in uvs)
 
-    # undefine the parameter macros
-    for par in comp.parameters:
-        lines.append(f'  #undef {par.name}')
-    for par in declared_parameters:
-        lines.append(f'  #undef {par}')
     # return the component
     lines.extend([
+        cogen_parameter_undef(comp),
         '  return(_comp);',
         f'}} /* class_{comp.name}_trace */ ',
         ''

@@ -56,15 +56,14 @@ def cogen_display(source, declared_parameters):
 
 
 def cogen_comp_display_class(comp, declared_parameters):
+    from .c_defines import cogen_parameter_define, cogen_parameter_undef
     if not len(comp.display):
         return []
 
-    lines = [f'_class_{comp.name} *class_{comp.name}_display(_class_{comp.name} *_comp) {{']
-    for par in comp.parameters:
-        lines.append(f'  #define {par.name} (_comp->_parameters.{par.name})')
-    for par in declared_parameters:
-        lines.append(f'  #define {par} (_comp->_parameters.{par})')
-
+    lines = [
+        f'_class_{comp.name} *class_{comp.name}_display(_class_{comp.name} *_comp) {{',
+        cogen_parameter_define(comp)
+    ]
     f, n = comp.display[0].fn if len(comp.final) else (comp.name, 0)
     lines.append(f'  SIG_MESSAGE("[_{comp.name}_display] component NULL={comp.name}() [{f}:{n}]");')
     lines.append('  printf("MCDISPLAY: component %s\\n", _comp->_name);')
@@ -72,11 +71,8 @@ def cogen_comp_display_class(comp, declared_parameters):
     for block in comp.display:
         lines.append(block.to_c())
 
-    for par in comp.parameters:
-        lines.append(f'  #undef {par.name}')
-    for par in declared_parameters:
-        lines.append(f'  #undef {par}')
     lines.extend([
+        cogen_parameter_undef(comp),
         '  return(_comp);',
         f'}} /* class_{comp.name}_display */',
         ''
