@@ -30,7 +30,7 @@ class TargetVisitor:
         self.component_declared_parameters = dict()
         self.ok_to_skip = None
         #
-        self.__post__init__()
+        self.__post_init__()
 
     def __init_subclass__(cls, **kwargs):
         target_language = kwargs.get('target_language', 'none')
@@ -39,7 +39,7 @@ class TargetVisitor:
         super().__init_subclass__(**kwargs)
         cls.target_language = target_language
 
-    def __post__init__(self):
+    def __post_init__(self):
         pass
 
     @property
@@ -75,6 +75,10 @@ class TargetVisitor:
                 self.output.write(file.read())
 
     def include_path(self, filename=None):
+        if filename is None:
+            # It would be better to read this from the cache itself
+            from pooch import os_cache
+            return os_cache('mccode-libc')
         return self.library_path(filename)
 
     def out(self, value):

@@ -21,7 +21,7 @@ def def_trace_section(is_mcstas):
         "*******************************************************************************/"
     ]
     lines.extend([f'#define {x} (_particle->{x})' for x in _runtime_parameters(is_mcstas)])
-    lines.append([
+    lines.extend([
         "/* if on GPU, globally nullify sprintf,fprintf,printfs   */",
         "/* (Similar defines are available in each comp trace but */",
         "/*  those are not enough to handle external libs etc. )  */",
@@ -73,8 +73,8 @@ def undef_trace_section(is_mcstas):
 
 def cogen_trace_section(is_mcstas, source, declared_parameters, instrument_uservars, component_uservars):
     return '\n'.join([
-        cogen_comp_trace_class(is_mcstas, c, source, declared_parameters[c],
-                               instrument_uservars, component_uservars[c]) for c in source.component_types
+        cogen_comp_trace_class(is_mcstas, c, source, declared_parameters[c.name],
+                               instrument_uservars, component_uservars[c.name]) for c in source.component_types()
     ])
 
 
@@ -95,7 +95,7 @@ def cogen_comp_trace_class(is_mcstas, comp, source, declared_parameters, instr_u
     for par in declared_parameters:
         lines.append(f'  #define {par} (_comp->_parameters.{par})')
 
-    f, n = comp.trace[0].fn if len(comp.trace) else comp.name, 0
+    f, n = comp.trace[0].fn if len(comp.trace) else (comp.name, 0)
     lines.append(f'  SIG_MESSAGE("[_{comp.name}_trace] component NULL={comp.name}() [{f}:{n}]");')
 
     # Check if there are any user-defined parameter types ... (something which wasn't set previously?)
@@ -103,6 +103,7 @@ def cogen_comp_trace_class(is_mcstas, comp, source, declared_parameters, instr_u
     declared_types = [t for _, (t, _) in declared_parameters.items()]
     # there must be a better way than this
     is_symbol = [t not in ('int', 'double', 'char', 'char *',) for t in declared_types]
+    # TODO FIXME Should this be looping through setting parameters? Or only USERVARs?
     if any(is_symbol):
         for i, inst in [(i, inst) for i, inst in enumerate(source.components) if inst.type.name == comp.name]:
             lines.extend([
@@ -113,11 +114,14 @@ def cogen_comp_trace_class(is_mcstas, comp, source, declared_parameters, instr_u
             for name, init in [(n, i) for iss, (n, (t, i)) in zip(is_symbol, declared_parameters.items()) if iss]:
                 # Use the user-defined instance parameter if it exists, or attempt to use a default otherwise?
                 inst_param = [p for p in inst.parameters if p.name == name]
-                if len(inst_param):
-                    lines.append(f'    {name} = {inst_param[0].value}')
-                else:
-                    lines.append(f'    {name} = {init};')
+                v = inst_param[0].value if len(inst_param) else init
+                if v is not None:
+                    lines.append(f'    {name} = {v};')
             lines.append('  }')
+
+    # output the actual TRACE block(s)
+    for block in comp.trace:
+        lines.append(block.to_c())
 
     # instr files do not produce a code block to output here.
     pars = _runtime_kv_parameters(is_mcstas)
@@ -126,7 +130,7 @@ def cogen_comp_trace_class(is_mcstas, comp, source, declared_parameters, instr_u
     lines.append("#else")
 
     def long(x):
-        return f'printf("NAN or INF found in {x}, %s (particle %lld)\n",_comp->_name,_particle->_uid)'
+        return f'printf("NAN or INF found in {x}, %s (particle %lld)\\n",_comp->_name,_particle->_uid)'
 
     lines.extend([f'  if(isnan({x}) || isinf({x})) {long(x)};' for x in pars])
     lines.append('#endif')

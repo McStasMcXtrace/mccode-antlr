@@ -58,8 +58,8 @@ component_out_parameters: (Output | Private) Parameters component_parameters;
 
 component_parameters: '(' (component_parameter (Comma component_parameter)*)? ')';
 component_parameter
-    : Double? Identifier (Assign expr)?                                            #ComponentParameterDouble
-    | Int Identifier (Assign expr)?                                                #ComponentParameterInteger
+    : Double? Identifier (Assign (expr | '0'))?                                    #ComponentParameterDouble
+    | Int Identifier (Assign (expr | '0'))?                                        #ComponentParameterInteger
     | (String | (Char Star)) Identifier (Assign (StringLiteral | Null | '0'))?     #ComponentParameterString
     | Vector Identifier (Assign (Identifier | initializerlist | Null | '0'))?      #ComponentParameterVector
     | Symbol Identifier (Assign expr)                                              #ComponentParameterSymbol

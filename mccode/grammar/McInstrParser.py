@@ -1,4 +1,4 @@
-# Generated from /home/gst/PycharmProjects/mccode4/mccode/grammar/McInstr.g4 by ANTLR 4.13.0
+# Generated from /home/g/Code/mccode-antlr/mccode/grammar/McInstr.g4 by ANTLR 4.13.0
 # encoding: utf-8
 from antlr4 import *
 from io import StringIO
@@ -10,7 +10,7 @@ else:
 
 def serializedATN():
     return [
-        4,1,188,442,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,
+        4,1,187,442,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,
         7,6,2,7,7,7,2,8,7,8,2,9,7,9,2,10,7,10,2,11,7,11,2,12,7,12,2,13,7,
         13,2,14,7,14,2,15,7,15,2,16,7,16,2,17,7,17,2,18,7,18,2,19,7,19,2,
         20,7,20,2,21,7,21,2,22,7,22,2,23,7,23,2,24,7,24,2,25,7,25,2,26,7,
@@ -254,11 +254,10 @@ class McInstrParser ( Parser ):
                       "AndAnd", "OrOr", "PlusPlus", "MinusMinus", "Comma", 
                       "ArrowStar", "Arrow", "Question", "Colon", "Doublecolon", 
                       "Semi", "Dot", "DotStar", "Ellipsis", "Identifier", 
-                      "DecimalLiteral", "OctalLiteral", "HexadecimalLiteral", 
-                      "BinaryLiteral", "IntegerSuffix", "UserDefinedIntegerLiteral", 
-                      "UserDefinedFloatingLiteral", "UserDefinedStringLiteral", 
-                      "UserDefinedCharacterLiteral", "Whitespace", "Newline", 
-                      "BlockComment", "LineComment" ]
+                      "DecimalLiteral", "HexadecimalLiteral", "BinaryLiteral", 
+                      "IntegerSuffix", "UserDefinedIntegerLiteral", "UserDefinedFloatingLiteral", 
+                      "UserDefinedStringLiteral", "UserDefinedCharacterLiteral", 
+                      "Whitespace", "Newline", "BlockComment", "LineComment" ]
 
     RULE_prog = 0
     RULE_instrument_definition = 1
@@ -485,18 +484,17 @@ class McInstrParser ( Parser ):
     Ellipsis=174
     Identifier=175
     DecimalLiteral=176
-    OctalLiteral=177
-    HexadecimalLiteral=178
-    BinaryLiteral=179
-    IntegerSuffix=180
-    UserDefinedIntegerLiteral=181
-    UserDefinedFloatingLiteral=182
-    UserDefinedStringLiteral=183
-    UserDefinedCharacterLiteral=184
-    Whitespace=185
-    Newline=186
-    BlockComment=187
-    LineComment=188
+    HexadecimalLiteral=177
+    BinaryLiteral=178
+    IntegerSuffix=179
+    UserDefinedIntegerLiteral=180
+    UserDefinedFloatingLiteral=181
+    UserDefinedStringLiteral=182
+    UserDefinedCharacterLiteral=183
+    Whitespace=184
+    Newline=185
+    BlockComment=186
+    LineComment=187
 
     def __init__(self, input:TokenStream, output:TextIO = sys.stdout):
         super().__init__(input, output)

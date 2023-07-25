@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from utilities import escape_str_for_c
+from .utilities import escape_str_for_c
 
 @dataclass
 class RawC:
@@ -33,4 +33,6 @@ class RawC:
 
 
 def blocks_to_raw_c(*args):
-    return tuple(x if isinstance(x, RawC) else RawC.from_tuple(x) for x in args)
+    raw_c = [x if isinstance(x, RawC) else RawC.from_tuple(x) for x in args]
+    # Filter out empty blocks
+    return tuple(x for x in raw_c if not x.is_empty)

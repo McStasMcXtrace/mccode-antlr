@@ -174,4 +174,4 @@ MCSTAS_REGISTRY = RemoteRegistry('mcstas', f'{REMOTE_REPOSITORY}/mcstas', 'mcsta
 # McXtrace components, instruments, and translation-time include files
 MCXTRACE_REGISTRY = RemoteRegistry('mcxtrace', f'{REMOTE_REPOSITORY}/mcxtrace', 'mcxtrace-registry.txt')
 # Common runtime components for C
-LIBC_REGISTRY = RemoteRegistry('libc', '{REMOTE_REPOSITORY}/runtime/libc', 'libc-registry.txt')
+LIBC_REGISTRY = RemoteRegistry('libc', f'{REMOTE_REPOSITORY}/runtime/libc', 'libc-registry.txt')

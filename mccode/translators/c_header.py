@@ -1,6 +1,5 @@
 def header_pre_runtime(is_mcstas, source, runtime: dict, config: dict, typedefs: list, uservars: set):
     from datetime import datetime
-    from .c_listener import extract_c_declared_variables
 
     def jump_line(instance, jump):
         return f'long Jump_{instance.name}_{jump}; /* the JUMP connection <from>_<to> */'
@@ -253,7 +252,7 @@ void particle_uservar_init(_class_particle *p){{
 
 
 def header_post_runtime(source, runtime: dict, config: dict, include_path):
-    from .c import escape_str_for_c
+    from ..common.utilities import escape_str_for_c
 
     def source_file_contents():
         from pathlib import Path

@@ -1,6 +1,6 @@
 def cogen_display(source, declared_parameters):
     lines = ["/* *****************************************************************************",
-             f"* instrument {source.name} and components DISPLAY"
+             f"* instrument {source.name} and components DISPLAY",
              "***************************************************************************** */",
              ]
     macros = dict(magnify='mcdis_magnify', line='mcdis_line', dashed_line='mcdis_dashed_line',
@@ -10,8 +10,8 @@ def cogen_display(source, declared_parameters):
     for x, v in macros.items():
         lines.append(f'  #define {x} {v}')
 
-    for comp in source.component_types:
-        lines.extend(cogen_comp_display_class(comp, declared_parameters))
+    for comp in source.component_types():
+        lines.extend(cogen_comp_display_class(comp, declared_parameters[comp.name]))
 
     for x in macros:
         lines.append(f'  #undef {x}')
@@ -20,7 +20,7 @@ def cogen_display(source, declared_parameters):
     lines.append(f'int display(void) /* called by mccode_main for {source.name}:DISPLAY */')
     lines.extend([f"#pragma acc update host(_{comp.name}_var)" for comp in source.components])
     lines.extend([
-        '  printf("MCDISPLAY: start\n");',
+        '  printf("MCDISPLAY: start\\n");',
         '',
     ])
 
@@ -42,11 +42,11 @@ def cogen_display(source, declared_parameters):
 
     lines.append('/* call iteratively all components DISPLAY */')
     for comp in source.components:
-        if len(comp.final):
+        if len(comp.type.display):
             lines.append(f'  class_{comp.type.name}_display(&_{comp.name}_var);')
 
     lines.extend([
-        '  printf("MCDISPLAY: end\n");'
+        '  printf("MCDISPLAY: end\\n");'
         '',
         '  return(0);',
         '} /* display */',
@@ -65,12 +65,12 @@ def cogen_comp_display_class(comp, declared_parameters):
     for par in declared_parameters:
         lines.append(f'  #define {par} (_comp->_parameters.{par})')
 
-    f, n = comp.display[0].fn if len(comp.final) else comp.name, 0
+    f, n = comp.display[0].fn if len(comp.final) else (comp.name, 0)
     lines.append(f'  SIG_MESSAGE("[_{comp.name}_display] component NULL={comp.name}() [{f}:{n}]");')
+    lines.append('  printf("MCDISPLAY: component %s\\n", _comp->_name);')
 
-    lines.append('  printf("MCDISPLAY: component %s\n", _comp->_name);')
     for block in comp.display:
-        lines.append(block.to_c)
+        lines.append(block.to_c())
 
     for par in comp.parameters:
         lines.append(f'  #undef {par.name}')

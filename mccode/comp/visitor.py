@@ -55,13 +55,19 @@ class CompVisitor(McCompVisitor):
 
     def visitComponentParameterDouble(self, ctx: Parser.ComponentParameterDoubleContext):
         name = str(ctx.Identifier())
-        value = Value(Value.Type.float, None if ctx.Assign() is None else self.visit(ctx.expr()))
-        return ComponentParameter(name=name, value=value)
+        value = None
+        if ctx.Assign() is not None:
+            # protect against a literal '0' provided ... which doesn't match IntegerLiteral for some reason
+            value = 0 if ctx.expr() is None else self.visit(ctx.expr())
+        return ComponentParameter(name=name, value=Value(Value.Type.float, value))
 
     def visitComponentParameterInteger(self, ctx: Parser.ComponentParameterIntegerContext):
         name = str(ctx.Identifier())
-        value = Value(Value.Type.int, None if ctx.Assign() is None else self.visit(ctx.expr()))
-        return ComponentParameter(name=name, value=value)
+        value = None
+        if ctx.Assign() is not None:
+            # protect against a literal '0' provided ... which doesn't match IntegerLiteral for some reason
+            value = 0 if ctx.expr() is None else self.visit(ctx.expr())
+        return ComponentParameter(name=name, value=Value(Value.Type.int, value))
 
     def visitComponentParameterString(self, ctx: Parser.ComponentParameterStringContext):
         name = str(ctx.Identifier())
@@ -116,7 +122,7 @@ class CompVisitor(McCompVisitor):
         copy_from = self.parent.get_component(str(ctx.Identifier()))
         self.state.SHARE(copy_from.share, self.visit(ctx.unparsed_block()))
 
-    def visitInitialzieBlock(self, ctx: Parser.InitializeBlockContext):
+    def visitInitializeBlock(self, ctx: Parser.InitializeBlockContext):
         self.state.INITIALIZE(self.visit(ctx.unparsed_block()))
 
     def visitInitializeBlockCopy(self, ctx: Parser.InitializeBlockCopyContext):

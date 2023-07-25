@@ -1,11 +1,11 @@
 def cogen_save(source, declared_parameters):
     lines = ["/* *****************************************************************************",
-             f"* instrument {source.name} and components SAVE"
+             f"* instrument {source.name} and components SAVE",
              "***************************************************************************** */",
              ]
 
-    for comp in source.component_types:
-        lines.extend(cogen_comp_save_class(comp, declared_parameters))
+    for comp in source.component_types():
+        lines.extend(cogen_comp_save_class(comp, declared_parameters[comp.name]))
 
     # write the instrument main code, which calls component ones
     lines.extend([
@@ -30,7 +30,7 @@ def cogen_save(source, declared_parameters):
 
     lines.append('/* call iteratively all components SAVE */')
     for comp in source.components:
-        if len(comp.save):
+        if len(comp.type.save):
             lines.append(f'  class_{comp.type.name}_save(&_{comp.name}_var);')
 
     lines.extend([
@@ -53,11 +53,11 @@ def cogen_comp_save_class(comp, declared_parameters):
     for par in declared_parameters:
         lines.append(f'  #define {par} (_comp->_parameters.{par})')
 
-    f, n = comp.initialize[0].fn if len(comp.initialize) else comp.name, 0
+    f, n = comp.initialize[0].fn if len(comp.initialize) else (comp.name, 0)
     lines.append(f'  SIG_MESSAGE("[_{comp.name}_save] component NULL={comp.name}() [{f}:{n}]");')
 
-    for block in comp.initialize:
-        lines.append(block.to_c)
+    for block in comp.save:
+        lines.append(block.to_c())
 
     for par in comp.parameters:
         lines.append(f'  #undef {par.name}')

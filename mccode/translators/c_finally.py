@@ -1,11 +1,11 @@
 def cogen_finally(source, declared_parameters):
     lines = ["/* *****************************************************************************",
-             f"* instrument {source.name} and components FINALLY"
+             f"* instrument {source.name} and components FINALLY",
              "***************************************************************************** */",
              ]
 
-    for comp in source.component_types:
-        lines.extend(cogen_comp_finally_class(comp, declared_parameters))
+    for comp in source.component_types():
+        lines.extend(cogen_comp_finally_class(comp, declared_parameters[comp.name]))
 
     # write the instrument main code, which calls component ones
     lines.append(f'int save(void) /* called by mccode_main for {source.name}:FINALLY */')
@@ -34,7 +34,7 @@ def cogen_finally(source, declared_parameters):
 
     lines.append('/* call iteratively all components FINALLY */')
     for comp in source.components:
-        if len(comp.final):
+        if len(comp.type.final):
             lines.append(f'  class_{comp.type.name}_finally(&_{comp.name}_var);')
 
     lines.extend([
@@ -57,11 +57,11 @@ def cogen_comp_finally_class(comp, declared_parameters):
     for par in declared_parameters:
         lines.append(f'  #define {par} (_comp->_parameters.{par})')
 
-    f, n = comp.final[0].fn if len(comp.final) else comp.name, 0
+    f, n = comp.final[0].fn if len(comp.final) else (comp.name, 0)
     lines.append(f'  SIG_MESSAGE("[_{comp.name}_finally] component NULL={comp.name}() [{f}:{n}]");')
 
     for block in comp.final:
-        lines.append(block.to_c)
+        lines.append(block.to_c())
 
     for par in comp.parameters:
         lines.append(f'  #undef {par.name}')

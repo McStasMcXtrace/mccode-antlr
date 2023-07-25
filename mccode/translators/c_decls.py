@@ -72,7 +72,7 @@ def declarations_pre_libraries(source, typedefs: list, component_declared_parame
 
     def metadata_table():
         def one_line(defined_by, name, mimetype, value):
-            from .c import escape_str_for_c
+            from ..common.utilities import escape_str_for_c
             return f'"{defined_by}", "{name}", "{mimetype}", {escape_str_for_c(value)}, '
 
         metadata = source.collect_metadata()
@@ -139,7 +139,7 @@ def component_type_declaration(comp, typedefs: list, declared_parameters: dict):
     from .c_listener import extract_c_declared_variables
     warnings = 0
     lines = [
-        f'/* Parameter definition for component type {comp.name}',
+        f'/* Parameter definition for component type {comp.name} */',
         f'struct _struct_{comp.name}_parameters {{',
         f'  /* Component type {comp.name} setting parameters */'
     ]
@@ -173,11 +173,12 @@ def component_type_declaration(comp, typedefs: list, declared_parameters: dict):
     # for declare_block in comp.declare:
     #     declared_parameters.update(extract_c_declared_variables(declare_block.source, user_types=typedefs))
     #
-    for name, (declared_type, initialized) in declared_parameters:
+    for name, (declared_type, initialized) in declared_parameters.items():
         lines.append(f'  {declared_type} {name}; /* {"Not initialized" if initialized is None else initialized} */')
 
     if len(comp.parameters) + len(declared_parameters) == 0:
         lines.append(f'  char {comp.name}_has_no_parameters;')
+
     lines.extend([
         f'}}; /* _struct_{comp.name}_parameters */',
         f'typedef struct _struct_{comp.name}_parameters _class_{comp.name}_parameters;',

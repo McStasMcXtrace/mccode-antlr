@@ -227,7 +227,7 @@ def cogen_raytrace(source, ok_to_skip):
 
 
 def cogen_funnel(source, ok_to_skip):
-    from .c import escape_str_for_c
+    from ..common.utilities import escape_str_for_c
     print('\n-----------------------------------------------------------')
     print('\nGenerating GPU/CPU -DFUNNEL layout:')
 
@@ -305,7 +305,7 @@ def cogen_funnel(source, ok_to_skip):
     ])
     cpu_last = not source.components[0].cpu
     for index, comp in enumerate(source.components):
-        if not comp.inst.acc:
+        if not comp.type.acc:
             print(f'Component {comp.name} is NOACC, CPUONLY={comp.cpu}')
             print('->FUNNEL mode enabled, SPLIT within buffer.')
             lines.append('        #define JUMP_FUNNEL')

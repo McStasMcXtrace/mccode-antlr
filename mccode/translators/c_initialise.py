@@ -1,4 +1,4 @@
-from .c import escape_str_for_c
+
 _GETDISTANCE_FCT = """
   double index_getdistance(int first_index, int second_index)
   /* Calculate the distance two components from their indexes*/
@@ -101,7 +101,7 @@ def cogen_comp_setpos(index, comp, last, instr, component_declared_parameters):
                     f'    stracpy(_{comp.name}_var.parameters.{p.name}, {p.value} ? {p.value} : "", 16384);',
                     '  else'
                 ])
-            pl.append(f"  _{comp.name}_var.parameters.{p.name}[0]='\0';")
+            pl.append(f"  _{comp.name}_var.parameters.{p.name}[0]='\\0';")
         elif p.value.is_a(Value.Type.float_array) or p.value.is_a(Value.Type.int_array):
             if p.value.has_value and p.value.holds_array:
                 for i, v in enumerate(p.value.value):
@@ -115,12 +115,12 @@ def cogen_comp_setpos(index, comp, last, instr, component_declared_parameters):
             pl.append(f'  _{comp.name}_var.parameters.{p.name} = {p.value if p.value.has_value else 0};')
         return '\n'.join(pl)
 
-    f, n = comp.initialize[0].fn if len(comp.initialize) else comp.name, 0
+    f, n = comp.type.initialize[0].fn if len(comp.type.initialize) else (comp.name, 0)
 
     lines = [
         f'/* component {comp.name}={comp.type.name}() SETTING, POSITION/ROTATION */',
         f'int _{comp.name}_setpos(void)"',
-        "{ /* sets initial component parameters, position and rotation */"
+        "{ /* sets initial component parameters, position and rotation */",
         # init parameters. These can then be used in position/rotation syntax
         # all these parameters have a #define pointing to the real name space in structure
         f'  SIG_MESSAGE("[_{comp.name}_setpos] component {comp.name}={comp.type.name}() SETTING [{f}:{n}]',
@@ -131,6 +131,12 @@ def cogen_comp_setpos(index, comp, last, instr, component_declared_parameters):
     ]
     # setting parameters
     set_parameter_names = [x.name for x in comp.parameters]
+    # TODO figure this out?! 'SETTING' parameters can be over-ridden by same-named instrument parameters??
+    for par in comp.type.settings:
+        tp = [x for x in comp.parameters if x.name == par.name][0] if par.name in set_parameter_names else par
+        lines.append(parameter_line(tp))
+
+    set_parameter_names = [x.name for x in comp.parameters]
     for par in comp.type.parameters:
         # select the instance parameter or default:
         tp = [x for x in comp.parameters if x.name == par.name][0] if par.name in set_parameter_names else par
@@ -140,7 +146,8 @@ def cogen_comp_setpos(index, comp, last, instr, component_declared_parameters):
     declared_parameters = component_declared_parameters[comp.type.name]
     for name, (declared_type, initialized_value) in declared_parameters.items():
         init_to = 'NULL' if any(x in declared_type for x in '*[]') and initialized_value is None else initialized_value
-        lines.append(f"  _{comp.name}_var.parameters.{name} = {init_to};")
+        if init_to is not None:
+            lines.append(f"  _{comp.name}_var.parameters.{name} = {init_to};")
 
     # position/rotation
     lines.append(cogen_comp_init_position(index, comp, last, instr))
@@ -167,7 +174,7 @@ def cogen_initialize(source, component_declared_parameters, ok_to_skip):
             last = idx
 
     # generate class functions
-    for comp in source.component_types:
+    for comp in source.component_types():
         lines.extend(cogen_comp_initialize_class(comp, component_declared_parameters[comp.name]))
 
     # write the instrument main code, which calls component ones
@@ -199,7 +206,7 @@ def cogen_initialize(source, component_declared_parameters, ok_to_skip):
 
     lines.append('/* call iteratively all components INITIALIZE */')
     for comp in source.components:
-        if len(comp.initialize):
+        if len(comp.type.initialize):
             lines.append(f'  class_{comp.type.name}_initialize(&_{comp.name}_var);')
 
     lines.extend([
@@ -233,11 +240,11 @@ def cogen_comp_initialize_class(comp, declared_parameters):
     for par in declared_parameters:
         lines.append(f'  #define {par} (_comp->_parameters.{par})')
 
-    f, n = comp.initialize[0].fn if len(comp.initialize) else comp.name, 0
+    f, n = comp.initialize[0].fn if len(comp.initialize) else (comp.name, 0)
     lines.append(f'  SIG_MESSAGE("[_{comp.name}_initialize] component NULL={comp.name}() [{f}:{n}]");')
 
     for block in comp.initialize:
-        lines.append(block.to_c)
+        lines.append(block.to_c())
 
     for par in comp.parameters:
         lines.append(f'  #undef {par.name}')

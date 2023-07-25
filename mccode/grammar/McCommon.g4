@@ -37,7 +37,9 @@ initializerlist: '{' values+=expr (Comma values+=expr)* '}';
 assignment: Identifier Assign expr; // Not used in McCode, but *could* be used to enable, e.g., loops or other simple control
 
 expr
-  : Identifier '[' expr ']'                    #ExpressionArrayAccess
+  : IntegerLiteral                             #ExpressionInteger
+  | FloatingLiteral                            #ExpressionFloat
+  | Identifier '[' expr ']'                    #ExpressionArrayAccess
   | Identifier '(' expr ')'                    #ExpressionFunctionCall
   | '(' expr ')'                               #ExpressionGrouping
   | ('+' | '-') expr                           #ExpressionUnaryPM
@@ -45,8 +47,6 @@ expr
   | left=expr ('*' | '/') right=expr           #ExpressionBinaryMD
   | left=expr ('+' | '-') right=expr           #ExpressionBinaryPM
   | Identifier                                 #ExpressionIdentifier
-  | FloatingLiteral                            #ExpressionFloat
-  | IntegerLiteral                             #ExpressionInteger
   ;
 
 shell: Shell StringLiteral;

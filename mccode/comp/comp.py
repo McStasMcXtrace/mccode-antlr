@@ -28,6 +28,9 @@ class Comp:
     final: tuple[RawC] = field(default_factory=tuple)       # clean-up memory for global declare parameters
     display: tuple[RawC] = field(default_factory=tuple)     # draw this component
 
+    def __hash__(self):
+        return hash(repr(self))
+
     def has_parameter(self, name: str):
         return parameter_name_present(self.parameters, name)
 

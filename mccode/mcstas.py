@@ -35,7 +35,7 @@ def mcstas_script_parse():
 
 
 def mcstas_script():
-    from mccode.reader import Reader, MCSTAS_REGISTRY
+    from mccode.reader import Reader, MCSTAS_REGISTRY, LIBC_REGISTRY
     from mccode.reader import LocalRegistry
     from mccode.translators.c import CTargetVisitor
     from mccode.translators.target import MCSTAS_GENERATOR
@@ -61,7 +61,9 @@ def mcstas_script():
     instrument = reader.get_instrument(args.filename)
 
     # Now write out the translated instrument in the McStas runtime
-    print(instrument)
+    # print(instrument)
+
+    registries.append(LIBC_REGISTRY)
 
     visitor = CTargetVisitor(instrument, generate=MCSTAS_GENERATOR, config=config, verbose=config['verbose'],
                              registries=reader.registries)
