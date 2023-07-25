@@ -134,6 +134,13 @@ def declarations_pre_libraries(source, typedefs: list, component_declared_parame
 def component_type_declaration(comp, typedefs: list, declared_parameters: dict):
     """Declare the *component type* structures needed for component instances.
     Includes the component parameters structure and positioning code.
+
+    FIXME The implementation in cogen.c is very convoluted. It reads component-declared parameters
+          from its DECLARE block, then *replaces* the output parameter list entirely but the found
+          'decl_par' list (at one point it combined them, but that is commented out now).
+          This means that at different points in the execution of cogen.c a `comp->def->out_par` pointer
+          might resolve to the OUTPUT PARAMETERS _or_ the DECLARE found parameters.
+          THIS IS NOT GOOD FOR FOLLOWING THE EXECUTION.
     """
     from ..common import Value
     from .c_listener import extract_c_declared_variables
@@ -143,7 +150,8 @@ def component_type_declaration(comp, typedefs: list, declared_parameters: dict):
         f'struct _struct_{comp.name}_parameters {{',
         f'  /* Component type {comp.name} setting parameters */'
     ]
-    for par in comp.parameters:
+    # TODO Veryify that the cogen.c iteration over the `comp->def->set_par` does not somehow include DEFINE PARAMETERS
+    for par in comp.setting:
         if par.value.is_a(Value.Type.float_array) or par.value.is_a(Value.Type.int_array):
             if par.value.holds_array:
                 # this is only possible if the value is a tuple of numbers, so no str representations of calculations
@@ -168,12 +176,17 @@ def component_type_declaration(comp, typedefs: list, declared_parameters: dict):
             # basic integer or float
             lines.append(f'  {par.value.mccode_c_type} {par.name};')
 
+    # TODO this is the loop over the *replaced* `comp->def->out_par` e.g., found DECLARE parameters
     lines.append(f'/* Component type {comp.name} private parameters */')
-    # declared_parameters = dict()
-    # for declare_block in comp.declare:
-    #     declared_parameters.update(extract_c_declared_variables(declare_block.source, user_types=typedefs))
-    #
     for name, (declared_type, initialized) in declared_parameters.items():
+        # name could include any pointer or static array indicators, e.g. `* {name}` or `{name}[]`,
+        # so we don't need to check for these. The type name should always be the base type, e.g
+        # `{type} * {name}` would have `{type}` not `{type} *`
+        # TODO Switch these to use CDeclarations, then we have (.name, .type, .init, .is_pointer, .is_array, .orig)
+        #      and the append would be f'  {x.type} {x.orig}; /* {"Not initialized" if x.init is None else x.init} */'
+        #      But of course, we need to do a bit more work to initialize any static array, so we instead would
+        #      branch on x.is_array and then either count the number of initializer elements or punt to 16384 elements
+        #      as McCode-3 does.
         lines.append(f'  {declared_type} {name}; /* {"Not initialized" if initialized is None else initialized} */')
 
     if len(comp.parameters) + len(declared_parameters) == 0:
@@ -185,6 +198,7 @@ def component_type_declaration(comp, typedefs: list, declared_parameters: dict):
         '',
         f"/* Parameters for component type '{comp.name}' */",
         f"struct _struct_{comp.name} {{",
+        # TODO We *could* look through all instances of comp to find the longest name
         f"  char     _name[256]; /* e.g. instance of {comp.name} name */",
         f"  char     _type[{len(comp.name)+1}]; /* {comp.name} */",
         f"  long     _index; /* index in TRACE list */",

@@ -150,6 +150,7 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
 
         # pull together the per-component-type defined parameters into a dictionary... since this is required
         # in multiple places :/
+        # TODO Update component_declared parameters to use CDeclaration as well.
         for typ in inst.component_types():
             declared_parameters = dict()
             for block in typ.declare:
