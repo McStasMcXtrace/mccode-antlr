@@ -189,7 +189,7 @@ def component_type_declaration(comp, typedefs: list, declared_parameters: dict):
         #      as McCode-3 does.
         lines.append(f'  {declared_type} {name}; /* {"Not initialized" if initialized is None else initialized} */')
 
-    if len(comp.parameters) + len(declared_parameters) == 0:
+    if len(comp.setting) + len(declared_parameters) == 0:
         lines.append(f'  char {comp.name}_has_no_parameters;')
 
     lines.extend([

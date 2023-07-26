@@ -329,7 +329,7 @@ def cogen_funnel(source, ok_to_skip):
         if index == 0 or comp.cpu != cpu_last or comp.split is not None:
             lines.append("")
             if not comp.cpu:
-                lines.append("#pragma acc parallel loop present(particles)")
+                lines.append("    #pragma acc parallel loop present(particles)")
             lines.extend([
                 "    for (unsigned long pidx=0 ; pidx < livebatchsize ; pidx++) {",
                 "      _class_particle* _particle = &particles[pidx];",
@@ -337,25 +337,25 @@ def cogen_funnel(source, ok_to_skip):
             ])
 
         lines.extend([
-            '',
             f'      // {comp.name}',
-            f'    if (!ABSORBED && _particle->index == {index}) {{',
+            f'      if (!ABSORBED && _particle->index == {index}) {{',
         ])
         if not ok_to_skip[index]:
             lines.extend([
-                f"        if (_{comp.name}_var._rotation_is_identity)",
+                f"        if (_{comp.name}_var._rotation_is_identity) {{",
                 f"          coords_get(coords_add(coords_set(x,y,z), _{comp.name}_var._position_relative),&x, &y, &z);",
-                "        else",
+                "        } else {",
                 f"          mccoordschange(_{comp.name}_var._position_relative, _{comp.name}_var._rotation_relative, _particle);",
+                '        }',
                 "        _particle_save = *_particle;",
             ])
         if len(comp.type.trace) or len(comp.extend):
             if comp.when is not None:
                 lines.append(f'    if (({comp.when}))  // conditional WHEN')
             lines.extend([
-                f'    class_{comp.type.name}_trace(&_{comp.name}_var, _particle);{" /* contains EXTEND code */" if len(comp.extend) else ""}',
-                '    if (_particle->_restore)',
-                '      particle_restore(_particle, &_particle_save);'
+                f'        class_{comp.type.name}_trace(&_{comp.name}_var, _particle);{" /* contains EXTEND code */" if len(comp.extend) else ""}',
+                '         if (_particle->_restore)',
+                '         particle_restore(_particle, &_particle_save);'
             ])
         if comp.group is not None:
             group = source.groups[comp.group]
@@ -382,9 +382,7 @@ def cogen_funnel(source, ok_to_skip):
         cpu_last = comp.cpu
 
     lines.extend([
-        '',
         '    }',
-        '',
         "    // jump to next viable seed",
         "    seed = seed + gpu_innerloop;",
         "  } // outer loop / particle batches",

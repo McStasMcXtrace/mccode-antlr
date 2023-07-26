@@ -42,6 +42,12 @@ class Instance:
         v = Value(p.value.data_type, value.value if isinstance(value, Value) else value)
         self.parameters += (ComponentParameter(p.name, v), )
 
+    def get_parameter(self, name: str):
+        for par in self.parameters:
+            if par.name == name:
+                return par
+        return self.type.get_parameter(name)
+
     def set_parameters(self, **kwargs):
         for name, value in kwargs.items():
             self.set_parameter(name, value)

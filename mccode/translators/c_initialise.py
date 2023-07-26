@@ -93,26 +93,32 @@ def cogen_comp_setpos(index, comp, last, instr, component_declared_parameters):
     from ..common import Value
 
     def parameter_line(p):
+        # cogen_comp_init_par skipped any parameters which had "val" which evaluates False
+        # For 'out_par' (DECLARE extracted parameters) any non-'->isoptional' values were skipped.
+        # For 'set_par' any `exp_tostring(entry->val)` parameters returning NULL (which was none of them?)
+        if p is None or not p.value.has_value:
+            return ''
         pl = []
+        fullname = f'_{comp.name}_var._parameters.{p.name}'
         if p.value.is_a(Value.Type.str):
             if p.value.has_value and p.value.value != '0' and p.value.value != 'NULL':
                 pl.extend([
                     f'  if ({p.value} && strlen({p.value}))',
-                    f'    stracpy(_{comp.name}_var.parameters.{p.name}, {p.value} ? {p.value} : "", 16384);',
+                    f'    stracpy({fullname}, {p.value} ? {p.value} : "", 16384);',
                     '  else'
                 ])
-            pl.append(f"  _{comp.name}_var.parameters.{p.name}[0]='\\0';")
+            pl.append(f"  {fullname}[0]='\\0';")
         elif p.value.is_a(Value.Type.float_array) or p.value.is_a(Value.Type.int_array):
             if p.value.has_value and p.value.holds_array:
                 for i, v in enumerate(p.value.value):
-                    pl.append(f'  _{comp.name}_var.parameters.{p.name}[{i}] = {v};')
+                    pl.append(f'  {fullname}[{i}] = {v};')
             else:
                 # it's a string (if not None), and should be an identifier that is a pointer to the data
-                pl.append(f'  _{comp.name}_var.parameters.{p.name} = {p.value if p.value.has_value else "NULL"};')
+                pl.append(f'  {fullname} = {p.value if p.value.has_value else "NULL"};')
         # elif p.value.is_a(Value.Type.symbol):
         #   symbol is not handled (yet) but should be initialized to zero
         else:
-            pl.append(f'  _{comp.name}_var.parameters.{p.name} = {p.value if p.value.has_value else 0};')
+            pl.append(f'  {fullname} = {p.value if p.value.has_value else 0};')
         return '\n'.join(pl)
 
     f, n = comp.type.initialize[0].fn if len(comp.type.initialize) else (comp.name, 0)
@@ -124,30 +130,29 @@ def cogen_comp_setpos(index, comp, last, instr, component_declared_parameters):
         # init parameters. These can then be used in position/rotation syntax
         # all these parameters have a #define pointing to the real name space in structure
         f'  SIG_MESSAGE("[_{comp.name}_setpos] component {comp.name}={comp.type.name}() SETTING [{f}:{n}]',
-        f'  stracpy(_{comp.name}_var._name, "{comp.name}", {len(comp.name)+1});',
-        f'  stracpy(_{comp.name}_var._type, "{comp.type.name}", {len(comp.type.name)+1});',
+        f'  stracpy(_{comp.name}_var._name, "{comp.name}", {min(len(comp.name)+1, 16384)});',
+        f'  stracpy(_{comp.name}_var._type, "{comp.type.name}", {min(len(comp.type.name)+1, 16384)});',
         f'  _{comp.name}_var._index={index};',
         f'  int current_setpos_index = {index};'
     ]
-    # setting parameters
-    set_parameter_names = [x.name for x in comp.parameters]
+
+    # <<< This is the first call to `cogen_comp_init_par`: `cogen_comp_init_par(comp, instr, "SETTING")
+    # With `section == "SETTING"` the first call picks out `comp->def->set_par`
     # TODO figure this out?! 'SETTING' parameters can be over-ridden by same-named instrument parameters??
-    for par in comp.type.settings:
-        tp = [x for x in comp.parameters if x.name == par.name][0] if par.name in set_parameter_names else par
-        lines.append(parameter_line(tp))
-
-    set_parameter_names = [x.name for x in comp.parameters]
-    for par in comp.type.parameters:
-        # select the instance parameter or default:
-        tp = [x for x in comp.parameters if x.name == par.name][0] if par.name in set_parameter_names else par
-        lines.append(parameter_line(tp))
-
-    # private parameters
+    for par in comp.type.setting:
+        # For each component definition SETTING PARAMETER the same-named instance parameter is retrieved
+        lines.append(parameter_line(comp.get_parameter(par.name)))  # use instance parameter if it exists, otherwise par
+    # >>> End of first call to `cogen_comp_init_par`
+    # <<< Start of second call to `cogen_comp_init_par`: `cogen_comp_init_par(comp, instr, "PRIVATE")`
     declared_parameters = component_declared_parameters[comp.type.name]
     for name, (declared_type, initialized_value) in declared_parameters.items():
-        init_to = 'NULL' if any(x in declared_type for x in '*[]') and initialized_value is None else initialized_value
-        if init_to is not None:
-            lines.append(f"  _{comp.name}_var.parameters.{name} = {init_to};")
+        # {declared_type} {name} = {initialized_value} -- name could be `* identifier`, `identifier[]` or `identifier`
+        if any(x in name for x in '*[]'):
+            name = name.translate(str.maketrans('', '', '*[] '))
+            initialized_value = 'NULL' if initialized_value is None else initialized_value
+        if initialized_value is not None:
+            lines.append(f' _{comp.name}_var.parameters.{name} = {initialized_value}')
+    # >>> End of second call to `cogen_comp_init_par`
 
     # position/rotation
     lines.append(cogen_comp_init_position(index, comp, last, instr))
@@ -155,7 +160,7 @@ def cogen_comp_setpos(index, comp, last, instr, component_declared_parameters):
     lines.extend([
         f'  instrument->counter_N[{index}] = instrument->counter_P[{index}] = instrument->counter_P2[{index}] = 0;',
         f'  instrument->counter_AbsorbProp[{index}] = 0;',
-        f'  return(0);'
+        f'  return(0);',
         f'}} /* _{comp.name}_setpos */'
     ])
     return lines
@@ -240,7 +245,7 @@ def cogen_comp_initialize_class(comp, declared_parameters):
         cogen_parameter_define(comp)
     ]
     f, n = comp.initialize[0].fn if len(comp.initialize) else (comp.name, 0)
-    lines.append(f'  SIG_MESSAGE("[_{comp.name}_initialize] component NULL={comp.name}() [{f}:{n}]");')
+    lines.append(f'SIG_MESSAGE("[_{comp.name}_initialize] component NULL={comp.name}() [{f}:{n}]");')
 
     for block in comp.initialize:
         lines.append(block.to_c())
