@@ -9,7 +9,7 @@ def mcstas_script_parse():
     parser.add_argument('filename', type=resolvable, help='.instr file name to be converted')
 
     parser.add_argument('-o', '--output-file', type=str, help='Output filename for C runtime file')
-    parser.add_argument('-I', '--search-dir', type=resolvable, help='Extra component search directory')
+    parser.add_argument('-I', '--search-dir', action='append', type=resolvable, help='Extra component search directory')
     parser.add_argument('-t', '--trace', action='store', help="Enable 'trace' mode for instrument display")
     parser.add_argument('-p', '--portable', action='store', help='No idea. Your guess is better than mine.')
     parser.add_argument('-v', '--version', action='store', help='Print the McCode version')
@@ -35,6 +35,7 @@ def mcstas_script_parse():
 
 
 def mcstas_script():
+    from pathlib import Path
     from mccode.reader import Reader, MCSTAS_REGISTRY, LIBC_REGISTRY
     from mccode.reader import LocalRegistry
     from mccode.translators.c import CTargetVisitor
@@ -51,20 +52,21 @@ def mcstas_script():
                   output=args.output_file if args.output_file is not None else args.filename.with_suffix('.c')
                   )
 
-    # TODO somehow pull out extra search directories into LocalRegistries
+    # McStas always requires access to the remote Pooch repository:
     registries = [MCSTAS_REGISTRY]
-    if args.search_dir is not None:
-        registries.append(LocalRegistry(args.searchdir.stem, args.searchdir))
+    # A user can specify extra (local) directories to search for included files using -I or --search-dir
+    registries.extend([LocalRegistry(d.stem, d) for d in args.search_dir])
+    # And McCode-3 users expect to always have access to files in the current working directory
+    registries.append(LocalRegistry('working_directory', f'{Path().resolve()}'))
 
+    # Construct the object which will read the instrument and component files, producing Python objects
     reader = Reader(registries=registries)
-
+    # Read the provided .instr file, including all specified .instr and .comp files along the way
     instrument = reader.get_instrument(args.filename)
 
-    # Now write out the translated instrument in the McStas runtime
-    # print(instrument)
-
+    # Conversion to C code requires access to the runtime library files (even if not being embedded)
     registries.append(LIBC_REGISTRY)
-
+    # Construct the object which will translate the Python instrument to C
     visitor = CTargetVisitor(instrument, generate=MCSTAS_GENERATOR, config=config, verbose=config['verbose'],
                              registries=reader.registries)
     # Go through the instrument, finish by writing the output file:
