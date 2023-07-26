@@ -72,7 +72,9 @@ class TargetVisitor:
         from importlib.resources import as_file
         with as_file(self.library_path(filename)) as file_at:
             with open(file_at, 'r') as file:
+                self.out(f'/* embedding file "{file_at}" */')
                 self.output.write(file.read())
+                self.out(f'/* end of file "{file_at}" */')
 
     def include_path(self, filename=None):
         if filename is None:

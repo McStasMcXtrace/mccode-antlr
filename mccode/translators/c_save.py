@@ -1,6 +1,6 @@
 def cogen_save(source, declared_parameters):
     lines = ["/* *****************************************************************************",
-             f"* instrument {source.name} and components SAVE",
+             f"* instrument '{source.name}' and components SAVE",
              "***************************************************************************** */",
              ]
 
@@ -9,7 +9,7 @@ def cogen_save(source, declared_parameters):
 
     # write the instrument main code, which calls component ones
     lines.extend([
-        f'int save(FILE *handle) /* called by mccode_main for {source.name}:SAVE */',
+        f'int save(FILE *handle) {{ /* called by mccode_main for {source.name}:SAVE */',
         "  if (!handle) siminfo_init(NULL);",
     ])
 
@@ -28,7 +28,7 @@ def cogen_save(source, declared_parameters):
         for par in source.parameters:
             lines.append(f'  #undef {par.name}')
 
-    lines.append('/* call iteratively all components SAVE */')
+    lines.append('  /* call iteratively all components SAVE */')
     for comp in source.components:
         if len(comp.type.save):
             lines.append(f'  class_{comp.type.name}_save(&_{comp.name}_var);')
@@ -50,7 +50,7 @@ def cogen_comp_save_class(comp, declared_parameters):
 
     lines = [
         f'_class_{comp.name} *class_{comp.name}_save(_class_{comp.name} *_comp) {{',
-        cogen_parameter_define(comp)
+        cogen_parameter_define(comp, declared_parameters)
     ]
     f, n = comp.initialize[0].fn if len(comp.initialize) else (comp.name, 0)
     lines.append(f'  SIG_MESSAGE("[_{comp.name}_save] component NULL={comp.name}() [{f}:{n}]");')
@@ -59,7 +59,7 @@ def cogen_comp_save_class(comp, declared_parameters):
         lines.append(block.to_c())
 
     lines.extend([
-        cogen_parameter_undef(comp),
+        cogen_parameter_undef(comp, declared_parameters),
         '  return(_comp);',
         f'}} /* class_{comp.name}_save */',
         ''

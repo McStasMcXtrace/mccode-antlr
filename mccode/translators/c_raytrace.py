@@ -6,8 +6,8 @@ def cogen_raytrace(source, ok_to_skip):
         "",
         "#ifndef FUNNEL",
         "#pragma acc routine",
-        "int raytrace(_class_particle* _particle) {"
-        f"/ * single event propagation, called by mccode_main for {source.name}:TRACE */",
+        "int raytrace(_class_particle* _particle) { "
+        f"/* single event propagation, called by mccode_main for {source.name}:TRACE */",
         "",
         "  /* init variables and counters for TRACE */",
         #  // we need this override, since "comp" is not defined in raytrace() - see section-wide define
@@ -71,43 +71,43 @@ def cogen_raytrace(source, ok_to_skip):
         if comp.group is None or source.groups[comp.group].is_leader(index):
             # This allows an empty ('') named group :/
             if not ok_to_skip[index]:
-                lines.append('    _particle_save = *_particle;')
+                lines.append('      _particle_save = *_particle;')
         else:
             lines.extend([
-                '    // 2nd or higher GROUP member, "reuse" coordinate-changed _particle_Save from 1st GROUP element.',
-                f'    mccoordschange(_{comp.name}_var._position_relative, _{comp.name}_var.rotation_relative, &_particle_save);',
+                '      // 2nd or higher GROUP member, "reuse" coordinate-changed _particle_Save from 1st GROUP element.',
+                f'      mccoordschange(_{comp.name}_var._position_relative, _{comp.name}_var.rotation_relative, &_particle_save);',
             ])
         if not ok_to_skip[index]:
             lines.extend([
-                f'    DEBUG_COMP(_{comp.name}_var._name);',
-                '    DEBUG_STATE();'
+                f'      DEBUG_COMP(_{comp.name}_var._name);',
+                '      DEBUG_STATE();'
             ])
         if len(comp.type.trace) or len(comp.extend):
             # WHEN
             if comp.when is not None:
-                lines.append(f'    if (({comp.when}))  // conditional WHEN execution')
+                lines.append(f'      if (({comp.when}))  // conditional WHEN execution')
             lines.extend([
-                f'    class_{comp.type.name}_trace(&_{comp.name}_var, _particle);{" /* contains EXTEND code */" if len(comp.extend) else ""}',
-                '    if (_particle->_restore)',
-                '      particle_restore(_particle, &_particle_save);'
+                f'      class_{comp.type.name}_trace(&_{comp.name}_var, _particle);{" /* contains EXTEND code */" if len(comp.extend) else ""}',
+                '      if (_particle->_restore)',
+                '        particle_restore(_particle, &_particle_save);'
             ])
         # If we have a JUMP, change the index
         for jump in comp.jump:
             if jump.iterate:
                 lines.extend([
-                    f'    if (++_particle->_logic.Jump_{comp.name}_{jump.target} < {jump.condition}) {{ /* test for iteration */',
-                    f'      _particle->_index = {jump.absolute_target - 1};',
-                    '      _particle->flag_nocoordschange=1; /* pass coordinate transformations when jumping */',
-                    '    } else {',
-                    f'      _particle->_logic.Jump_{comp.name}_{jump.target} = 0; /* reset Jump top and go forward */',
-                    '    }'
+                    f'      if (++_particle->_logic.Jump_{comp.name}_{jump.target} < {jump.condition}) {{ /* test for iteration */',
+                    f'        _particle->_index = {jump.absolute_target - 1};',
+                    '        _particle->flag_nocoordschange=1; /* pass coordinate transformations when jumping */',
+                    '      } else {',
+                    f'        _particle->_logic.Jump_{comp.name}_{jump.target} = 0; /* reset Jump top and go forward */',
+                    '      }'
                 ])
             else:
                 lines.extend([
-                    f'    if ({jump.condition}) {{/* conditional JUMP to {jump.target} */',
-                    f'      _particle->_index = {jump.absolute_target - 1};',
-                    '      _particle->flag_nocoordschange=1; /* pass coordinate transformations when jumping */',
-                    '    }'
+                    f'      if ({jump.condition}) {{/* conditional JUMP to {jump.target} */',
+                    f'        _particle->_index = {jump.absolute_target - 1};',
+                    '        _particle->flag_nocoordschange=1; /* pass coordinate transformations when jumping */',
+                    '      }'
                 ])
         # If we are in a group handle SCATTERED
         if comp.group is not None:
@@ -116,20 +116,20 @@ def cogen_raytrace(source, ok_to_skip):
             ln = group.last.name
             lid = group.last_id
             lines.extend([
-                f'    // GROUP {group.name}: from {fn} [{group.first_id}] to {ln} [{lid}]',
+                f'      // GROUP {group.name}: from {fn} [{group.first_id}] to {ln} [{lid}]',
                 # Skip over when SCATTERED in the group:
-                f'    if (SCATTERED) _particle->_index = {lid}; '
+                f'      if (SCATTERED) _particle->_index = {lid}; '
                 '// when SCATTERED in GROUP: reach exit of GROUP after {ln}',
                 #
             ])
             if index == lid:
-                lines.append('    else ABSORB; // Not SCATTERED by end of GROUP: particle does not progress')
+                lines.append('      else ABSORB; // Not SCATTERED by end of GROUP: particle does not progress')
             else:
-                lines.append('    else particle_restore(_particle, &_particle_save); // not SCATTERED in GROUP, restore')
+                lines.append('      else particle_restore(_particle, &_particle_save); // not SCATTERED in GROUP, restore')
 
-        lines.append('    _particle->_index++;')
+        lines.append('      _particle->_index++;')
         if not ok_to_skip[index]:
-            lines.append('    if (!ABSORBED) { DEBUG_STATE(); }')
+            lines.append('      if (!ABSORBED) { DEBUG_STATE(); }')
         lines.append(f'    }} /* end of component {comp.name} [{index}] */')
 
     # /* now we close the SPLIT loops, unrolled from last to 1st */
@@ -147,7 +147,7 @@ def cogen_raytrace(source, ok_to_skip):
         # /* propagate to the next component */
         f'    if (_particle->_index > {len(source.components)})',
         # /* if we reach the last component and nothing happened, ABSORB */
-        '      ABSORBED++; /* absorbed when passed all components *',
+        '      ABSORBED++; /* absorbed when passed all components */',
         "  } /* while !ABSORBED */",
         "",
         "  DEBUG_LEAVE()",
@@ -174,7 +174,7 @@ def cogen_raytrace(source, ok_to_skip):
         "",
         "  #ifdef OPENACC",
         "  if (ncount>gpu_innerloop) {",
-        '    printf("Defining %%llu CPU loops around GPU kernel and adjusting ncount\\n",loops);',
+        '    printf("Defining %llu CPU loops around GPU kernel and adjusting ncount\\n",loops);',
         "    mcset_ncount(loops*gpu_innerloop);",
         "  } else {",
         "    #endif",
@@ -186,7 +186,7 @@ def cogen_raytrace(source, ok_to_skip):
         "",
         "  for (unsigned long long cloop=0; cloop<loops; cloop++) {",
         "    #ifdef OPENACC",
-        '    if (loops>1) fprintf(stdout, "%%d..", (int)cloop); fflush(stdout);',
+        '    if (loops>1) fprintf(stdout, "%d..", (int)cloop); fflush(stdout);',
         "    #endif",
         "",
         "    /* if on GPU, re-nullify printf */",
@@ -264,7 +264,7 @@ def cogen_funnel(source, ok_to_skip):
         "  #ifdef OPENACC",
         "  loops = ceil((double)ncount/gpu_innerloop);",
         "  if (ncount>gpu_innerloop) {",
-        '    printf("Defining %%llu CPU loops around kernel and adjusting ncount\\n",loops);',
+        '    printf("Defining %llu CPU loops around kernel and adjusting ncount\\n",loops);',
         "    mcset_ncount(loops*gpu_innerloop);",
         "  } else {",
         "  #endif",
@@ -287,7 +287,7 @@ def cogen_funnel(source, ok_to_skip):
         #  // batches
         "  // outer loop / particle batches",
         "  for (unsigned long long cloop=0; cloop<loops; cloop++) {",
-        '    if (loops>1) fprintf(stdout, "%%d..", (int)cloop); fflush(stdout);',
+        '    if (loops>1) fprintf(stdout, "%d..", (int)cloop); fflush(stdout);',
         "",
         #  // init batch
         "    // init particles",
@@ -354,8 +354,7 @@ def cogen_funnel(source, ok_to_skip):
                 lines.append(f'    if (({comp.when}))  // conditional WHEN')
             lines.extend([
                 f'        class_{comp.type.name}_trace(&_{comp.name}_var, _particle);{" /* contains EXTEND code */" if len(comp.extend) else ""}',
-                '         if (_particle->_restore)',
-                '         particle_restore(_particle, &_particle_save);'
+                '         if (_particle->_restore) particle_restore(_particle, &_particle_save);'
             ])
         if comp.group is not None:
             group = source.groups[comp.group]

@@ -1,36 +1,37 @@
 
 _GETDISTANCE_FCT = """
-  double index_getdistance(int first_index, int second_index)
-  /* Calculate the distance two components from their indexes*/
-  {
-    return coords_len(coords_sub(POS_A_COMP_INDEX(first_index), POS_A_COMP_INDEX(second_index)));
-  }
+double index_getdistance(int first_index, int second_index)
+/* Calculate the distance two components from their indexes*/
+{
+  return coords_len(coords_sub(POS_A_COMP_INDEX(first_index), POS_A_COMP_INDEX(second_index)));
+}
 
-  double getdistance(char* first_component, char* second_component)
-  /* Calculate the distance between two named components */
-  {
-    int first_index = _getcomp_index(first_component);
-    int second_index = _getcomp_index(second_component);
-    return index_getdistance(first_index, second_index);
+double getdistance(char* first_component, char* second_component)
+/* Calculate the distance between two named components */
+{
+  int first_index = _getcomp_index(first_component);
+  int second_index = _getcomp_index(second_component);
+  return index_getdistance(first_index, second_index);
+}
+
+double checked_setpos_getdistance(int current_index, char* first_component, char* second_component)
+/* Calculate the distance between two named components at *_setpos() time, with component index checking */
+{
+  int first_index = _getcomp_index(first_component);
+  int second_index = _getcomp_index(second_component);
+  if (first_index >= current_index || second_index >= current_index) {
+    printf(\"setpos_getdistance can only be used with the names of components before the current one!\\n\");
+    return 0;
   }
-  
-  double checked_setpos_getdistance(int current_index, char* first_component, char* second_component)
-  /* Calculate the distance between two named components at *_setpos() time, with component index checking */
-  {
-    int first_index = _getcomp_index(first_component);
-    int second_index = _getcomp_index(second_component);
-    if (first_index >= current_index || second_index >= current_index) {
-      printf(\"setpos_getdistance can only be used with the names of components before the current one!\\n\");
-      return 0;
-    }
-    return index_getdistance(first_index, second_index);
-  }
-  #define setpos_getdistance(first, second) checked_setpos_getdistance(current_setpos_index, first, second)
+  return index_getdistance(first_index, second_index);
+}
+#define setpos_getdistance(first, second) checked_setpos_getdistance(current_setpos_index, first, second)
 """
 
 
 def cogen_comp_init_position(index, comp, last, instr):
     ref = None if index == 0 else instr.components[last]
+    var = f'_{comp.name}_var'
     lines = [
         f'  /* component {comp.name}={comp.type.name}() AT ROTATED */',
         '  {',
@@ -45,46 +46,46 @@ def cogen_comp_init_position(index, comp, last, instr):
     rel = comp.rotate_relative[1]
     if rel is None:
         lines.append(
-            f'    rot_set_rotation(_{comp.name}_var._rotation_absolute, ({x})*DEG2RAD, ({y})*DEG2RAD, ({z})*DEG2RAD);'
+            f'    rot_set_rotation({var}._rotation_absolute, ({x})*DEG2RAD, ({y})*DEG2RAD, ({z})*DEG2RAD);'
         )
     else:
         lines.extend([
             f'    rot_set_rotation(tr1, ({x})*DEG2RAD, ({y})*DEG2RAD, ({z})*DEG2RAD);',
-            f'    rot_mul(tr1, _{rel.name}_var._rotation_absolute, _{comp.name}_var._rotation_absolute);'
+            f'    rot_mul(tr1, _{rel.name}_var._rotation_absolute, {var}._rotation_absolute);'
         ])
     # Sort out relative orientation
     if index == 0:
-        lines.append(f'    rot_copy(_{comp.name}_var._rotation_relative, _{comp.name}_var._rotation_absolute);')
+        lines.append(f'    rot_copy({var}._rotation_relative, {var}._rotation_absolute);')
     else:
         lines.extend([
-            f'    rot_transpose(_{ref.name}, tr1);',
-            f'    rot_mul(_{comp.name}_var._rotation_absolute, tr1, _{comp.name}_var._rotation_relative);'
+            f'    rot_transpose(_{ref.name}_var._rotation_absolute, tr1);',
+            f'    rot_mul({var}._rotation_absolute, tr1, {var}._rotation_relative);'
         ])
-    lines.append(f'    _{comp.name}._rotation_is_identity = rot_test_identity(_{comp.name}._rotation_relative);')
+    lines.append(f'    {var}._rotation_is_identity = rot_test_identity({var}._rotation_relative);')
 
     # Then translation
     x, y, z = comp.at_relative[0]
     rel = comp.at_relative[1]
     if rel is None:
-        lines.append(f'    _{comp.name}_var._position_absolute = coords_set({x}, {y}, {z});')
+        lines.append(f'    {var}._position_absolute = coords_set({x}, {y}, {z});')
     else:
         lines.extend([
             f'    tc1 = coords_set({x}, {y}, {z});',
             f'    rot_transpose(_{rel.name}_var._rotation_absolute, tr1);',
             '    tc2 = rot_apply(tr1, tc1);'
-            f'    _{comp.name}_var._position_absolute = coords_add(_{rel.name}_var._position_absolute, tc2);'
+            f'    {var}._position_absolute = coords_add(_{rel.name}_var._position_absolute, tc2);'
         ])
     if index == 0:
-        lines.append('    tc1 = coords_neg(_{comp.name}_var.position_absolute);')
+        lines.append(f'    tc1 = coords_neg({var}.position_absolute);')
     else:
-        lines.append(f'    tc1 = coords_sub(_{ref.name}_var._position_absolute, _{comp.name}_var._position_absolute);')
+        lines.append(f'    tc1 = coords_sub(_{ref.name}_var._position_absolute, {var}._position_absolute);')
     lines.extend([
-        f'    _{comp.name}_var._position_relative = rot_apply(_{comp.name}_var._rotation_absolute, tc1);',
+        f'    {var}._position_relative = rot_apply({var}._rotation_absolute, tc1);',
         f'  }} /* {comp.name}={comp.type.name}() AT ROTATED */',
-        f'  DEBUG_COMPONENT("{comp.name}", _{comp.name}_var._position_absolute, _{comp.name}_var._rotation_absolute);',
-        f'  instrument->_position_absolute[{index}] = _{comp.name}_var._position_absolute;',
-        f'  instrument->_position_relative[{index}] = _{comp.name}_var._position_relative;',
-        f'  _{comp.name}_var._position_relative_is_zero = coords_test_zero(_{comp.name}_var._position_relative);'
+        f'  DEBUG_COMPONENT("{comp.name}", {var}._position_absolute, {var}._rotation_absolute);',
+        f'  instrument->_position_absolute[{index}] = {var}._position_absolute;',
+        f'  instrument->_position_relative[{index}] = {var}._position_relative;',
+        f'  {var}._position_relative_is_zero = coords_test_zero({var}._position_relative);'
     ])
     return '\n'.join(lines)
 
@@ -96,7 +97,7 @@ def cogen_comp_setpos(index, comp, last, instr, component_declared_parameters):
         # cogen_comp_init_par skipped any parameters which had "val" which evaluates False
         # For 'out_par' (DECLARE extracted parameters) any non-'->isoptional' values were skipped.
         # For 'set_par' any `exp_tostring(entry->val)` parameters returning NULL (which was none of them?)
-        if p is None or not p.value.has_value:
+        if p is None:
             return ''
         pl = []
         fullname = f'_{comp.name}_var._parameters.{p.name}'
@@ -125,11 +126,11 @@ def cogen_comp_setpos(index, comp, last, instr, component_declared_parameters):
 
     lines = [
         f'/* component {comp.name}={comp.type.name}() SETTING, POSITION/ROTATION */',
-        f'int _{comp.name}_setpos(void)"',
+        f'int _{comp.name}_setpos(void)',
         "{ /* sets initial component parameters, position and rotation */",
         # init parameters. These can then be used in position/rotation syntax
         # all these parameters have a #define pointing to the real name space in structure
-        f'  SIG_MESSAGE("[_{comp.name}_setpos] component {comp.name}={comp.type.name}() SETTING [{f}:{n}]',
+        f'  SIG_MESSAGE("[_{comp.name}_setpos] component {comp.name}={comp.type.name}() SETTING [{f}:{n}]")',
         f'  stracpy(_{comp.name}_var._name, "{comp.name}", {min(len(comp.name)+1, 16384)});',
         f'  stracpy(_{comp.name}_var._type, "{comp.type.name}", {min(len(comp.type.name)+1, 16384)});',
         f'  _{comp.name}_var._index={index};',
@@ -168,7 +169,7 @@ def cogen_comp_setpos(index, comp, last, instr, component_declared_parameters):
 
 def cogen_initialize(source, component_declared_parameters, ok_to_skip):
     lines = ["/* *****************************************************************************",
-             f"* instrument {source.name} and components INITIALIZE"
+             f"* instrument '{source.name}' and components INITIALISE",
              "***************************************************************************** */",
              _GETDISTANCE_FCT, ""]
 
@@ -184,8 +185,8 @@ def cogen_initialize(source, component_declared_parameters, ok_to_skip):
 
     # write the instrument main code, which calls component ones
     lines.extend([
-        f'int initialize(void) /* called by mccode_main for {source.name}:INITIALIZE */',
-        '  DEBUG_INSTR()',
+        f'int initialize(void) {{ /* called by mccode_main for {source.name}:INITIALIZE */',
+        '  DEBUG_INSTR();',
         '',
         '  /* code_main/parseoptions/readparams sets instrument parameters value */',
         f'  stracpy(instrument->_name, "{source.name}", {len(source.name)+1});',
@@ -242,7 +243,7 @@ def cogen_comp_initialize_class(comp, declared_parameters):
 
     lines = [
         f'_class_{comp.name} *class_{comp.name}_initialize(_class_{comp.name} *_comp) {{',
-        cogen_parameter_define(comp)
+        cogen_parameter_define(comp, declared_parameters)
     ]
     f, n = comp.initialize[0].fn if len(comp.initialize) else (comp.name, 0)
     lines.append(f'SIG_MESSAGE("[_{comp.name}_initialize] component NULL={comp.name}() [{f}:{n}]");')
@@ -251,7 +252,7 @@ def cogen_comp_initialize_class(comp, declared_parameters):
         lines.append(block.to_c())
 
     lines.extend([
-        cogen_parameter_undef(comp),
+        cogen_parameter_undef(comp, declared_parameters),
         '  return(_comp);',
         f'}} /* class_{comp.name}_initialize */',
         ''

@@ -8,7 +8,7 @@ def cogen_getvarpars_fct(instr):
         "  #endif",
     ]
     for comp in instr.components:
-        lines.append(f'  if (!strcmp(compname, "{comp.name}") return (void *) &(_{comp.name}_var._parameters);')
+        lines.append(f'  if (!strcmp(compname, "{comp.name}")) return (void *) &(_{comp.name}_var._parameters);')
 
     lines.extend([
         '  return 0;',
@@ -43,7 +43,7 @@ def cogen_getcompindex_fct(instr):
         "{",
     ]
     for index, comp in enumerate(instr.components):
-        lines.append(f'  if(!strcmp(compname, "{comp.name}")) return {1 + index};')
+        lines.append(f'  if (!strcmp(compname, "{comp.name}")) return {1 + index};')
 
     lines.extend([
         "  return -1;",

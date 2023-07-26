@@ -8,12 +8,12 @@ def cogen_finally(source, declared_parameters):
         lines.extend(cogen_comp_finally_class(comp, declared_parameters[comp.name]))
 
     # write the instrument main code, which calls component ones
-    lines.append(f'int save(void) /* called by mccode_main for {source.name}:FINALLY */')
+    lines.append(f'int finally(void) {{ /* called by mccode_main for {source.name}:FINALLY */')
     lines.extend([f"#pragma acc update host(_{comp.name}_var)" for comp in source.components])
     lines.extend([
-        '#pragma acc update host(_instrument_var);',
+        '#pragma acc update host(_instrument_var)',
         '',
-        ' siminfo_init(NULL);'
+        ' siminfo_init(NULL);',
         ' save(siminfo_file); /* save data when simulation ends */'
     ])
 
@@ -32,7 +32,7 @@ def cogen_finally(source, declared_parameters):
         for par in source.parameters:
             lines.append(f'  #undef {par.name}')
 
-    lines.append('/* call iteratively all components FINALLY */')
+    lines.append('  /* call iteratively all components FINALLY */')
     for comp in source.components:
         if len(comp.type.final):
             lines.append(f'  class_{comp.type.name}_finally(&_{comp.name}_var);')
@@ -54,7 +54,7 @@ def cogen_comp_finally_class(comp, declared_parameters):
 
     lines = [
         f'_class_{comp.name} *class_{comp.name}_finally(_class_{comp.name} *_comp) {{',
-        cogen_parameter_define(comp)
+        cogen_parameter_define(comp, declared_parameters)
     ]
     f, n = comp.final[0].fn if len(comp.final) else (comp.name, 0)
     lines.append(f'  SIG_MESSAGE("[_{comp.name}_finally] component NULL={comp.name}() [{f}:{n}]");')
@@ -63,7 +63,7 @@ def cogen_comp_finally_class(comp, declared_parameters):
         lines.append(block.to_c())
 
     lines.extend([
-        cogen_parameter_undef(comp),
+        cogen_parameter_undef(comp, declared_parameters),
         '  return(_comp);',
         f'}} /* class_{comp.name}_finally */',
         ''

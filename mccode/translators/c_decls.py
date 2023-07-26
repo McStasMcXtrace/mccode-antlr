@@ -63,7 +63,8 @@ def declarations_pre_libraries(source, typedefs: list, component_declared_parame
 
     def instrument_parameters_table():
         def one_line(name, typename, value, unit):
-            return f'  "{name},  &(_instrument_var._parameters{name}) , {typename}, "{value}", "{unit}",'
+            u = '' if unit is None else unit
+            return f'  "{name}", &(_instrument_var._parameters.{name}), {typename}, "{value}", "{u}",'
         lines = [f'int numipar = {len(source.parameters)};', 'struct mcinputtable_struct mcinputtable[] = {']
         lines.extend([one_line(p.name, p.value.mccode_c_type_name, p.value, p.unit) for p in source.parameters])
         lines.extend(['  NULL, NULL, instr_type_double, "", ""'])
@@ -73,12 +74,12 @@ def declarations_pre_libraries(source, typedefs: list, component_declared_parame
     def metadata_table():
         def one_line(defined_by, name, mimetype, value):
             from ..common.utilities import escape_str_for_c
-            return f'"{defined_by}", "{name}", "{mimetype}", {escape_str_for_c(value)}, '
+            return f'  "{defined_by}", "{name}", "{mimetype}", {escape_str_for_c(value)}, '
 
         metadata = source.collect_metadata()
-        lines = ['struct metadata_table_struct metadtata_table[] = {']
+        lines = ['struct metadata_table_struct metadata_table[] = {']
         lines.extend([one_line(m.source.name, m.name, m.mimetype, m.value) for m in metadata])
-        lines.extend(['"", "", "", ""', '};', f'int num_metadata = {len(metadata)};'])
+        lines.extend(['  "", "", "", ""', '};', f'int num_metadata = {len(metadata)};'])
         return '\n'.join(lines)
 
     def component_share_declarations():
@@ -108,7 +109,7 @@ def declarations_pre_libraries(source, typedefs: list, component_declared_parame
 
     def component_instance_declarations():
         lines = [component_instance_declaration(instance, index) for index, instance in enumerate(source.components)]
-        lines.append(f'int mcNUMCOMP = {len(source.components)}')
+        lines.append(f'int mcNUMCOMP = {len(source.components)};')
         return '\n'.join(lines)
 
     contents = [
@@ -146,9 +147,9 @@ def component_type_declaration(comp, typedefs: list, declared_parameters: dict):
     from .c_listener import extract_c_declared_variables
     warnings = 0
     lines = [
-        f'/* Parameter definition for component type {comp.name} */',
+        f"/* Parameter definition for component type '{comp.name}' */",
         f'struct _struct_{comp.name}_parameters {{',
-        f'  /* Component type {comp.name} setting parameters */'
+        f"  /* Component type '{comp.name}' setting parameters */"
     ]
     # TODO Veryify that the cogen.c iteration over `comp->def->set_par` does not somehow include DEFINITION PARAMETERS
     for par in comp.setting:
@@ -177,7 +178,7 @@ def component_type_declaration(comp, typedefs: list, declared_parameters: dict):
             lines.append(f'  {par.value.mccode_c_type} {par.name};')
 
     # This is the loop over the *replaced* `comp->def->out_par` e.g., found DECLARE parameters
-    lines.append(f'/* Component type {comp.name} private parameters */')
+    lines.append(f"/* Component type '{comp.name}' private parameters */")
     for name, (declared_type, initialized) in declared_parameters.items():
         # name could include any pointer or static array indicators, e.g. `* {name}` or `{name}[]`,
         # so we don't need to check for these. The type name should always be the base type, e.g
@@ -210,7 +211,7 @@ def component_type_declaration(comp, typedefs: list, declared_parameters: dict):
         "  int      _position_relative_is_zero;",
         f"  _class_{comp.name}_parameters _parameters;",
         "};",
-        f"typedef struct _struct_{comp.name}, _class_{comp.name};"
+        f"typedef struct _struct_{comp.name} _class_{comp.name};"
     ])
     return '\n'.join(lines)
 

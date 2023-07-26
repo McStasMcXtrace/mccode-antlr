@@ -53,8 +53,7 @@ def header_pre_runtime(is_mcstas, source, runtime: dict, config: dict, typedefs:
         else:
             uservar_init += f'\np->{x.name}={0 if x.init is None else x.init};'
 
-    contents = f"""
-/* Automatically generated file. Do not edit.
+    contents = f"""/* Automatically generated file. Do not edit.
  * Format:     ANSI C source code
  * Creator:    {runtime.get("fancy")} <{runtime.get("url")}>
  * Instrument: {source.source} ({source.name})
@@ -88,18 +87,14 @@ struct particle_logic_struct {{
 struct _struct_particle {{
   double x,y,z; /* position [m] */
 {particle_struct}
-  //  randstate_t randstate[RANDSTATE_LEN]
-  unsigned long randstate[7];  # for the KISS generator
+  unsigned long randstate[7];
   double t, p;    /* time, event weight */
   long long _uid;  /* event ID */
   long _index;     /* component index where to send this event */
-  // these are needed for SCATTERED, ABSORB and RESTORE macros
   long _absorbed;  /* flag set to TRUE when this event is to be removed/ignored */
   long _scattered; /* flag set to TRUE when this event has interacted with the last component instance */
   long _restore;   /* set to true if neutron event must be restored */
   long flag_nocoordschange;   /* set to true if particle is jumping */
-
-  // Include the struct defined earlier holding information on JUMP logic
   struct particle_logic_struct _logic;
   {uservar_string}
 }};
@@ -125,8 +120,6 @@ _class_particle mcgenstate(void) {{
   _class_particle particle = mcsetstate(0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, mcgravitation, NULL, mcallowbackprop);
   return(particle);
 }}
-
-// generate uservar return functions
 /*Generated user variable handlers:*/
 
 #pragma acc routine
@@ -187,6 +180,7 @@ void* particle_getvar_void(_class_particle *p, char *name, int *suc){{
   if (suc!=0x0) {{*suc=s;}}
   return rval;
 }}
+
 #pragma acc routine
 int particle_setvar_void(_class_particle *, char *, void*);\n
 int particle_setvar_void(_class_particle *p, char *name, void* value){{
@@ -262,14 +256,14 @@ def header_post_runtime(source, runtime: dict, config: dict, include_path):
             with path.open('r') as file:
                 return escape_str_for_c(file.read())
         message = f"Instrument {source.name} source code "
-        message += f"from {escape_str_for_c(source.source)} is not embedded in this executable.\n"
+        message += f"from {escape_str_for_c(source.source)} is not embedded in this executable.\\n"
         message += f"Use --source option when running {config.get('flavor')}"
         return message
 
     main_file_string = 'int main(int argc, char *argv[]){return mccode_main(argc, argv);}'
     contents = f"""
 /* *****************************************************************************
- * Start of instrument {source.name} generated code
+ * Start of instrument '{source.name}' generated code
 ***************************************************************************** */
 
 #ifdef MC_TRACE_ENABLED
@@ -283,6 +277,6 @@ char  instrument_name[]   = "{source.name}";
 char  instrument_source[] = "{escape_str_for_c(source.source)}";
 char *instrument_exe      = NULL; /* will be set to argv[0] in main */
 char instrument_code[] = "{source_file_contents()}";
-{main_file_string if config.get('use_default_main') else ''}
+{main_file_string if config.get('default_main') else ''}
 """
     return contents

@@ -90,7 +90,7 @@ def cogen_comp_trace_class(is_mcstas, comp, source, declared_parameters, instr_u
         '#pragma acc routine',
         f'_class_{comp.name} *class_{comp.name}_trace(_class_{comp.name} *_comp, _class_particle *_particle) {{',
         'ABSORBED=SCATTERED=RESTORE=0;',
-        cogen_parameter_define(comp),
+        cogen_parameter_define(comp, declared_parameters),
     ]
     f, n = comp.trace[0].fn if len(comp.trace) else (comp.name, 0)
     lines.append(f'SIG_MESSAGE("[_{comp.name}_trace] component NULL={comp.name}() [{f}:{n}]");')
@@ -152,9 +152,9 @@ def cogen_comp_trace_class(is_mcstas, comp, source, declared_parameters, instr_u
 
     # return the component
     lines.extend([
-        cogen_parameter_undef(comp),
+        cogen_parameter_undef(comp, declared_parameters),
         '  return(_comp);',
-        f'}} /* class_{comp.name}_trace */ ',
+        f'}} /* class_{comp.name}_trace */',
         ''
     ])
 

@@ -1,6 +1,6 @@
 def cogen_display(source, declared_parameters):
     lines = ["/* *****************************************************************************",
-             f"* instrument {source.name} and components DISPLAY",
+             f"* instrument '{source.name}' and components DISPLAY",
              "***************************************************************************** */",
              ]
     macros = dict(magnify='mcdis_magnify', line='mcdis_line', dashed_line='mcdis_dashed_line',
@@ -17,8 +17,8 @@ def cogen_display(source, declared_parameters):
         lines.append(f'  #undef {x}')
 
     # write the instrument main code, which calls component ones
-    lines.append(f'int display(void) /* called by mccode_main for {source.name}:DISPLAY */')
-    lines.extend([f"#pragma acc update host(_{comp.name}_var)" for comp in source.components])
+    lines.append(f'int display(void) {{ /* called by mccode_main for {source.name}:DISPLAY */')
+    # lines.extend([f"#pragma acc update host(_{comp.name}_var)" for comp in source.components])
     lines.extend([
         '  printf("MCDISPLAY: start\\n");',
         '',
@@ -40,10 +40,13 @@ def cogen_display(source, declared_parameters):
     #     for par in source.parameters:
     #         lines.append(f'  #undef {par.name}')
 
-    lines.append('/* call iteratively all components DISPLAY */')
+    lines.append('  /* call iteratively all components DISPLAY */')
     for comp in source.components:
         if len(comp.type.display):
             lines.append(f'  class_{comp.type.name}_display(&_{comp.name}_var);')
+        else:
+            # McCode-3 would have called a function just to print this line
+            lines.append(f'  printf("MCDISPLAY: component %s\\n", _{comp.name}_var->_name);')
 
     lines.extend([
         '  printf("MCDISPLAY: end\\n");'
@@ -62,7 +65,7 @@ def cogen_comp_display_class(comp, declared_parameters):
 
     lines = [
         f'_class_{comp.name} *class_{comp.name}_display(_class_{comp.name} *_comp) {{',
-        cogen_parameter_define(comp)
+        cogen_parameter_define(comp, declared_parameters)
     ]
     f, n = comp.display[0].fn if len(comp.final) else (comp.name, 0)
     lines.append(f'  SIG_MESSAGE("[_{comp.name}_display] component NULL={comp.name}() [{f}:{n}]");')
@@ -72,7 +75,7 @@ def cogen_comp_display_class(comp, declared_parameters):
         lines.append(block.to_c())
 
     lines.extend([
-        cogen_parameter_undef(comp),
+        cogen_parameter_undef(comp, declared_parameters),
         '  return(_comp);',
         f'}} /* class_{comp.name}_display */',
         ''

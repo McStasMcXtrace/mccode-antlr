@@ -171,6 +171,7 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
         # runtime part
         if self.config.get('include_runtime'):
             self.out('#define MC_EMBEDDED_RUNTIME')
+            self.embed_file('mcstas-d.h' if is_mcstas else 'mcxtrace-d.h')
             self.embed_file("mccode-r.h")
             self.embed_file('mcstas-r.h' if is_mcstas else 'mcxtrace-r.h')
             self.embed_file("mccode-r.c")
