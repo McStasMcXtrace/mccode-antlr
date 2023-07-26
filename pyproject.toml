@@ -14,7 +14,8 @@ dependencies = [
 dynamic = ["version"]
 
 [project.scripts]
-mcstas4 = "mccode.mcstas:mcstas_script"
+mcstas4 = "mccode.commands:mcstas"
+mcxtrace4 = "mccode.commands:mcxtrace"
 
 [tool.setuptools_scm]
 

@@ -1,11 +1,11 @@
-def mcstas_script_parse():
+def mccode_script_parse(prog: str):
     from argparse import ArgumentParser
     from pathlib import Path
 
     def resolvable(name: str):
         return Path(name).resolve()
 
-    parser = ArgumentParser(prog='mcstas', description='Convert mccode-3 instr and comp files to mcstas runtime in C')
+    parser = ArgumentParser(prog=prog, description=f'Convert mccode-3 instr and comp files to {prog} runtime in C')
     parser.add_argument('filename', type=resolvable, help='.instr file name to be converted')
 
     parser.add_argument('-o', '--output-file', type=str, help='Output filename for C runtime file')
@@ -34,14 +34,14 @@ def mcstas_script_parse():
     return args
 
 
-def mcstas_script():
+def mcstas():
     from pathlib import Path
     from mccode.reader import Reader, MCSTAS_REGISTRY, LIBC_REGISTRY
     from mccode.reader import LocalRegistry
     from mccode.translators.c import CTargetVisitor
     from mccode.translators.target import MCSTAS_GENERATOR
 
-    args = mcstas_script_parse()
+    args = mccode_script_parse('mcstas')
 
     config = dict(default_main=(not args.no_main) if args.no_main is not None else True,
                   enable_trace=args.trace if args.trace is not None else False,
@@ -73,5 +73,41 @@ def mcstas_script():
     visitor.translate(filename=config['output'])
 
 
-if __name__ == '__main__':
-    mcstas_script()
+def mcxtrace():
+    from pathlib import Path
+    from mccode.reader import Reader, MCXTRACE_REGISTRY, LIBC_REGISTRY
+    from mccode.reader import LocalRegistry
+    from mccode.translators.c import CTargetVisitor
+    from mccode.translators.target import MCXTRACE_GENERATOR
+
+    args = mccode_script_parse('mcxtrace')
+
+    config = dict(default_main=(not args.no_main) if args.no_main is not None else True,
+                  enable_trace=args.trace if args.trace is not None else False,
+                  portable=args.portable if args.portable is not None else False,
+                  include_runtime=(not args.no_runtime) if args.no_runtime is not None else True,
+                  embed_instrument_file=args.source if args.source is not None else False,
+                  verbose=args.verbose if args.verbose is not None else False,
+                  output=args.output_file if args.output_file is not None else args.filename.with_suffix('.c')
+                  )
+
+    # McXtrace always requires access to the remote Pooch repository:
+    registries = [MCXTRACE_REGISTRY]
+    # A user can specify extra (local) directories to search for included files using -I or --search-dir
+    registries.extend([LocalRegistry(d.stem, d) for d in args.search_dir])
+    # And McCode-3 users expect to always have access to files in the current working directory
+    registries.append(LocalRegistry('working_directory', f'{Path().resolve()}'))
+
+    # Construct the object which will read the instrument and component files, producing Python objects
+    reader = Reader(registries=registries)
+    # Read the provided .instr file, including all specified .instr and .comp files along the way
+    instrument = reader.get_instrument(args.filename)
+
+    # Conversion to C code requires access to the runtime library files (even if not being embedded)
+    registries.append(LIBC_REGISTRY)
+    # Construct the object which will translate the Python instrument to C
+    visitor = CTargetVisitor(instrument, generate=MCXTRACE_GENERATOR, config=config, verbose=config['verbose'],
+                             registries=reader.registries)
+    # Go through the instrument, finish by writing the output file:
+    visitor.translate(filename=config['output'])
+
