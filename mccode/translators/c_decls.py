@@ -134,14 +134,14 @@ def declarations_pre_libraries(source, typedefs: list, component_declared_parame
 def component_type_declaration(comp, typedefs: list, declared_parameters: dict):
     """Declare the *component type* structures needed for component instances.
     Includes the component parameters structure and positioning code.
-
-    FIXME The implementation in cogen.c is very convoluted. It reads component-declared parameters
-          from its DECLARE block, then *replaces* the output parameter list entirely but the found
-          'decl_par' list (at one point it combined them, but that is commented out now).
-          This means that at different points in the execution of cogen.c a `comp->def->out_par` pointer
-          might resolve to the OUTPUT PARAMETERS _or_ the DECLARE found parameters.
-          THIS IS NOT GOOD FOR FOLLOWING THE EXECUTION.
     """
+    # Note for future reference against McCode-3:
+    # The implementation of parameter handling in cogen.c is very convoluted. It reads component-declared parameters
+    # from the component definition DECLARE block, then *replaces* the output parameter list entirely by the found
+    # 'decl_par' list (at one point it combined them, but that is commented out now).
+    # The call tree for functions that access `comp->def->out_par` is such that the pointer is not used before it
+    # is replaced, so at least there is no ambiguity between DECLARE-found parameters and OUTPUT PARAMETERS in cogen.
+
     from ..common import Value
     from .c_listener import extract_c_declared_variables
     warnings = 0
@@ -150,7 +150,7 @@ def component_type_declaration(comp, typedefs: list, declared_parameters: dict):
         f'struct _struct_{comp.name}_parameters {{',
         f'  /* Component type {comp.name} setting parameters */'
     ]
-    # TODO Veryify that the cogen.c iteration over the `comp->def->set_par` does not somehow include DEFINE PARAMETERS
+    # TODO Veryify that the cogen.c iteration over `comp->def->set_par` does not somehow include DEFINITION PARAMETERS
     for par in comp.setting:
         if par.value.is_a(Value.Type.float_array) or par.value.is_a(Value.Type.int_array):
             if par.value.holds_array:
@@ -176,7 +176,7 @@ def component_type_declaration(comp, typedefs: list, declared_parameters: dict):
             # basic integer or float
             lines.append(f'  {par.value.mccode_c_type} {par.name};')
 
-    # TODO this is the loop over the *replaced* `comp->def->out_par` e.g., found DECLARE parameters
+    # This is the loop over the *replaced* `comp->def->out_par` e.g., found DECLARE parameters
     lines.append(f'/* Component type {comp.name} private parameters */')
     for name, (declared_type, initialized) in declared_parameters.items():
         # name could include any pointer or static array indicators, e.g. `* {name}` or `{name}[]`,
