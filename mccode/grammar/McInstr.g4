@@ -37,10 +37,12 @@ The general format of an instrument paraemter in the instr file is
 */
 instrument_parameters: '(' (params+=instrument_parameter (',' params+=instrument_parameter)*)? ')';
 instrument_parameter
-  : Double? Identifier (Div StringLiteral)? (Assign expr)?                         #InstrumentParameterDouble
-  | Int Identifier (Div StringLiteral)? (Assign expr)?                             #InstrumentParameterInteger
-  | (String | (Char Star)) Identifier (Div StringLiteral)? (Assign StringLiteral)? #InstrumentParameterString
+  : Double? Identifier instrument_parameter_unit? (Assign expr)?                         #InstrumentParameterDouble
+  | Int Identifier instrument_parameter_unit? (Assign expr)?                             #InstrumentParameterInteger
+  | (String | (Char Star)) Identifier instrument_parameter_unit? (Assign StringLiteral)? #InstrumentParameterString
   ;
+
+instrument_parameter_unit: Div StringLiteral;
 
 instrument_trace: Trace ((component_instance | search | instrument_trace_include)+)?;
 

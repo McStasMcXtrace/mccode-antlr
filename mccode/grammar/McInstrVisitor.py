@@ -1,4 +1,4 @@
-# Generated from /home/g/Code/mccode-antlr/mccode/grammar/McInstr.g4 by ANTLR 4.13.0
+# Generated from /home/gst/PycharmProjects/mccode4/mccode/grammar/McInstr.g4 by ANTLR 4.13.0
 from antlr4 import *
 if "." in __name__:
     from .McInstrParser import McInstrParser
@@ -36,6 +36,11 @@ class McInstrVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by McInstrParser#InstrumentParameterString.
     def visitInstrumentParameterString(self, ctx:McInstrParser.InstrumentParameterStringContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by McInstrParser#instrument_parameter_unit.
+    def visitInstrument_parameter_unit(self, ctx:McInstrParser.Instrument_parameter_unitContext):
         return self.visitChildren(ctx)
 
 
@@ -254,13 +259,13 @@ class McInstrVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by McInstrParser#ExpressionIdentifier.
-    def visitExpressionIdentifier(self, ctx:McInstrParser.ExpressionIdentifierContext):
+    # Visit a parse tree produced by McInstrParser#ExpressionInteger.
+    def visitExpressionInteger(self, ctx:McInstrParser.ExpressionIntegerContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by McInstrParser#ExpressionInteger.
-    def visitExpressionInteger(self, ctx:McInstrParser.ExpressionIntegerContext):
+    # Visit a parse tree produced by McInstrParser#ExpressionIdentifier.
+    def visitExpressionIdentifier(self, ctx:McInstrParser.ExpressionIdentifierContext):
         return self.visitChildren(ctx)
 
 

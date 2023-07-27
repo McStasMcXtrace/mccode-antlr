@@ -1,4 +1,4 @@
-# Generated from /home/g/Code/mccode-antlr/mccode/grammar/McInstr.g4 by ANTLR 4.13.0
+# Generated from /home/gst/PycharmProjects/mccode4/mccode/grammar/McInstr.g4 by ANTLR 4.13.0
 from antlr4 import *
 if "." in __name__:
     from .McInstrParser import McInstrParser
@@ -59,6 +59,15 @@ class McInstrListener(ParseTreeListener):
 
     # Exit a parse tree produced by McInstrParser#InstrumentParameterString.
     def exitInstrumentParameterString(self, ctx:McInstrParser.InstrumentParameterStringContext):
+        pass
+
+
+    # Enter a parse tree produced by McInstrParser#instrument_parameter_unit.
+    def enterInstrument_parameter_unit(self, ctx:McInstrParser.Instrument_parameter_unitContext):
+        pass
+
+    # Exit a parse tree produced by McInstrParser#instrument_parameter_unit.
+    def exitInstrument_parameter_unit(self, ctx:McInstrParser.Instrument_parameter_unitContext):
         pass
 
 
@@ -449,21 +458,21 @@ class McInstrListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by McInstrParser#ExpressionIdentifier.
-    def enterExpressionIdentifier(self, ctx:McInstrParser.ExpressionIdentifierContext):
-        pass
-
-    # Exit a parse tree produced by McInstrParser#ExpressionIdentifier.
-    def exitExpressionIdentifier(self, ctx:McInstrParser.ExpressionIdentifierContext):
-        pass
-
-
     # Enter a parse tree produced by McInstrParser#ExpressionInteger.
     def enterExpressionInteger(self, ctx:McInstrParser.ExpressionIntegerContext):
         pass
 
     # Exit a parse tree produced by McInstrParser#ExpressionInteger.
     def exitExpressionInteger(self, ctx:McInstrParser.ExpressionIntegerContext):
+        pass
+
+
+    # Enter a parse tree produced by McInstrParser#ExpressionIdentifier.
+    def enterExpressionIdentifier(self, ctx:McInstrParser.ExpressionIdentifierContext):
+        pass
+
+    # Exit a parse tree produced by McInstrParser#ExpressionIdentifier.
+    def exitExpressionIdentifier(self, ctx:McInstrParser.ExpressionIdentifierContext):
         pass
 
 

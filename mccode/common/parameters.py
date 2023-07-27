@@ -215,6 +215,18 @@ class InstrumentParameter:
     unit: str
     value: Value
 
+    @staticmethod
+    def parse(s: str):
+        from antlr4 import CommonTokenStream, InputStream
+        from ..grammar import McInstrParser, McInstrLexer
+        from ..instr import InstrVisitor
+        stream = InputStream(s)
+        lexer = McInstrLexer(stream)
+        tokens = CommonTokenStream(lexer)
+        parser = McInstrParser(tokens)
+        visitor = InstrVisitor(None, None)
+        return visitor.getInstrument_parameter(parser.instrument_parameter())
+
 
 @dataclass
 class ComponentParameter:

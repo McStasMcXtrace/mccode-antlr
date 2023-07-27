@@ -3,6 +3,7 @@ from ..common import Value, InstrumentParameter
 from ..instr import Instr, Instance
 from ..reader import Reader, Registry
 
+
 class Assembler:
     """Interactive instrument assembly"""
 
@@ -38,6 +39,9 @@ class Assembler:
         if isinstance(parameters, dict):
             instance.set_parameters(**parameters)
         return instance
+
+    def parameter(self, string):
+        self.instrument.add_parameter(InstrumentParameter.parse(string))
 
     def parameters(self, **pairs):
         for name, value in pairs.items():

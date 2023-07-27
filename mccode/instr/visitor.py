@@ -27,29 +27,34 @@ class InstrVisitor(McInstrVisitor):
         for param in ctx.params:
             self.state.add_parameter(self.visit(param))
 
+    def getInstrument_parameter(self, ctx: McInstrParser.Instrument_parameterContext):
+        return self.visit(ctx)
+
     def visitInstrument_metadata(self, ctx: McInstrParser.Instrument_metadataContext):
         for metadata_context in ctx.metadata():
             mime, name, metadata = self.visit(metadata_context)
             self.state.add_metadata(MetaData.from_instrument_tokens(self.state.name, mime, name, metadata))
 
-
     def visitInstrumentParameterDouble(self, ctx: McInstrParser.InstrumentParameterDoubleContext):
         name = str(ctx.Identifier())
-        unit = None if ctx.StringLiteral() is None else str(ctx.StringLiteral())
+        unit = None if ctx.instrument_parameter_unit() is None else self.visit(ctx.instrument_parameter_unit())
         value = None if ctx.Assign() is None else self.visit(ctx.expr())
         return InstrumentParameter(name, unit, Value.float(value))
 
     def visitInstrumentParameterInteger(self, ctx: McInstrParser.InstrumentParameterIntegerContext):
         name = str(ctx.Identifier())
-        unit = None if ctx.StringLiteral() is None else str(ctx.StringLiteral())
+        unit = None if ctx.instrument_parameter_unit() is None else self.visit(ctx.instrument_parameter_unit())
         value = None if ctx.Assign() is None else self.visit(ctx.expr())
         return InstrumentParameter(name, unit, Value.int(value))
 
     def visitInstrumentParameterString(self, ctx: McInstrParser.InstrumentParameterStringContext):
         name = str(ctx.Identifier())
-        unit = None if ctx.StringLiteral() is None else str(ctx.StringLiteral())
-        value = None if ctx.Assign() is None else self.visit(ctx.expr())
+        unit = None if ctx.instrument_parameter_unit() is None else self.visit(ctx.instrument_parameter_unit())
+        value = None if ctx.Assign() is None else str(ctx.StringLiteral())
         return InstrumentParameter(name, unit, Value.str(value))
+
+    def visitInstrument_parameter_unit(self, ctx: McInstrParser.Instrument_parameter_unitContext):
+        return str(ctx.StringLiteral())
 
     def visitInstrument_trace(self, ctx: McInstrParser.Instrument_traceContext):
         return self.visitChildren(ctx)

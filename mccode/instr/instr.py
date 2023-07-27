@@ -47,6 +47,8 @@ class Instr:
         return fixed[-count]
 
     def get_component(self, name: str):
+        if name == 'PREVIOUS':
+            return self.components[-1]
         for comp in self.components:
             if comp.name == name:
                 return comp
