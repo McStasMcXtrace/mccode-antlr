@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from ..common import Value
-
+from enum import Enum
 
 def _value_float_tuple(n, v=0.):
     return tuple(Value.float(v) for _ in range(n))
@@ -30,15 +30,22 @@ def degree_to_radian(v: Value):
 
 @dataclass
 class Orientation:
+    class Type(Enum):
+        axes = 1
+        coordinates = 2
+
     position: tuple[Value, Value, Value] = field(default_factory=lambda: _value_float_tuple(3))
-    rotation: tuple[Value, Value, Value, Value, Value, Value, Value, Value, Value] \
+    _axes: tuple[Value, Value, Value, Value, Value, Value, Value, Value, Value] \
+        = field(default_factory=lambda: _value_float_tuple(9))
+    _coordinates: tuple[Value, Value, Value, Value, Value, Value, Value, Value, Value] \
         = field(default_factory=lambda: _value_float_tuple(9))
 
     @property
-    def affine_matrix(self):
-        m = ((self.rotation[0], self.rotation[1], self.rotation[2], self.position[0]),
-             (self.rotation[3], self.rotation[4], self.rotation[5], self.position[1]),
-             (self.rotation[6], self.rotation[7], self.rotation[8], self.position[2]),
+    def affine_matrix(self, which=None):
+        t = self._axes if which is None or not which == Orientation.Type.coordinates else self._coordinates
+        m = ((t[0], t[1], t[2], self.position[0]),
+             (t[3], t[4], t[5], self.position[1]),
+             (t[6], t[7], t[8], self.position[2]),
              (Value.float(0), Value.float(0), Value.float(0), Value.float(1)))
         return m
 
@@ -49,35 +56,41 @@ class Orientation:
             return v.value == 1 if isinstance(v, Value) else v
 
         # Inspired by eniius get_euler_angles
-        x = atan2_value(-self.rotation[7], self.rotation[8])  # tan(x) = sin(x) / cos(x) = -(-sx*cy)/(cx*cy)
-        z = atan2_value(-self.rotation[3], self.rotation[0])  # tan(z) = sin(z) / cos(z) = -(-cy*sz)/(cy*cz)
+        x = atan2_value(-self._axes[7], self._axes[8])  # tan(x) = sin(x) / cos(x) = -(-sx*cy)/(cx*cy)
+        z = atan2_value(-self._axes[3], self._axes[0])  # tan(z) = sin(z) / cos(z) = -(-cy*sz)/(cy*cz)
         # Ensure we know the sign of cos(y), not just its magnitude:
         cos_x, cos_z = [cos_value(a) for a in (x, z)]
         if not x.is_a(Value.Type.str) and not z.is_a(Value.Type.str):
             if abs_ch(cos_x, cos_z):
-                cos_a, sin_a, cos_y_cos_a, sin_y_sin_a = cos_x, sin_value(x), self.rotation[8], -self.rotation[7]
+                cos_a, sin_a, cos_y_cos_a, sin_y_sin_a = cos_x, sin_value(x), self._axes[8], -self._axes[7]
             else:
-                cos_a, sin_a, cos_y_cos_a, sin_y_sin_a = cos_z, sin_value(z), self.rotation[0], -self.rotation[3]
+                cos_a, sin_a, cos_y_cos_a, sin_y_sin_a = cos_z, sin_value(z), self._axes[0], -self._axes[3]
         elif not x.is_a(Value.Type.str):
-            cos_a, sin_a, cos_y_cos_a, sin_y_sin_a = cos_x, sin_value(x), self.rotation[8], -self.rotation[7]
+            cos_a, sin_a, cos_y_cos_a, sin_y_sin_a = cos_x, sin_value(x), self._axes[8], -self._axes[7]
         elif not z.is_a(Value.Type.str):
-            cos_a, sin_a, cos_y_cos_a, sin_y_sin_a = cos_z, sin_value(z), self.rotation[0], -self.rotation[3]
+            cos_a, sin_a, cos_y_cos_a, sin_y_sin_a = cos_z, sin_value(z), self._axes[0], -self._axes[3]
         else:
             raise RuntimeError("How do we prevent division by zero when both x and z are strings?")
-        y = atan2_value(self.rotation[6], cos_y_cos_a / cos_a if abs_ch(cos_a, sin_a) else sin_y_sin_a / sin_a)
+        y = atan2_value(self._axes[6], cos_y_cos_a / cos_a if abs_ch(cos_a, sin_a) else sin_y_sin_a / sin_a)
         return x, y, z
 
     @staticmethod
     def from_at_rotated(at, rotated):
         cx, cy, cz = [cos_value(degree_to_radian(r)) for r in rotated]
         sx, sy, sz = [sin_value(degree_to_radian(r)) for r in rotated]
-        # The 3x3 rotation matrix part:
-        m = (cy * cz, sx * sy * cz + cx * sz, sx * sz - cx * sy * cz,
-             -cy * sz, cx * cz - sx * sy * sz, sx * cz + cx * sy * sz,
-             sy, -sx * cy, cx * cy)
+        # Rotation matrices following the McCode first x then y then z method of applying rotations.
+        # The 3x3 rotation matrix part (which rotates the *axes* of a coordinate system):
+        axes = (cy * cz, sx * sy * cz + cx * sz, sx * sz - cx * sy * cz,
+                -cy * sz, cx * cz - sx * sy * sz, sx * cz + cx * sy * sz,
+                sy, -sx * cy, cx * cy)
+        # The coordinates of the same system rotate the opposite way, but still in the same order
+        # (All sin terms gain a negative sign)
+        coordinates = (cy * cz, sx * sy * cz - cx * sz, sx * sz + cx * sy * cz,
+                       cy * sz, cx * cz + sx * sy * sz, -sx * cz + cx * sy * sz,
+                       -sy, sx * cy, cx * cy)
         # The 3 vector part:
         v = at[0], at[1], at[2]
-        return Orientation(v, m)
+        return Orientation(v, axes, coordinates)
 
 
 def from_at_rotated(at: tuple[Value, Value, Value], rotated: tuple[Value, Value, Value]):
