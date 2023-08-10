@@ -13,6 +13,9 @@ dependencies = [
 ]
 dynamic = ["version"]
 
+[project.optional-dependencies]
+test = ["gputil"]
+
 [project.scripts]
 mcstas4 = "mccode.commands:mcstas"
 mcxtrace4 = "mccode.commands:mcxtrace"

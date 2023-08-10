@@ -1,7 +1,16 @@
 import pooch
 from pathlib import Path
+from re import Pattern
 from importlib.resources import files, as_file
 from mccode import __version__
+
+def ensure_regex_pattern(pattern):
+    import re
+    if not isinstance(pattern, Pattern) and isinstance(pattern, str):
+        pattern = re.compile(pattern)
+    if not isinstance(pattern, Pattern):
+        raise RuntimeError("No valid regex pattern from input")
+    return pattern
 
 
 class Registry:
@@ -24,6 +33,18 @@ class Registry:
     def path(self, name: str):
         pass
 
+    def filenames(self) -> list[str]:
+        pass
+
+    def search(self, regex: Pattern):
+        """Return filenames containing the regex pattern, uses regex search"""
+        regex = ensure_regex_pattern(regex)
+        return [x for x in self.filenames() if regex.search(x) is not None]
+
+    def match(self, regex: Pattern):
+        """Return regex *matching* registered file names -- which *start* with the regex pattern"""
+        regex = ensure_regex_pattern(regex)
+        return [x for x in self.filenames() if regex.match(x) is not None]
 
 
 class RemoteRegistry(Registry):
@@ -58,6 +79,9 @@ class RemoteRegistry(Registry):
 
     def path(self, name: str):
         return Path(self.pooch.fetch(self.fullname(name)))
+
+    def filenames(self) -> list[str]:
+        return [x for x in self.pooch.registry_files]
 
     def __eq__(self, other):
         if not isinstance(other, Registry):
@@ -98,6 +122,9 @@ class LocalRegistry(Registry):
 
     def path(self, name: str):
         return self.root.joinpath(self.fullname(name))
+
+    def filenames(self) -> list[str]:
+        return [str(x) for x in self.root.glob('**')]
 
     def __eq__(self, other):
         if not isinstance(other, Registry):
