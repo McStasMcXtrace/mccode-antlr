@@ -1,8 +1,10 @@
-from typing import Self
 from dataclasses import dataclass, field
-from pathlib import Path
-from numpy import nan
 from datetime import timedelta
+from pathlib import Path
+from typing import Self
+
+from numpy import nan
+
 from mccode.reader import Registry
 
 
@@ -34,13 +36,11 @@ class TestInstrExample:
         return [cls(filename, 1)]
 
     def get_display_name(self):
-        return f'{self.instrname}_{self.testnb}' if self.testnb > 1 else self.instrname
+        return f'{self.sourcefile.stem}_{self.testnb}' if self.testnb > 1 else self.sourcefile.stem
 
     def get_json_repr(self):
         jr = dict(displayname=self.get_display_name(),
                   sourcefile=self.sourcefile,
-                  localfile=self.localfile,
-                  instrname=self.instrname,
                   testnb=self.testnb,
                   parvals=self.parvals,
                   detector=self.detector,
@@ -80,24 +80,28 @@ class LineLogger:
 
 
 def get_cpu_name():
-    import os, platform, subprocess, re
-    if platform.system() == "Windows":
-        return platform.processor()
-    elif platform.system() == "Darwin":
-        os.environ['PATH'] = os.environ['PATH'] + os.pathsep + '/usr/sbin'
-        command ="sysctl -n machdep.cpu.brand_string"
-        return subprocess.check_output(command).strip()
-    elif platform.system() == "Linux":
+    from platform import system
+    from subprocess import check_output
+    if system() == "Windows":
+        from platform import processor
+        return processor()
+    elif system() == "Darwin":
+        from os import environ, pathsep
+        environ['PATH'] = environ['PATH'] + pathsep + '/usr/sbin'
+        command = "sysctl -n machdep.cpu.brand_string"
+        return check_output(command).strip()
+    elif system() == "Linux":
         command = "cat /proc/cpuinfo"
-        all_info = subprocess.check_output(command, shell=True).decode().strip()
+        all_info = check_output(command, shell=True).decode().strip()
         for line in all_info.split("\n"):
             if "model name" in line:
-                return re.sub( ".*model name.*:", "", line,1).strip()
+                from re import sub
+                return sub(".*model name.*:", "", line, 1).strip()
     return ""
 
 
 def get_nvidia_gpu_name():
-    """Used GPUtil which only knows about Nvidia GPUs"""
+    """Identify GPU (Uses GPUtil which only knows about Nvidia GPUs)"""
     import GPUtil
     gpus = GPUtil.getGPUs()
     names = ','.join(gpu.name for gpu in gpus)
@@ -123,10 +127,10 @@ def _monitor_name_file_name_match(folder, monitor_name):
     with open(folder.joinpath('mccode.sim'), 'r') as file:
         lines = file.readlines()
     for line in lines:
-        if re.match(f'  component: {monitor_name}$', line):
+        if re.match(rf"\s*component:\s*{monitor_name}$", line):
             look_for_filename = True
         if look_for_filename:
-            m = re.match('\s*filename:\s+(.+)', line)
+            m = re.match(r'\s*filename:\s+(.+)', line)
             if m:
                 filename = folder.joinpath(m.group(1))
                 if filename.is_file():
@@ -138,6 +142,61 @@ def _monitor_name_file_name_match(folder, monitor_name):
                     return zero_d_filename
                 return None
     return None
+
+
+def mccode_test_compiler(work_dir, file_path, c_compiler, c_flags, extension, registry, generator, config):
+    from pathlib import Path
+    from mccode.reader import Reader
+    from mccode.compiler.c import compile_instrument
+    # only the provided (remote) registry should be necessary for test instruments
+    reader = Reader(registries=[registry])
+    instrument = reader.get_instrument(file_path)
+    options = {'compiler': c_compiler, 'flags': c_flags, 'output': Path(work_dir).joinpath(instrument.name + extension)}
+    try:
+        binary_path = compile_instrument(instrument, options, registry=registry, generator=generator, config=config)
+    except RuntimeError:
+        return False, Path()
+    return True, binary_path
+
+
+def mccode_c_settings():
+    import platform
+    system = platform.system()
+    config = dict(default_main=True, enable_trace=False, portable=False, include_runtime=True,
+                  embed_instrument_file=False, verbose=False)
+    if system == "Linux":
+        return "gcc", [], ".out", config
+    elif system == "Darwin":
+        return "clang", [], ".out", config
+    elif system == "Windows":
+        return "mingw", [], ".exe", config
+    return platform.python_compiler().split()[0].lower(), [], "", config
+
+
+def mcstas_test_compiler(work_dir, file_path):
+    from mccode.reader import MCSTAS_REGISTRY
+    from mccode.translators.target import MCSTAS_GENERATOR
+    cc, flags, ext, config = mccode_c_settings()
+    return mccode_test_compiler(work_dir, file_path, cc, flags, ext, MCSTAS_REGISTRY, MCSTAS_GENERATOR, config)
+
+
+def mcxtrace_test_compiler(work_dir, file_path):
+    from mccode.reader import MCXTRACE_REGISTRY
+    from mccode.translators.target import MCXTRACE_GENERATOR
+    cc, flags, ext, config = mccode_c_settings()
+    return mccode_test_compiler(work_dir, file_path, cc, flags, ext, MCXTRACE_REGISTRY, MCXTRACE_GENERATOR, config)
+
+
+def mccode_runner(binary_path, parameters: str):
+    from tempfile import mkdtemp
+    from subprocess import run, CalledProcessError
+    output_path = mkdtemp(prefix=binary_path.stem, dir=binary_path.parent.resolve())
+    command = [str(binary_path.resolve()), *(parameters.split()), '--dir', output_path]
+    try:
+        proc = run(command, check=True, capture_output=True)
+    except CalledProcessError as error:
+        return False, str(error), output_path
+    return True, proc.stdout, output_path
 
 
 def mccode_test(compiler, runner, registry: Registry, search_pattern=None, instr_count=None,
@@ -182,16 +241,18 @@ def mccode_test(compiler, runner, registry: Registry, search_pattern=None, instr
     # Build test objects from the '%Example:' line(s) in each file:
     tests = [x for filepath in filepaths for x in TestInstrExample.list_from_file(filepath)]
 
+    binaries = dict()
+
     # Move into a temporary directory to ensure compilation/run times are from scratch
     with tempfile.TemporaryDirectory() as workdir:
         logging.info("Compiling instruments")
         for test in tests:
-            if not (test.testnb == 0 and skip_non_test):
+            if test.sourcefile not in binaries and (test.testnb != 0 or not skip_non_test):
                 t1 = datetime.now()
-                test.compiled = compiler(workdir, test.sourcefile)
+                binaries[test.sourcefile] = compiler(workdir, test.sourcefile)
                 test.compiletime = datetime.now() - t1
 
-                if test.compiled:
+                if binaries[test.sourcefile][0]:
                     logging.info(f'%-{test.sourcefile.stem:>{longest_name}s}: {test.compiletime}')
                 else:
                     logging.info(f'%-{test.sourcefile.stem:>{longest_name}s}: COMPILE ERROR')
@@ -200,7 +261,7 @@ def mccode_test(compiler, runner, registry: Registry, search_pattern=None, instr
 
         logging.info("Running tests")
         for test in tests:
-            if not test.compiled:
+            if not binaries.get(test.sourcefile, (False, None))[0]:
                 logging.info(f'%-{test.sourcefile.stem:>{longest_name}s}: No compile')
                 continue
             if test.testnb < 1:
@@ -208,7 +269,7 @@ def mccode_test(compiler, runner, registry: Registry, search_pattern=None, instr
                 continue
 
             t1 = datetime.now()
-            test.didrun, stdout, output_dir = runner(workdir, test.sourcefile)
+            test.didrun, stdout, output_dir = runner(binaries[test.sourcefile][1], test.parvals)
             test.runtime = datetime.now() - t1
 
             if test.didrun:
@@ -244,3 +305,13 @@ def mccode_test(compiler, runner, registry: Registry, search_pattern=None, instr
     results['_meta'] = {'date': datetime.now().isoformat(), 'hostname': get_hostname(),
                         'user': get_username(), 'cpu_type': get_cpu_name(), 'gpu_type': get_nvidia_gpu_name()}
     return results
+
+
+def mcstas_test(search_pattern=None, instr_count=None, skip_non_test: bool = False):
+    from mccode.reader import MCSTAS_REGISTRY as REGISTRY
+    return mccode_test(mcstas_test_compiler, mccode_runner, REGISTRY, search_pattern, instr_count, skip_non_test)
+
+
+def mcxtrace_test(search_pattern=None, instr_count=None, skip_non_test: bool = False):
+    from mccode.reader import MCXTRACE_REGISTRY as REGISTRY
+    return mccode_test(mcxtrace_test_compiler, mccode_runner, REGISTRY, search_pattern, instr_count, skip_non_test)

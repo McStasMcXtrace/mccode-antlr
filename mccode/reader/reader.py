@@ -1,3 +1,5 @@
+from typing import Union
+from pathlib import Path
 from dataclasses import dataclass, field
 from .registry import Registry, MCSTAS_REGISTRY, registries_match, registry_from_specification
 from ..comp import Comp
@@ -77,22 +79,21 @@ class Reader:
             self.add_component(name)
         return self.components[name]
 
-    def get_instrument(self, name: str):
+    def get_instrument(self, name: Union[str, Path]):
         """Load and parse an instr Instrument definition file
 
         In McCode3 fashion, the instrument file *should* be in the current working directory.
         In new-fashion, the registry/registries will be checked if it is not.
         """
-        from pathlib import Path
         from antlr4 import CommonTokenStream, FileStream
         from ..grammar import McInstrParser, McInstrLexer
         from ..instr import InstrVisitor
-        path = Path(name)
+        path = name if isinstance(name, Path) else Path(name)
         if path.suffix != '.instr':
-            path = Path(f'{name}.instr')
-        if not path.exists() and path.is_file():
+            path = path.with_suffix(f'{path.suffix}.instr')
+        if not path.exists() and not path.is_file():
             path = self.locate(path.name)  # include the .instr for the search
-        if not path.exists() and path.is_file():
+        if not path.exists() and not path.is_file():
             raise RuntimeError(f'Can not locate instr file for {name}.')
         filename = str(path.resolve())
         lexer = McInstrLexer(FileStream(filename))
@@ -103,5 +104,7 @@ class Reader:
         if not isinstance(res, Instr):
             raise RuntimeError(f'Parsing instrument file {filename} did not produce an Instr object')
         res.source = filename
+        res.flags = tuple(self.c_flags)
+        res.registries = tuple(self.registries)
         return res
 

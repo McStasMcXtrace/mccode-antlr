@@ -13,18 +13,15 @@ CONFIG = dict(default_main=True, enable_trace=True, portable=True, include_runti
 
 # Follow the logic of codegen.c(.in) from McCode-3, but make use of visitor semantics for possible alternate runtimes
 class TargetVisitor:
-    def __init__(self, instr: Instr, generate: dict = None, config: dict = None, verbose=False,
-                 registries=None):
+    def __init__(self, instr: Instr, generate: dict = None, config: dict = None, verbose=False):
         self.runtime = MCSTAS_GENERATOR if generate is None else generate
         self.config = CONFIG if config is None else config
         self.source = instr
-        self.sink = None
         self.output = None
         self.verbose = verbose
         self.warnings = 0
         self.instrument_uservars = ()
         self.component_uservars = dict()
-        self.registries = [] if registries is None else registries
         self.libraries = []
         self.typedefs = None
         self.component_declared_parameters = dict()
@@ -48,6 +45,10 @@ class TargetVisitor:
         if index != 1 and index != 2:
             raise RuntimeError(f'Unknown runtime for project index {index}')
         return index == 1
+
+    @property
+    def registries(self):
+        return self.source.registries
 
     def known(self, name: str, which: str = None):
         if self.registries is None:
@@ -88,10 +89,12 @@ class TargetVisitor:
             raise RuntimeError('Printing only enabled once translation has begun!')
         print(value, file=self.output)
 
-    def translate(self, filename=None):
+    def translate(self, reprocess=True):
+        if self.output is not None:
+            if not reprocess:
+                return self.output
+            self.output.close()
         self.output = StringIO()
-        self.sink = filename
-
         self.visit_header()
         self.visit_declare()
         self.set_jump_absolute_targets()
@@ -107,14 +110,28 @@ class TargetVisitor:
         self.visit_finally()
         self.visit_display()
         self.visit_macros()
-
         if self.verbose and self.warnings:
             print(f"Build of instrument {self.source.name} had {self.warnings} warnings")
+        return self.output
 
-        if self.sink:
-            with open(self.sink, 'w') as file:
+    def save(self, filename=None, close=True, reprocess=True):
+        self.translate(reprocess=reprocess)
+        if filename:
+            with open(filename, 'w') as file:
                 file.write(self.output.getvalue())
-        self.output.close()
+        if close:
+            self.output.close()
+            self.output = None
+
+    def contents(self):
+        if self.output is None:
+            output = self.translate(reprocess=False)
+            string = output.getvalue()
+            output.close()
+            self.output = None
+        else:
+            string = self.output.getvalue()
+        return string
 
     def detect_skipable_transforms(self):
         def can_skip(comp):

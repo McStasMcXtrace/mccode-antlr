@@ -1,3 +1,5 @@
+from mccode.reader import Registry
+
 def mccode_script_parse(prog: str):
     from argparse import ArgumentParser
     from pathlib import Path
@@ -34,14 +36,13 @@ def mccode_script_parse(prog: str):
     return args
 
 
-def mcstas():
+def mccode(flavor: str, registry: Registry, generator: dict):
     from pathlib import Path
-    from mccode.reader import Reader, MCSTAS_REGISTRY, LIBC_REGISTRY
+    from mccode.reader import Reader
     from mccode.reader import LocalRegistry
     from mccode.translators.c import CTargetVisitor
-    from mccode.translators.target import MCSTAS_GENERATOR
 
-    args = mccode_script_parse('mcstas')
+    args = mccode_script_parse(flavor)
 
     config = dict(default_main=(not args.no_main) if args.no_main is not None else True,
                   enable_trace=args.trace if args.trace is not None else False,
@@ -51,9 +52,8 @@ def mcstas():
                   verbose=args.verbose if args.verbose is not None else False,
                   output=args.output_file if args.output_file is not None else args.filename.with_suffix('.c')
                   )
-
-    # McStas always requires access to the remote Pooch repository:
-    registries = [MCSTAS_REGISTRY]
+    # McCode always requires access to a remote Pooch repository:
+    registries = [registry]
     # A user can specify extra (local) directories to search for included files using -I or --search-dir
     registries.extend([LocalRegistry(d.stem, d) for d in args.search_dir])
     # And McCode-3 users expect to always have access to files in the current working directory
@@ -63,51 +63,19 @@ def mcstas():
     reader = Reader(registries=registries)
     # Read the provided .instr file, including all specified .instr and .comp files along the way
     instrument = reader.get_instrument(args.filename)
-
-    # Conversion to C code requires access to the runtime library files (even if not being embedded)
-    registries.append(LIBC_REGISTRY)
     # Construct the object which will translate the Python instrument to C
-    visitor = CTargetVisitor(instrument, generate=MCSTAS_GENERATOR, config=config, verbose=config['verbose'],
-                             registries=reader.registries)
+    visitor = CTargetVisitor(instrument, generate=generator, config=config, verbose=config['verbose'])
     # Go through the instrument, finish by writing the output file:
-    visitor.translate(filename=config['output'])
+    visitor.save(filename=config['output'])
+
+
+def mcstas():
+    from mccode.reader import MCSTAS_REGISTRY
+    from mccode.translators.target import MCSTAS_GENERATOR
+    mccode('mcstas', MCSTAS_REGISTRY, MCSTAS_GENERATOR)
 
 
 def mcxtrace():
-    from pathlib import Path
-    from mccode.reader import Reader, MCXTRACE_REGISTRY, LIBC_REGISTRY
-    from mccode.reader import LocalRegistry
-    from mccode.translators.c import CTargetVisitor
+    from mccode.reader import MCXTRACE_REGISTRY
     from mccode.translators.target import MCXTRACE_GENERATOR
-
-    args = mccode_script_parse('mcxtrace')
-
-    config = dict(default_main=(not args.no_main) if args.no_main is not None else True,
-                  enable_trace=args.trace if args.trace is not None else False,
-                  portable=args.portable if args.portable is not None else False,
-                  include_runtime=(not args.no_runtime) if args.no_runtime is not None else True,
-                  embed_instrument_file=args.source if args.source is not None else False,
-                  verbose=args.verbose if args.verbose is not None else False,
-                  output=args.output_file if args.output_file is not None else args.filename.with_suffix('.c')
-                  )
-
-    # McXtrace always requires access to the remote Pooch repository:
-    registries = [MCXTRACE_REGISTRY]
-    # A user can specify extra (local) directories to search for included files using -I or --search-dir
-    registries.extend([LocalRegistry(d.stem, d) for d in args.search_dir])
-    # And McCode-3 users expect to always have access to files in the current working directory
-    registries.append(LocalRegistry('working_directory', f'{Path().resolve()}'))
-
-    # Construct the object which will read the instrument and component files, producing Python objects
-    reader = Reader(registries=registries)
-    # Read the provided .instr file, including all specified .instr and .comp files along the way
-    instrument = reader.get_instrument(args.filename)
-
-    # Conversion to C code requires access to the runtime library files (even if not being embedded)
-    registries.append(LIBC_REGISTRY)
-    # Construct the object which will translate the Python instrument to C
-    visitor = CTargetVisitor(instrument, generate=MCXTRACE_GENERATOR, config=config, verbose=config['verbose'],
-                             registries=reader.registries)
-    # Go through the instrument, finish by writing the output file:
-    visitor.translate(filename=config['output'])
-
+    mccode('mcxtrace', MCXTRACE_REGISTRY, MCXTRACE_GENERATOR)

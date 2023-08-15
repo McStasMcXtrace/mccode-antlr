@@ -1,12 +1,13 @@
 """Translates a McComp instrument from its intermediate form to a C runtime source file."""
 from collections import namedtuple
-from ..reader import LIBC_REGISTRY
+from ..reader import Registry, LIBC_REGISTRY
 from ..instr import Instr, Instance
 from .target import TargetVisitor
 from .c_listener import extract_c_declared_variables
 
 # For use in keeping track of 'USERVAR' particle struct injections
 CDeclaration = namedtuple("CDeclaration", "name type init is_pointer is_array orig")
+
 
 class CTargetVisitor(TargetVisitor, target_language='c'):
     def _file_contents(self, filename):
@@ -126,7 +127,7 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
         """
         # Make sure the registry list contains the C library registry, so that we can find and include files
         if not any(reg == LIBC_REGISTRY for reg in self.registries):
-            self.registries.append(LIBC_REGISTRY)
+            self.source.registries += (LIBC_REGISTRY, )
 
         libraries = set()
         inst = self.source
@@ -177,7 +178,7 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
             self.embed_file("mccode-r.c")
             self.embed_file('mcstas-r.c' if is_mcstas else 'mcxtrace-r.c')
             if self.verbose:
-                print(f"Compile '{self.sink} -DUSE_NEXUS -lNeXus' to enable NeXus support")
+                print(f"Compile with flags '-DUSE_NEXUS -lNeXus' to enable NeXus support")
         else:
             # This only works if the module is *not* a compressed archive
             # If it is, we would need to do some trickery to ... write out the
@@ -273,4 +274,4 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
         self.out(cogen_getcompindex_fct(self.source))
         self.embed_file('metadata-r.c')
         self.embed_file('mccode_main.c')
-        self.out(f'/* end of generated C code {self.sink} */')
+        self.out(f'/* end of generated C code for {self.source} */')

@@ -1,6 +1,7 @@
 """Data structures required for representing the contents of a McCode instr file"""
 from dataclasses import dataclass, field
 from ..common import InstrumentParameter, MetaData, parameter_name_present, RawC, blocks_to_raw_c
+from ..reader import Registry
 from .instance import Instance
 from .group import Group
 
@@ -25,6 +26,8 @@ class Instr:
     save: tuple[RawC] = field(default_factory=tuple)  # statements executed after TRACE to save results
     final: tuple[RawC] = field(default_factory=tuple)  # clean-up memory for global declare parameters
     groups: dict[str, Group] = field(default_factory=dict)
+    flags: tuple[str] = field(default_factory=tuple)  # (C) flags needed for compilation of the (translated) instrument
+    registries: tuple[Registry] = field(default_factory=tuple)  # the registries used by the reader to populate this
 
     def add_component(self, a: Instance):
         if any(x.name == a.name for x in self.components):
