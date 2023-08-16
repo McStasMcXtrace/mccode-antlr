@@ -23,7 +23,7 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
         return contents
 
     def _handle_raw_c_include(self, raw_c: str):
-        import regex as re
+        import re
         re_lib = re.compile(r'^\s*%include\s*"(?P<libname>[^"\n\.]+)"\s*$', re.MULTILINE)
         re_inc = re.compile(r'^\s*%include\s*"(?P<filename>[^"\n]+)"\s*$', re.MULTILINE)
         # Include statements without an extension are library includes (.h, plus .c if embedding the runtime)

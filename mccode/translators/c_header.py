@@ -59,7 +59,7 @@ def header_pre_runtime(is_mcstas, source, runtime: dict, config: dict, typedefs:
  * Instrument: {source.source} ({source.name})
  * Date: {datetime.now()}
  * File: {config.get('output')}
- * CFLAGS={source.dependency}
+ * CFLAGS={' '.join(set(source.flags))}
  */
  
 #define MCCODE_STRING "{runtime.get("fancy")}

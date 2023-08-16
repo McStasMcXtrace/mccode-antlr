@@ -18,19 +18,19 @@ class Registry:
     root = None
     pooch = None
 
-    def known(self, name: str):
+    def known(self, name: str, ext: str = None):
         pass
 
     def unique(self, name: str):
         pass
 
-    def fullname(self, name: str):
+    def fullname(self, name: str, ext: str = None):
         pass
 
-    def is_available(self, name: str):
+    def is_available(self, name: str, ext: str = None):
         pass
 
-    def path(self, name: str):
+    def path(self, name: str, ext: str = None):
         pass
 
     def filenames(self) -> list[str]:
@@ -45,6 +45,13 @@ class Registry:
         """Return regex *matching* registered file names -- which *start* with the regex pattern"""
         regex = ensure_regex_pattern(regex)
         return [x for x in self.filenames() if regex.match(x) is not None]
+
+
+def _name_plus_suffix(name: str, suffix: str = None):
+    path = Path(name)
+    if suffix is not None and path.suffix != suffix:
+        return path.with_suffix(f'{path.suffix}{suffix}').as_posix()
+    return path.as_posix()
 
 
 class RemoteRegistry(Registry):
@@ -65,20 +72,51 @@ class RemoteRegistry(Registry):
         else:
             raise RuntimeError(f"The provided filename {filename} is not a path or file packaged with this module")
 
-    def known(self, name: str):
+    def known(self, name: str, ext: str = None):
+        compare = _name_plus_suffix(name, ext)
+        # the files *in* the registry are already posix paths, so that makes life easier
+        if any(x.endswith(compare) for x in self.pooch.registry_files):
+            return True
+        # fall back to matching without the extension:
+        if any(Path(x).with_suffix('').as_posix().endswith(compare) for x in self.pooch.registry_files):
+            return True
+        # Or matching *any* file that contains name
         return any(name in x for x in self.pooch.registry_files)
 
     def unique(self, name: str):
         return sum(name in x for x in self.pooch.registry_files) == 1
 
-    def fullname(self, name: str):
-        return list(filter(lambda x: name in x, self.pooch.registry_files))[0]
+    def fullname(self, name: str, ext: str = None, exact: bool = True):
+        compare = _name_plus_suffix(name, ext)
+        # the files *in* the registry are already posix paths, so that makes life easier
+        # first step, exact match:
+        for registry_file in self.pooch.registry_files:
+            if registry_file == compare:
+                return registry_file
+        # second step, exact match to filename:
+        for registry_file in self.pooch.registry_files:
+            if Path(registry_file).parts[-1] == compare:
+                return registry_file
+        # fall back to matching without the extension:
+        if not exact:
+            for registry_file in self.pooch.registry_files:
+                if Path(registry_file).with_suffix('').as_posix() == compare:
+                    return registry_file
+            # nearly-giving-up match filename without extension against the comparison
+            for registry_file in self.pooch.registry_files:
+                if Path(registry_file).with_suffix('').parts[-1] == compare:
+                    return registry_file
+        # Or matching *any* file that contains name
+        matches = list(filter(lambda x: name in x, self.pooch.registry_files))
+        if len(matches) != 1:
+            raise RuntimeError(f'More than one match for {name}:{ext}, which is required of:\n{matches}')
+        return matches[0]
 
-    def is_available(self, name: str):
-        return self.pooch.registry_files(self.fullname(name))
+    def is_available(self, name: str, ext: str = None, exact: bool = True):
+        return self.pooch.registry_files(self.fullname(name, ext, exact))
 
-    def path(self, name: str):
-        return Path(self.pooch.fetch(self.fullname(name)))
+    def path(self, name: str, ext: str = None, exact: bool = True):
+        return Path(self.pooch.fetch(self.fullname(name, ext, exact)))
 
     def filenames(self) -> list[str]:
         return [x for x in self.pooch.registry_files]
@@ -108,20 +146,45 @@ class LocalRegistry(Registry):
     def _file_iterator(self, name: str):
         return self.root.glob(f'**/{name}')
 
-    def known(self, name: str):
-        return len(list(self._file_iterator(name))) > 0
+    def _exact_file_iterator(self, name: str):
+        return self.root.glob(name)
+
+    def known(self, name: str, ext: str = None):
+        compare = _name_plus_suffix(name, ext)
+        return len(list(self._file_iterator(compare))) > 0
 
     def unique(self, name: str):
         return len(list(self._file_iterator(name))) == 1
 
-    def fullname(self, name: str):
-        return list(self._file_iterator(name))[0]
+    def fullname(self, name: str, ext: str = None, exact: bool = True):
+        compare = _name_plus_suffix(name, ext)
+        # Complete match
+        is_compare = list(self._exact_file_iterator(compare))
+        if len(is_compare) == 1:
+            return is_compare[0]
+        # Complete match if name happens to be missing the extension
+        is_name = list(self._exact_file_iterator(name))
+        if len(is_name) == 1:
+            return is_name[0]
+        if not exact:
+            ends_with_compare = list(self._file_iterator(compare))
+            if len(ends_with_compare) == 1:
+                return ends_with_compare[0]
+            # Complete match if name happens to be missing the extension
+            ends_with_name = list(self._file_iterator(name))
+            if len(ends_with_name) == 1:
+                return ends_with_name[0]
+        # Or matching *any* file that contains name
+        matches = list(self._file_iterator(name))
+        if len(matches) != 1:
+            raise RuntimeError(f'More than one match for {name}:{ext}, which is required of:\n{matches}')
+        return matches[0]
 
-    def is_available(self, name: str):
-        return self.known(name)
+    def is_available(self, name: str, ext: str = None):
+        return self.known(name, ext)
 
-    def path(self, name: str):
-        return self.root.joinpath(self.fullname(name))
+    def path(self, name: str, ext: str = None, exact: bool = True):
+        return self.root.joinpath(self.fullname(name, ext, exact))
 
     def filenames(self) -> list[str]:
         return [str(x) for x in self.root.glob('**')]

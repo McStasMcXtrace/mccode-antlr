@@ -94,8 +94,13 @@ class McInstrVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by McInstrParser#instance_parameter.
-    def visitInstance_parameter(self, ctx:McInstrParser.Instance_parameterContext):
+    # Visit a parse tree produced by McInstrParser#InstanceParameterExpr.
+    def visitInstanceParameterExpr(self, ctx:McInstrParser.InstanceParameterExprContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by McInstrParser#InstanceParameterString.
+    def visitInstanceParameterString(self, ctx:McInstrParser.InstanceParameterStringContext):
         return self.visitChildren(ctx)
 
 

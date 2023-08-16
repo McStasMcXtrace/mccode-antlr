@@ -84,7 +84,7 @@ def cogen_comp_trace_class(is_mcstas, comp, source, declared_parameters, instr_u
     extended = [(n, i) for n, i in enumerate(source.components) if i.type.name == comp.name and len(i.extend)]
 
     if len(extended) == 0 and all(x.is_empty for x in comp.trace):
-        return []
+        return ''
 
     lines = [
         '#pragma acc routine',
@@ -103,7 +103,7 @@ def cogen_comp_trace_class(is_mcstas, comp, source, declared_parameters, instr_u
     # This is the 'symbol' type
     declared_types = [t for _, (t, _) in declared_parameters.items()]
     # there must be a better way than this
-    is_symbol = [t is 'symbol' for t in declared_types]
+    is_symbol = [t == 'symbol' for t in declared_types]
     # TODO FIXME This should be looping through setting parameters. It is probably wrong.
     if any(is_symbol):
         for i, inst in [(i, inst) for i, inst in enumerate(source.components) if inst.type.name == comp.name]:

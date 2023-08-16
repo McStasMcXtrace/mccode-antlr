@@ -125,8 +125,8 @@ class Value:
 
     @staticmethod
     def apply_elementwise_binary_function(f, fname: str, va, vb):
-        ta = va.data_type if hasattr(va, 'data_type') else value_type(str(type(va)))
-        tb = vb.data_type if hasattr(vb, 'data_type') else value_type(str(type(vb)))
+        ta = va.data_type if hasattr(va, 'data_type') else value_type(va)
+        tb = vb.data_type if hasattr(vb, 'data_type') else value_type(vb)
         a = va.value if hasattr(va, 'value') else va
         b = vb.value if hasattr(vb, 'value') else vb
         if a is None or b is None:
@@ -156,25 +156,25 @@ class Value:
         return rv
 
     def __mul__(self, other):
-        if self.data_type == Value.Type.str and (isinstance(other, Value) and other.is_a(Value.Type.str)):
+        if self.data_type == Value.Type.str or (isinstance(other, Value) and other.is_a(Value.Type.str)):
             return Value(Value.Type.str, f'{self.value} * {other.value}')
         v = other.value if isinstance(other, Value) else other
         return self._binary_op(v, lambda x: x * v, '*')
 
     def __truediv__(self, other):
-        if self.data_type == Value.Type.str and (isinstance(other, Value) and other.is_a(Value.Type.str)):
+        if self.data_type == Value.Type.str or (isinstance(other, Value) and other.is_a(Value.Type.str)):
             return Value(Value.Type.str, f'{self.value} / {other.value}')
         v = other.value if isinstance(other, Value) else other
         return self._binary_op(v, lambda x: x / v, '/')
 
     def __add__(self, other):
-        if self.data_type == Value.Type.str and (isinstance(other, Value) and other.is_a(Value.Type.str)):
+        if self.data_type == Value.Type.str or (isinstance(other, Value) and other.is_a(Value.Type.str)):
             return Value(Value.Type.str, f'{self.value} + {other.value}')
         v = other.value if isinstance(other, Value) else other
         return self._binary_op(v, lambda x: x + v, '+')
 
     def __sub__(self, other):
-        if self.data_type == Value.Type.str and (isinstance(other, Value) and other.is_a(Value.Type.str)):
+        if self.data_type == Value.Type.str or (isinstance(other, Value) and other.is_a(Value.Type.str)):
             return Value(Value.Type.str, f'{self.value} - {other.value}')
         v = other.value if isinstance(other, Value) else other
         return self._binary_op(v, lambda x: x - v, '-')
@@ -234,7 +234,7 @@ class ComponentParameter:
     value: Value
 
     def compatible_value(self, value):
-        vt = value.data_type if isinstance(value, Value) else value_type(type(value))
+        vt = value.data_type if isinstance(value, Value) else value_type(value)
         vv = value.value if isinstance(value, Value) else value
         dt = self.value.data_type
         if vt == dt:
@@ -254,14 +254,15 @@ def parameter_name_present(parameters: tuple[Union[InstrumentParameter, Componen
     return any(name == x.name for x in parameters)
 
 
-def value_type(s: str):
-    if s == 'str':
+def value_type(value):
+    """Determine the type from type(value) or str(type(value))"""
+    if isinstance(value, str):
         return Value.Type.str
-    elif s == 'float' or s == 'double':
+    if isinstance(value, float):
         return Value.Type.float
-    elif s == 'int':
+    if isinstance(value, int):
         return Value.Type.int
-    raise RuntimeError(f'How do I handle {s} to Value.Type conversion?')
+    raise RuntimeError(f'How do I handle {type(s)} to Value.Type conversion?')
 
 
 def mccode_c_type_name(vt: Value.Type):

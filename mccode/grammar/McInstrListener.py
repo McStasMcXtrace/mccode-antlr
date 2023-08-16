@@ -161,12 +161,21 @@ class McInstrListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by McInstrParser#instance_parameter.
-    def enterInstance_parameter(self, ctx:McInstrParser.Instance_parameterContext):
+    # Enter a parse tree produced by McInstrParser#InstanceParameterExpr.
+    def enterInstanceParameterExpr(self, ctx:McInstrParser.InstanceParameterExprContext):
         pass
 
-    # Exit a parse tree produced by McInstrParser#instance_parameter.
-    def exitInstance_parameter(self, ctx:McInstrParser.Instance_parameterContext):
+    # Exit a parse tree produced by McInstrParser#InstanceParameterExpr.
+    def exitInstanceParameterExpr(self, ctx:McInstrParser.InstanceParameterExprContext):
+        pass
+
+
+    # Enter a parse tree produced by McInstrParser#InstanceParameterString.
+    def enterInstanceParameterString(self, ctx:McInstrParser.InstanceParameterStringContext):
+        pass
+
+    # Exit a parse tree produced by McInstrParser#InstanceParameterString.
+    def exitInstanceParameterString(self, ctx:McInstrParser.InstanceParameterStringContext):
         pass
 
 

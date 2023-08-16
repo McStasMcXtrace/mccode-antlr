@@ -32,11 +32,11 @@ class Reader:
     def add_c_flags(self, flags):
         self.c_flags.append(flags)
 
-    def locate(self, name: str, which: str = None):
+    def locate(self, name: str, which: str = None, ext: str = None):
         registries = self.registries if which is None else [x for x in self.registries if x.name in which]
         for reg in registries:
-            if reg.known(name):
-                return reg.path(name)
+            if reg.known(name, ext):
+                return reg.path(name, ext)
         names = [reg.name for reg in registries]
         msg = "registry " + names[0] if len(names) == 1 else 'registries: ' + ','.join(names)
         raise RuntimeError(f'{name} not found in {msg}')
@@ -63,7 +63,7 @@ class Reader:
         from antlr4 import CommonTokenStream, FileStream
         from ..grammar import McCompLexer, McCompParser
         from ..comp import CompVisitor
-        filename = str(self.locate(name).resolve())
+        filename = str(self.locate(name, ext='.comp').resolve())
         lexer = McCompLexer(FileStream(filename))
         tokens = CommonTokenStream(lexer)
         parser = McCompParser(tokens)

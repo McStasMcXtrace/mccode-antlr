@@ -155,7 +155,7 @@ def mccode_test_compiler(work_dir, file_path, target, registry, generator):
     config = dict(default_main=True, enable_trace=False, portable=False, include_runtime=True,
                   embed_instrument_file=False, verbose=False)
     try:
-        binary_path = compile_instrument(inst, target, output, registry=registry, generator=generator, config=config)
+        binary_path = compile_instrument(inst, target, output, generator=generator, config=config)
     except RuntimeError:
         return False, Path()
     return True, binary_path
@@ -207,16 +207,20 @@ def mccode_test(compiler, runner, mpi: int = None, acc: bool = False, nexus: boo
     return _mccode_test(partial(compiler, target), partial(runner, target), **kwargs)
 
 
-def mcstas_test(search_pattern=None, instr_count=None, skip_non_test: bool = False, nproc: int = 1, openacc: bool = False):
+def mcstas_test(search_pattern=None, instr_count=None, skip_non_test: bool = False,
+                mpi: int = None, acc: bool = False, nexus: bool = False, n_particles: int = 1000):
     from mccode.reader import MCSTAS_REGISTRY as REGISTRY
-    return mccode_test(mcstas_test_compiler, mcstas_test_runner, nproc, openacc, registry=REGISTRY,
-                       search_pattern=search_pattern, instr_count=instr_count, skip_non_test=skip_non_test)
+    return mccode_test(mcstas_test_compiler, mcstas_test_runner, mpi, acc, nexus, registry=REGISTRY,
+                       search_pattern=search_pattern, instr_count=instr_count, skip_non_test=skip_non_test,
+                       n_particles=n_particles)
 
 
-def mcxtrace_test(search_pattern=None, instr_count=None, skip_non_test: bool = False, nproc: int = 1, openacc: bool = False):
+def mcxtrace_test(search_pattern=None, instr_count=None, skip_non_test: bool = False,
+                mpi: int = None, acc: bool = False, nexus: bool = False, n_particles: int = 1000):
     from mccode.reader import MCXTRACE_REGISTRY as REGISTRY
-    return mccode_test(mcxtrace_test_compiler, mcxtrace_test_runner, nproc, openacc, registry=REGISTRY,
-                       search_pattern=search_pattern, instr_count=instr_count, skip_non_test=skip_non_test)
+    return mccode_test(mcxtrace_test_compiler, mcxtrace_test_runner, mpi, acc, nexus, registry=REGISTRY,
+                       search_pattern=search_pattern, instr_count=instr_count, skip_non_test=skip_non_test,
+                       n_particles=n_particles)
 
 
 def _mccode_test(compiler, runner, registry: Registry, search_pattern=None, instr_count=None,
@@ -267,6 +271,7 @@ def _mccode_test(compiler, runner, registry: Registry, search_pattern=None, inst
     with tempfile.TemporaryDirectory() as workdir:
         logging.info("Compiling instruments")
         for test in tests:
+            print(test)
             if test.sourcefile not in binaries and (test.testnb != 0 or not skip_non_test):
                 t1 = datetime.now()
                 binaries[test.sourcefile] = compiler(workdir, test.sourcefile)
@@ -328,3 +333,28 @@ def _mccode_test(compiler, runner, registry: Registry, search_pattern=None, inst
 
 
 
+def main(name, program):
+    from argparse import ArgumentParser
+    parser = ArgumentParser(name, description=f'Test instrument compilation and runtime for {name}')
+    parser.add_argument('-s', '--search', help='Regular expression positive filter for instrument names', default=None)
+    parser.add_argument('-c', '--count', help='Maximum number of instruments to test', default=None)
+    parser.add_argument('-k', '--skip', action='store_true', help='Skip instruments without test cases')
+    parser.add_argument('--mpi', type=int, help='Number of mpi processes to use', default=None)
+    parser.add_argument('--nexus', action='store_true', help='Whether to use NeXus output')
+    parser.add_argument('-n', '--ncount', type=int, help='Number of particles to simulate per test', default=1000)
+
+    args = parser.parse_args()
+    results = program(search_pattern=args.search, instr_count=args.count, skip_non_test=args.skip, mpi=args.mpi,
+                      nexus=args.nexus, n_particles=args.ncount)
+    results['_meta']['mpi'] = args.mpi
+    results['_meta']['ncount'] = args.ncount
+
+def mcstas_test_main():
+    return main('mcstas_test', mcstas_test)
+
+def mcxtract_test_main():
+    return main('mcxtrace_test', mcxtrace_test)
+
+
+if __name__ == '__main__':
+    mcstas_test_main()

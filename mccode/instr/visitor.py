@@ -191,7 +191,7 @@ class InstrVisitor(McInstrVisitor):
         self.state.get_component(str(ctx.Identifier()))
 
     def visitCoords(self, ctx: McInstrParser.CoordsContext):
-        return tuple([self.visit(x) for x in ctx.expr()])
+        return tuple([Value.best(self.visit(x)) for x in ctx.expr()])
 
     def visitReference(self, ctx: McInstrParser.ReferenceContext):
         # ABSOLUTE or RELATIVE ABSOLUTE -> None
@@ -199,7 +199,6 @@ class InstrVisitor(McInstrVisitor):
 
     def visitDependency(self, ctx: McInstrParser.DependencyContext):
         return str(ctx.StringLiteral())
-
 
     def visitDeclareBlock(self, ctx: McInstrParser.DeclareBlockContext):
         self.state.DECLARE(self.visit(ctx.unparsed_block()))
