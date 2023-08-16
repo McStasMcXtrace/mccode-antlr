@@ -3,7 +3,6 @@ from pathlib import Path
 from dataclasses import dataclass, field
 from .registry import Registry, MCSTAS_REGISTRY, registries_match, registry_from_specification
 from ..comp import Comp
-from ..instr import Instr
 
 
 @dataclass
@@ -87,7 +86,7 @@ class Reader:
         """
         from antlr4 import CommonTokenStream, FileStream
         from ..grammar import McInstrParser, McInstrLexer
-        from ..instr import InstrVisitor
+        from ..instr import InstrVisitor, Instr
         path = name if isinstance(name, Path) else Path(name)
         if path.suffix != '.instr':
             path = path.with_suffix(f'{path.suffix}.instr')
