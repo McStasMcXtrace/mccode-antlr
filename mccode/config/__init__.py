@@ -20,7 +20,8 @@ def _platform_defaults():
         raise RuntimeError(f"Can not locate platforms.yaml in module files (looking for {platforms_file}")
 
     with as_file(platforms_file) as file:
-        platform_configs = yaml.safe_load(file)
+        with open(file, 'r') as data:
+            platform_configs = yaml.safe_load(data)
 
     system = platform.system()  # "Linux", "Darwin", "Windows", ...
     if system not in platform_configs:
@@ -29,4 +30,5 @@ def _platform_defaults():
     return platform_configs[system]
 
 
+# By using the 'add' method, we set these as the *lowest* priority. Any user/system files will override:
 config.add(_platform_defaults())

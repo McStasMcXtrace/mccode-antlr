@@ -1,5 +1,6 @@
 """Data structures required for representing the contents of a McCode instr file"""
 from dataclasses import dataclass, field
+from typing import Union
 from ..common import InstrumentParameter, MetaData, parameter_name_present, RawC, blocks_to_raw_c
 from ..reader import Registry
 from .instance import Instance
@@ -17,7 +18,6 @@ class Instr:
     source: str = None           # Instrument *file* name
     parameters: tuple[InstrumentParameter] = field(default_factory=tuple)  # runtime-set instrument parameters
     metadata: tuple[MetaData] = field(default_factory=tuple)               # metadata for use by simulation consumers
-    dependency: str = None       # compile-time dependency
     components: tuple[Instance] = field(default_factory=tuple)  #
     included: tuple[str] = field(default_factory=tuple)  # names of included instr definition(s)
     user: tuple[RawC] = field(default_factory=tuple)  # struct members for _particle
@@ -95,4 +95,82 @@ class Instr:
         # Metadata defined in an instance overrides that defined in a component.
         # Metadata defined for an instrument is added to the collected list
         return tuple(m for inst in self.components for m in inst.collect_metadata()) + self.metadata
+
+    def _getpath(self, filename: str):
+        from pathlib import Path
+        for registry in self.registries:
+            if registry.known(filename):
+                return registry.path(filename).absolute().resolve()
+        return Path()
+
+    def _replace_env_getpath_cmd(self, flags: Union[str, bytes]):
+        """Replace CMD, ENV, and GETPATH directives from a flag string or byte-array"""
+        # Mimics McCode-3/tools/Python/mccodelib/cflags.py:evaluate_dependency_str
+        #
+        is_bytes = isinstance(flags, bytes)
+        to_str = (lambda b: b.decode()) if is_bytes else (lambda b: b)
+        from_str = (lambda b: b.encode()) if is_bytes else (lambda b: b)
+
+        def getpath(chars):
+            return from_str(str(self._getpath(to_str(chars)).as_posix()))
+
+        def eval_cmd(chars):
+            from subprocess import run, CalledProcessError
+            try:
+                proc = run(to_str(chars), check=True, shell=True, capture_output=True)
+                output = proc.stdout
+            except CalledProcessError as error:
+                raise RuntimeError(f"Calling {to_str(chars)} resulted in error {error}")
+            output = [line.strip() for line in to_str(output).splitlines() if line.strip()]
+            if len(output) > 1:
+                raise RuntimeError(f"Calling {to_str(chars)} produced more than one line of output")
+            return from_str(output[0] if output else '')
+
+        def eval_env(chars):
+            from os import environ
+            return from_str(environ.get(to_str(chars), ''))
+
+        def replace(chars, start, replacer):
+            if start not in chars:
+                return chars
+            before, after = chars.split(start, 1)
+            if from_str('(') != after[0]:
+                raise ValueError(f'Missing opening parenthesis in dependency string after {to_str(start)}')
+            if from_str(')') not in after:
+                raise ValueError(f'Missing closing parenthesis in dependency string after {to_str(start)}')
+            dep, after = after[1:].split(from_str(')'), 1)
+            if start in dep:
+                raise ValueError(f'Nested {to_str(start)} in dependency string')
+            return before + replacer(dep) + replace(after, start, replacer)
+
+        keys = [b'ENV', b'GETPATH', b'CMD'] if is_bytes else ['ENV', 'GETPATH', 'CMD']
+
+        for key, worker in zip(keys, [eval_env, getpath, eval_cmd]):
+            flags = replace(flags, key, worker)
+
+        return flags
+
+    def _replace_keywords(self, flag):
+        from mccode.config import config
+        from re import sub
+        if '@NEXUSFLAGS@' in flag:
+            flag = sub(r'@NEXUSFLAGS@', config['flags']['nexus'].as_str_expanded(), flag)
+        if '@MCCODE_LIB@' in flag:
+            print(f'The instrument {self.name} uses @MCCODE_LIB@ dependencies which no longer work.')
+            print('Expect problems at compilation.')
+            flag = sub('@MCCODE_LIB@', '.', flag)
+        return flag
+
+    def decoded_flags(self) -> list[str]:
+        # Each 'flag' in self.flags is from a single instrument component DEPENDENCY, and might contain duplicates:
+        # If we accept that white space differences matter, we can deduplicate the strings 'easily'
+        unique_flags = set(self.flags)
+        # The dependency strings are allowed to contain any of
+        #       '@NEXUSFLAGS@', @MCCODE_LIB@, CMD(...), ENV(...), GETPATH(...)
+        # each of which should be replaced by ... something. Start by replacing the 'static' (old-style) keywords
+        replaced_flags = [self._replace_keywords(flag) for flag in unique_flags]
+        # Then use the above decoder method to replace any instances of CMD, ENV, or GETPATH
+        return [self._replace_env_getpath_cmd(flag) for flag in replaced_flags]
+
+
 

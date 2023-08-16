@@ -144,63 +144,83 @@ def _monitor_name_file_name_match(folder, monitor_name):
     return None
 
 
-def mccode_test_compiler(work_dir, file_path, c_compiler, c_flags, extension, registry, generator, config):
+def mccode_test_compiler(work_dir, file_path, target, registry, generator):
     from pathlib import Path
     from mccode.reader import Reader
     from mccode.compiler.c import compile_instrument
     # only the provided (remote) registry should be necessary for test instruments
     reader = Reader(registries=[registry])
-    instrument = reader.get_instrument(file_path)
-    options = {'compiler': c_compiler, 'flags': c_flags, 'output': Path(work_dir).joinpath(instrument.name + extension)}
+    inst = reader.get_instrument(file_path)
+    output = Path(work_dir)
+    config = dict(default_main=True, enable_trace=False, portable=False, include_runtime=True,
+                  embed_instrument_file=False, verbose=False)
     try:
-        binary_path = compile_instrument(instrument, options, registry=registry, generator=generator, config=config)
+        binary_path = compile_instrument(inst, target, output, registry=registry, generator=generator, config=config)
     except RuntimeError:
         return False, Path()
     return True, binary_path
 
 
-def mccode_c_settings():
-    import platform
-    system = platform.system()
-    config = dict(default_main=True, enable_trace=False, portable=False, include_runtime=True,
-                  embed_instrument_file=False, verbose=False)
-    if system == "Linux":
-        return "gcc", [], ".out", config
-    elif system == "Darwin":
-        return "clang", [], ".out", config
-    elif system == "Windows":
-        return "mingw", [], ".exe", config
-    return platform.python_compiler().split()[0].lower(), [], "", config
-
-
-def mcstas_test_compiler(work_dir, file_path):
+def mcstas_test_compiler(target, work_dir, file_path):
     from mccode.reader import MCSTAS_REGISTRY
     from mccode.translators.target import MCSTAS_GENERATOR
-    cc, flags, ext, config = mccode_c_settings()
-    return mccode_test_compiler(work_dir, file_path, cc, flags, ext, MCSTAS_REGISTRY, MCSTAS_GENERATOR, config)
+    return mccode_test_compiler(work_dir, file_path, target, MCSTAS_REGISTRY, MCSTAS_GENERATOR)
 
 
-def mcxtrace_test_compiler(work_dir, file_path):
+def mcxtrace_test_compiler(target, work_dir, file_path):
     from mccode.reader import MCXTRACE_REGISTRY
     from mccode.translators.target import MCXTRACE_GENERATOR
-    cc, flags, ext, config = mccode_c_settings()
-    return mccode_test_compiler(work_dir, file_path, cc, flags, ext, MCXTRACE_REGISTRY, MCXTRACE_GENERATOR, config)
+    return mccode_test_compiler(work_dir, file_path, target, MCXTRACE_REGISTRY, MCXTRACE_GENERATOR)
 
 
-def mccode_runner(binary_path, parameters: str):
+def mccode_test_runner(target, binary_path, test_parameters: str, n_particles: int):
     from tempfile import mkdtemp
-    from subprocess import run, CalledProcessError
+    from mccode.compiler.c import run_compiled_instrument
+
     output_path = mkdtemp(prefix=binary_path.stem, dir=binary_path.parent.resolve())
-    command = [str(binary_path.resolve()), *(parameters.split()), '--dir', output_path]
+    # common default parameters: output directory, seed value, number of particles
+    parameters = f'--dir {output_path} -s 1000 -n {n_particles} ' + test_parameters
     try:
-        proc = run(command, check=True, capture_output=True)
-    except CalledProcessError as error:
+        output = run_compiled_instrument(binary_path, target, parameters, capture=True)
+    except RuntimeError as error:
         return False, str(error), output_path
-    return True, proc.stdout, output_path
+    return True, output, output_path
 
 
-def mccode_test(compiler, runner, registry: Registry, search_pattern=None, instr_count=None,
-                skip_non_test: bool = False):
+def mcstas_test_runner(target, binary_path, test_parameters: str, n_particles: int):
+    # If NeXus output is requested and the InstrumentDescriptionFile is needed, run a different script entirely...
+    #   TODO think about actually doing this?
+    # if target.flags & CBinaryTarget.Type.nexus and idf_required:
+    #     run([config['idfgen'].get(str), str(binary), *options])
+    return mccode_test_runner(target, binary_path, test_parameters, n_particles)
+
+
+def mcxtrace_test_runner(target, binary_path, test_parameters: str, n_particles: int):
+    return mccode_test_runner(target, binary_path, test_parameters, n_particles)
+
+
+def mccode_test(compiler, runner, mpi: int = None, acc: bool = False, nexus: bool = False, **kwargs):
+    """Specialize the compiler and runner based on requested number of processors and use of OpenACC, then test"""
+    from functools import partial
+    from mccode.compiler.c import CBinaryTarget
+    target = CBinaryTarget(mpi=mpi is not None, acc=acc, count=1 if mpi is None else mpi, nexus=nexus)
+    return _mccode_test(partial(compiler, target), partial(runner, target), **kwargs)
+
+
+def mcstas_test(search_pattern=None, instr_count=None, skip_non_test: bool = False, nproc: int = 1, openacc: bool = False):
+    from mccode.reader import MCSTAS_REGISTRY as REGISTRY
+    return mccode_test(mcstas_test_compiler, mcstas_test_runner, nproc, openacc, registry=REGISTRY,
+                       search_pattern=search_pattern, instr_count=instr_count, skip_non_test=skip_non_test)
+
+
+def mcxtrace_test(search_pattern=None, instr_count=None, skip_non_test: bool = False, nproc: int = 1, openacc: bool = False):
+    from mccode.reader import MCXTRACE_REGISTRY as REGISTRY
+    return mccode_test(mcxtrace_test_compiler, mcxtrace_test_runner, nproc, openacc, registry=REGISTRY,
+                       search_pattern=search_pattern, instr_count=instr_count, skip_non_test=skip_non_test)
+
+
+def _mccode_test(compiler, runner, registry: Registry, search_pattern=None, instr_count=None,
+                skip_non_test: bool = False, n_particles: int = 1000):
     """Run McCode instrument test(s) using the provided `compiler` and `runner` functions to handle those tasks.
 
     Each takes the expected working directory name (a string) and the path to the instr file as input.
@@ -269,7 +289,7 @@ def mccode_test(compiler, runner, registry: Registry, search_pattern=None, instr
                 continue
 
             t1 = datetime.now()
-            test.didrun, stdout, output_dir = runner(binaries[test.sourcefile][1], test.parvals)
+            test.didrun, stdout, output_dir = runner(binaries[test.sourcefile][1], test.parvals, n_particles)
             test.runtime = datetime.now() - t1
 
             if test.didrun:
@@ -307,11 +327,4 @@ def mccode_test(compiler, runner, registry: Registry, search_pattern=None, instr
     return results
 
 
-def mcstas_test(search_pattern=None, instr_count=None, skip_non_test: bool = False):
-    from mccode.reader import MCSTAS_REGISTRY as REGISTRY
-    return mccode_test(mcstas_test_compiler, mccode_runner, REGISTRY, search_pattern, instr_count, skip_non_test)
 
-
-def mcxtrace_test(search_pattern=None, instr_count=None, skip_non_test: bool = False):
-    from mccode.reader import MCXTRACE_REGISTRY as REGISTRY
-    return mccode_test(mcxtrace_test_compiler, mccode_runner, REGISTRY, search_pattern, instr_count, skip_non_test)
