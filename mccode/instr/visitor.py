@@ -136,8 +136,11 @@ class InstrVisitor(McInstrVisitor):
     def visitInstance_parameters(self, ctx: McInstrParser.Instance_parametersContext):
         return [self.visit(p) for p in ctx.params]
 
-    def visitInstance_parameter(self, ctx: McInstrParser.Instance_parameterContext):
+    def visitInstanceParameterExpr(self, ctx: McInstrParser.InstanceParameterExprContext):
         return str(ctx.Identifier()), self.visit(ctx.expr())
+
+    def visitInstanceParameterString(self, ctx: McInstrParser.InstanceParameterStringContext):
+        return str(ctx.Identifier()), str(ctx.StringLiteral())
 
     def visitSplit(self, ctx: McInstrParser.SplitContext):
         return Value.int(10) if ctx.expr() is None else self.visit(ctx.expr())
