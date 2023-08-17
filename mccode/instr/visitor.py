@@ -248,8 +248,10 @@ class InstrVisitor(McInstrVisitor):
 
     def visitUnparsed_block(self, ctx: McInstrParser.Unparsed_blockContext):
         # We want to extract the source-file line number (and filename) for use in the C-preprocessor
-        # via `#file {number} "{filename}"` directives, for more expressive error handling
+        # via `#line {number} "{filename}"` directives, for more expressive error handling
         line_number = None if ctx.start is None else ctx.start.line
+        if line_number is None:
+            print(f'Why is line none for {self.filename} {ctx.UnparsedBlock()}')
         return self.filename, line_number,  str(ctx.UnparsedBlock())[2:-2]
 
     def visitShell(self, ctx: McInstrParser.ShellContext):

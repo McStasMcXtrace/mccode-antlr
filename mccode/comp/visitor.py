@@ -159,7 +159,7 @@ class CompVisitor(McCompVisitor):
 
     def visitUnparsed_block(self, ctx: Parser.Unparsed_blockContext):
         # We want to extract the source-file line number (and filename) for use in the C-preprocessor
-        # via `#file {number} "{filename}"` directives, for more expressive error handling
+        # via `#line {number} "{filename}"` directives, for more expressive error handling
         line_number = None if ctx.start is None else ctx.start.line
         content = str(ctx.UnparsedBlock())[2:-2]
         return self.filename, line_number, content

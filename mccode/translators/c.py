@@ -1,5 +1,6 @@
 """Translates a McComp instrument from its intermediate form to a C runtime source file."""
 from collections import namedtuple
+from dataclasses import dataclass
 from ..reader import Registry, LIBC_REGISTRY
 from ..instr import Instr, Instance
 from .target import TargetVisitor
@@ -7,6 +8,52 @@ from .c_listener import extract_c_declared_variables
 
 # For use in keeping track of 'USERVAR' particle struct injections
 CDeclaration = namedtuple("CDeclaration", "name type init is_pointer is_array orig")
+
+
+@dataclass
+class CInclude:
+    parent: str
+    name: str
+    content: str = ''
+    root: str = ''
+
+    def __hash__(self):
+        return hash(self.parent + self.name + self.content + self.root)
+
+    def __str__(self):
+        return f'{self.parent}:{self.name}'
+
+    def __lt__(self, other):
+        if self.root or other.root:
+            if self.parent == self.root or self.parent == other.root:
+                return True
+            if other.parent == self.root or other.parent == other.root:
+                return False
+        if self.parent == other.name:
+            return False
+        if other.parent == self.name:
+            return True
+        return self.name < other.name
+
+
+def sort_include_hierarchy(includes: set[CInclude]):
+    print(f'sort includes {" ".join(str(x) for x in includes)}')
+    # find the 'root' of the tree, a parent which is _not_ a named include:
+    root = list(set([x.parent for x in includes]).difference(set([x.name for x in includes])))
+    if len(root) != 1:
+        raise RuntimeError(f'Expected a single root parent but have {root} for\n{includes}')
+    for include in includes:
+        include.root = root[0]
+    # Sort the includes such that if A includes B and C, and C includes B, then we get [C:B, A:C, A:B]
+    # Or a more complicated case: G:(Z,A,W), Z:(B,Y), A:X, W(Y) -> [Z:Y, W:Y, A:X, B:W, Z:B, G:A, G:Z, G:W]
+    used, output = [], []
+    for include in sorted(includes, reverse=True):
+        if include.name not in used:
+            output.append(include)
+            used.append(include.name)
+    # Reduce output to [C:B, A:C], or [Z:Y, A:X, B:W, Z:B, G:A, G:Z], which would include the named libraries correctly
+    print(f"sorted to {'  '.join(str(x) for x in output)}")
+    return output
 
 
 class CTargetVisitor(TargetVisitor, target_language='c'):
@@ -22,7 +69,7 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
             contents = file.read()
         return contents
 
-    def _handle_raw_c_include(self, raw_c: str):
+    def _handle_raw_c_include(self, parent: str, raw_c: str):
         import re
         re_lib = re.compile(r'^\s*%include\s*"(?P<libname>[^"\n\.]+)"\s*$', re.MULTILINE)
         re_inc = re.compile(r'^\s*%include\s*"(?P<filename>[^"\n]+)"\s*$', re.MULTILINE)
@@ -35,9 +82,20 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
         # *erase* the library includes from the block:
         raw_c = re.sub(re_lib, '', raw_c)
 
+        # We must look through the to-be-included code *now* to see if it *also* includes more libraries.
+        includes = [CInclude(parent=parent, name=lib, content=self._file_contents(f'{lib}.h')) for lib in libraries]
+        new_includes = set()
+        for include in includes:
+            found_includes, include.content = self._handle_raw_c_include(include.name, include.content)
+            if found_includes:
+                new_includes = new_includes.union(found_includes)
+        includes = new_includes.union(set(includes))
+
         # If there are any non-library includes remaining, we should insert them immediately:
         matches = list(re_inc.finditer(raw_c))
+        count = 0
         while len(matches):
+            count += 1
             # Try and find this matched filename
             filename = matches[0].group('filename')
             this_re = re.compile(rf'^\s*%include\s*"{filename}"\s*$', re.MULTILINE)
@@ -45,14 +103,21 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
             # re-match since we modified raw_c
             matches = list(re_inc.finditer(raw_c))
 
-        return libraries, raw_c
+        if count:
+            found_includes, raw_c = self._handle_raw_c_include(parent, raw_c)
+            includes = includes.union(found_includes)
+
+        return includes, raw_c
 
     def _parse_libraries_for_typedefs(self):
         from .c_listener import extract_c_declared_variables_and_defined_types as parse
         typedefs = set()
-        for library in self.libraries:
-            declares, defined_types = parse(self._file_contents(f'{library}.h'), user_types=list(typedefs))
+        for include in self.includes:
+            print(f'library {include.name}')
+            # The files '%include'-d can themselves use the '%include' mechanism :/
+            declares, defined_types = parse(include.content, user_types=list(typedefs))
             typedefs = typedefs.union(set(defined_types))
+            print(f'{include.name} done')
         # types can also be defined in component 'SHARE' blocks:
         for block in [share for comp in self.source.component_types() if len(comp.share) for share in comp.share]:
             declares, defined_types = parse(block.source, user_types=list(typedefs))
@@ -129,22 +194,23 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
         if not any(reg == LIBC_REGISTRY for reg in self.registries):
             self.source.registries += (LIBC_REGISTRY, )
 
+        includes = set()
         libraries = set()
         inst = self.source
         for grp in (inst.user, inst.declare, inst.initialize, inst.save, inst.final):
             for block in grp:
-                libs, block.source = self._handle_raw_c_include(block.source)
-                libraries = libraries.union(libs)
+                incs, block.source = self._handle_raw_c_include(inst.name, block.source)
+                includes = includes.union(incs)
         for typ in inst.component_types():
             for grp in (typ.share, typ.user, typ.declare, typ.initialize, typ.trace, typ.save, typ.final, typ.display):
                 for block in grp:
-                    libs, block.source = self._handle_raw_c_include(block.source)
-                    libraries = libraries.union(libs)
+                    incs, block.source = self._handle_raw_c_include(typ.name, block.source)
+                    includes = includes.union(incs)
         for instance in inst.components:
             for block in instance.extend:
-                libs, block.source = self._handle_raw_c_include(block.source)
-                libraries = libraries.union(libs)
-        self.libraries = list(libraries)
+                incs, block.source = self._handle_raw_c_include(instance.name, block.source)
+                includes = includes.union(incs)
+        self.includes = sort_include_hierarchy(includes)
 
         # search the library headers for type definitions:
         self._parse_libraries_for_typedefs()
@@ -186,27 +252,37 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
             self.out(f'#include "{self.include_path("mcstas-r.h" if is_mcstas else "mcxtrace-r.h")}"')
             print(f"Dependency: mccode-r.o\nDependency: {'mcstas-r.o' if is_mcstas else 'mcxtrace-r.o'}")
 
+        # # TODO insert includes here?
+        # if len(self.includes):
+        #     self.out("/* %include libraries from instrument and component definitions */")
+        # for include in self.includes:
+        #     self.out(f'/* Contents of {include.name}.h (requested from {include.parent})*/')
+        #     self.out(include.content)
+
         self.out(header_post_runtime(self.source, self.runtime, self.config, self.include_path()))
 
     def visit_declare(self):
         from .c_decls import declarations_pre_libraries
         if self.verbose:
             print(f"Writing instrument '{self.source.name}' and components DECLARE")
+
+        if len(self.includes):
+            self.out("/* %include libraries from instrument and component definitions */")
+        for include in self.includes:
+            print(f'include {include}')
+            self.out(f'/* Contents of {include.name}.h (requested from {include.parent})*/')
+            self.out(include.content)
+
         contents, warnings = declarations_pre_libraries(self.source, self.typedefs, self.component_declared_parameters)
         self.out(contents)
 
-        if len(self.libraries):
-            self.out("/* %include libraries from instrument and component definitions */")
-        for library in self.libraries:
-            self.out(f'/* Contents of {library}.h */')
-            self.out(self._file_contents(f'{library}.h'))
         if self.config.get('include_runtime'):
-            for library in self.libraries:
-                self.out(f'/* Contents of {library}.c */')
-                self.out(self._file_contents(f'{library}.c'))
+            for include in self.includes:
+                self.out(f'/* Contents of {include.name}.c (requested from {include.parent})*/')
+                self.out(self._file_contents(f'{include.name}.c'))
         else:
-            for library in self.libraries:
-                print(f'Dependency: {library}.o')
+            for include in self.includes:
+                print(f'Dependency: {include.name}.o')
 
         self.out("/* User declarations from instrument definition. Can define functions. */")
         self.out('\n'.join([dec.to_c() for dec in self.source.declare]))
@@ -274,4 +350,4 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
         self.out(cogen_getcompindex_fct(self.source))
         self.embed_file('metadata-r.c')
         self.embed_file('mccode_main.c')
-        self.out(f'/* end of generated C code for {self.source} */')
+        self.out(f'/* end of generated C code for {self.source.name} */')

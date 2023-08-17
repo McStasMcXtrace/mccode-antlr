@@ -76,7 +76,7 @@ def cogen_comp_init_position(index, comp, last, instr):
             f'    {var}._position_absolute = coords_add(_{rel.name}_var._position_absolute, tc2);'
         ])
     if index == 0:
-        lines.append(f'    tc1 = coords_neg({var}.position_absolute);')
+        lines.append(f'    tc1 = coords_neg({var}._position_absolute);')
     else:
         lines.append(f'    tc1 = coords_sub(_{ref.name}_var._position_absolute, {var}._position_absolute);')
     lines.extend([
@@ -199,6 +199,7 @@ def cogen_initialize(source, component_declared_parameters, ok_to_skip):
             f'  /* Instrument {source.name} INITIALIZE */',
             f'  SIG_MESSAGE("[{source.name} INITIALIZE [{f}:{n}]");'
         ])
+        print(f'The instrument has {len(source.parameters)} parameters')
         for par in source.parameters:
             # ensure there's no conflict of names
             lines.append(f'  #define {par.name} (instrument->_parameters.{par.name}')
@@ -206,6 +207,8 @@ def cogen_initialize(source, component_declared_parameters, ok_to_skip):
             lines.append(block.to_c())
         for par in source.parameters:
             lines.append(f'  #undef {par.name}')
+    else:
+        print("No initialization present?")
 
     for comp in source.components:
         lines.append(f'  _{comp.name}_setpos(); /* type {comp.type.name} */')

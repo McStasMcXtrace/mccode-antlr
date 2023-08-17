@@ -44,11 +44,12 @@ def cogen_raytrace(source, ok_to_skip):
                 '    if (!ABSORBED) {',
                 f'    _class_particle Split_{comp.name}_particle = *_particle;',
                 f'    int SplitS_{comp.name} = {comp.split};',
-                f'    for (int SplitN_{comp.name}=0; SplitN_{comp.name} < SplitS_{comp.name}; Split_{comp.name}++) {{',
+                f'    for (int SplitN_{comp.name}=0; SplitN_{comp.name} < SplitS_{comp.name}; SplitS_{comp.name}++) {{',
                 '    randstate_t randbackup = *_particle->randstate;',
                 f'    *_particle=Split_{comp.name}_particle;',
                 '    *_particle->randstate = randbackup;',
-                f'    p /= SplitS_{comp.name} > 0 ? SplitS_{comp.name} : 1;'
+                f'    p /= SplitS_{comp.name} > 0 ? SplitS_{comp.name} : 1;',
+                '#endif'
             ])
         # Coordinate transforms WRT PREVIOUS
         lines.append(f'    /* begin component {comp.name}={comp.type.name}() [{index}] */')
@@ -138,7 +139,7 @@ def cogen_raytrace(source, ok_to_skip):
             lines.extend([
                 '#ifndef NOSPLIT',
                 f'    }} /* end split at {comp.name} */',
-                f'    }} /* end if(!ABSORBED) relating to SPLIT at {comp.name}',
+                f'    }} /* end if(!ABSORBED) relating to SPLIT at {comp.name} */',
                 '#endif'
             ])
 

@@ -25,7 +25,8 @@ class RawC:
 
     def to_c(self):
         """Use the preprocessor #line directive to aid in debugging produced C source code."""
-        return f'#line {self.line} "{self.filename}"\n{self.source}'
+        # return f'#line {self.line} "{self.filename}"\n{self.source}'
+        return self.source
 
     @property
     def fn(self):
@@ -35,4 +36,5 @@ class RawC:
 def blocks_to_raw_c(*args):
     raw_c = [x if isinstance(x, RawC) else RawC.from_tuple(x) for x in args]
     # Filter out empty blocks
-    return tuple(x for x in raw_c if not x.is_empty)
+    output = tuple(x for x in raw_c if not x.is_empty)
+    return output if len(output) else ()

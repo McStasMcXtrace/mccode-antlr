@@ -62,7 +62,7 @@ def header_pre_runtime(is_mcstas, source, runtime: dict, config: dict, typedefs:
  * CFLAGS={' '.join(set(source.flags))}
  */
  
-#define MCCODE_STRING "{runtime.get("fancy")}
+#define MCCODE_STRING "{runtime.get("fancy")}"
 #define FLAVOR "{runtime.get("name", "none")}"
 #define FLAVOR_UPPER "{runtime.get("name", "none").upper()}"
 {'#define MC_USE_DEFAULT_MAIN' if config.get('default_main') else ''}

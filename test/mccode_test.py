@@ -40,16 +40,16 @@ class TestInstrExample:
 
     def get_json_repr(self):
         jr = dict(displayname=self.get_display_name(),
-                  sourcefile=self.sourcefile,
+                  sourcefile=self.sourcefile.as_posix(),
                   testnb=self.testnb,
                   parvals=self.parvals,
                   detector=self.detector,
                   targetval=self.targetval,
                   testval=self.testval,
                   compiled=self.compiled,
-                  compiletime=self.compiletime,
+                  compiletime=str(self.compiletime),
                   didrun=self.didrun,
-                  runtime=self.runtime,
+                  runtime=str(self.runtime),
                   errmsg=self.errmsg)
         return jr
 
@@ -256,7 +256,6 @@ def _mccode_test(compiler, runner, registry: Registry, search_pattern=None, inst
     # optionally test case count limiter:
     if instr_count is not None and isinstance(instr_count, int) and instr_count > 0:
         filenames = filenames[:instr_count]
-
     # grab full paths to each file (in case this is a remote registry and they need to be fetched)
     filepaths = [registry.path(filename) for filename in filenames]
 
@@ -337,7 +336,7 @@ def main(name, program):
     from argparse import ArgumentParser
     parser = ArgumentParser(name, description=f'Test instrument compilation and runtime for {name}')
     parser.add_argument('-s', '--search', help='Regular expression positive filter for instrument names', default=None)
-    parser.add_argument('-c', '--count', help='Maximum number of instruments to test', default=None)
+    parser.add_argument('-c', '--count', type=int, help='Maximum number of instruments to test', default=None)
     parser.add_argument('-k', '--skip', action='store_true', help='Skip instruments without test cases')
     parser.add_argument('--mpi', type=int, help='Number of mpi processes to use', default=None)
     parser.add_argument('--nexus', action='store_true', help='Whether to use NeXus output')

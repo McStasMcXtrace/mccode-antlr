@@ -100,6 +100,12 @@ def compile_instrument(instrument: Instr, target: CBinaryTarget, output: Union[s
         flags.append('-D__GNUC__')
 
     command = [target.compiler, *target.flags, *flags, '-o', str(output), '-']
+    source = instrument_source(instrument, **kwargs)
+    source_file = Path().joinpath(output.parts[-1]).with_suffix('.c')
+    print(f'Source and executable in {source_file}')
+    with open(source_file, 'w') as cfile:
+        cfile.write(source)
+    print(f"Compile using {command}")
     try:
         run(command, input=instrument_source(instrument, **kwargs), text=True, check=True)
     except CalledProcessError as error:

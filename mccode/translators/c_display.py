@@ -46,7 +46,7 @@ def cogen_display(source, declared_parameters):
             lines.append(f'  class_{comp.type.name}_display(&_{comp.name}_var);')
         else:
             # McCode-3 would have called a function just to print this line
-            lines.append(f'  printf("MCDISPLAY: component %s\\n", _{comp.name}_var->_name);')
+            lines.append(f'  printf("MCDISPLAY: component %s\\n", _{comp.name}_var._name);')
 
     lines.extend([
         '  printf("MCDISPLAY: end\\n");'

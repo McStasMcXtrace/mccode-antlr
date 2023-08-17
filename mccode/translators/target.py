@@ -22,7 +22,7 @@ class TargetVisitor:
         self.warnings = 0
         self.instrument_uservars = ()
         self.component_uservars = dict()
-        self.libraries = []
+        self.includes = []
         self.typedefs = None
         self.component_declared_parameters = dict()
         self.ok_to_skip = None
