@@ -209,13 +209,13 @@ class McCompVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by McCompParser#ExpressionIdentifier.
-    def visitExpressionIdentifier(self, ctx:McCompParser.ExpressionIdentifierContext):
+    # Visit a parse tree produced by McCompParser#ExpressionInteger.
+    def visitExpressionInteger(self, ctx:McCompParser.ExpressionIntegerContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by McCompParser#ExpressionInteger.
-    def visitExpressionInteger(self, ctx:McCompParser.ExpressionIntegerContext):
+    # Visit a parse tree produced by McCompParser#ExpressionIdentifier.
+    def visitExpressionIdentifier(self, ctx:McCompParser.ExpressionIdentifierContext):
         return self.visitChildren(ctx)
 
 

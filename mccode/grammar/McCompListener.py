@@ -368,21 +368,21 @@ class McCompListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by McCompParser#ExpressionIdentifier.
-    def enterExpressionIdentifier(self, ctx:McCompParser.ExpressionIdentifierContext):
-        pass
-
-    # Exit a parse tree produced by McCompParser#ExpressionIdentifier.
-    def exitExpressionIdentifier(self, ctx:McCompParser.ExpressionIdentifierContext):
-        pass
-
-
     # Enter a parse tree produced by McCompParser#ExpressionInteger.
     def enterExpressionInteger(self, ctx:McCompParser.ExpressionIntegerContext):
         pass
 
     # Exit a parse tree produced by McCompParser#ExpressionInteger.
     def exitExpressionInteger(self, ctx:McCompParser.ExpressionIntegerContext):
+        pass
+
+
+    # Enter a parse tree produced by McCompParser#ExpressionIdentifier.
+    def enterExpressionIdentifier(self, ctx:McCompParser.ExpressionIdentifierContext):
+        pass
+
+    # Exit a parse tree produced by McCompParser#ExpressionIdentifier.
+    def exitExpressionIdentifier(self, ctx:McCompParser.ExpressionIdentifierContext):
         pass
 
 
