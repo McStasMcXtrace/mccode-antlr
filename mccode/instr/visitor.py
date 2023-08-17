@@ -206,7 +206,7 @@ class InstrVisitor(McInstrVisitor):
     def visitUservars(self, ctx: McInstrParser.UservarsContext):
         self.state.USERVARS(self.visit(ctx.unparsed_block()))
 
-    def visitInitialzieBlock(self, ctx: McInstrParser.InitializeBlockContext):
+    def visitInitializeBlock(self, ctx: McInstrParser.InitializeBlockContext):
         self.state.INITIALIZE(self.visit(ctx.unparsed_block()))
 
     def visitSaveBlock(self, ctx: McInstrParser.SaveBlockContext):

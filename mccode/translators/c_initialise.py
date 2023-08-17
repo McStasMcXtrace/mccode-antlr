@@ -185,7 +185,7 @@ def cogen_initialize(source, component_declared_parameters, ok_to_skip):
 
     # write the instrument main code, which calls component ones
     lines.extend([
-        f'int initialize(void) {{ /* called by mccode_main for {source.name}:INITIALIZE */',
+        f'int init(void) {{ /* called by mccode_main for {source.name}:INITIALIZE */',
         '  DEBUG_INSTR();',
         '',
         '  /* code_main/parseoptions/readparams sets instrument parameters value */',
@@ -202,7 +202,7 @@ def cogen_initialize(source, component_declared_parameters, ok_to_skip):
         print(f'The instrument has {len(source.parameters)} parameters')
         for par in source.parameters:
             # ensure there's no conflict of names
-            lines.append(f'  #define {par.name} (instrument->_parameters.{par.name}')
+            lines.append(f'  #define {par.name} (instrument->_parameters.{par.name})')
         for block in source.initialize:
             lines.append(block.to_c())
         for par in source.parameters:
