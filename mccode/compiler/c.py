@@ -91,6 +91,8 @@ def compile_instrument(instrument: Instr, target: CBinaryTarget, output: Union[s
         raise RuntimeError(f"Output {output} exists but recompile is not requested.")
 
     # the type of binary requested determines (some of) the required flags:
+    print(f"{target.flags = }")
+    print(f"{target.extra_flags = }")
     flags = target.flags + target.extra_flags
     # the flags in an instrument *might* contain ENV, CMD, GETPATH directives which need to be expanded via decode:
     flags.extend([word for flag in instrument.decoded_flags() for word in flag.split()])
@@ -106,10 +108,14 @@ def compile_instrument(instrument: Instr, target: CBinaryTarget, output: Union[s
     with open(source_file, 'w') as cfile:
         cfile.write(source)
     print(f"Compile using {command}")
-    try:
-        run(command, input=instrument_source(instrument, **kwargs), text=True, check=True)
-    except CalledProcessError as error:
-        raise RuntimeError(f'Compilation failed, raising error {error}')
+    result = run(command, input=source, text=True, capture_output=True)
+    if result.returncode:
+        raise RuntimeError(f"Compilation failed producing output\n{result.stdout}\n  and error\n{result.stderr}")
+    #
+    # try:
+    #     run(command, input=instrument_source(instrument, **kwargs), text=True, check=True)
+    # except CalledProcessError as error:
+    #     raise RuntimeError(f'Compilation failed, raising error {error}')
 
     if not output.exists():
         raise RuntimeError(f"Compilation should have produced {output}, but it does not appear to exist")
@@ -130,7 +136,7 @@ def run_compiled_instrument(binary: Path, target: CBinaryTarget, options: str, c
     #     run([config['idfgen'].get(str), str(binary), *options])
 
     command = []
-    if target.flags & CBinaryTarget.Type.mpi:
+    if target.type & CBinaryTarget.Type.mpi:
         # we execute mpirun
         command.append(config['mpi']['run'].as_str_expanded())
         # which takes optional flags
@@ -141,7 +147,7 @@ def run_compiled_instrument(binary: Path, target: CBinaryTarget, options: str, c
         if config['machinefile'].exists():
             command.extend(['-machinefile', config['machinefile'].as_str_expanded()])
         # and requires trickery if we want to restrict the GPU used
-        if target.flags & CBinaryTarget.Type.acc and 'Windows' != system():
+        if target.type & CBinaryTarget.Type.acc and 'Windows' != system():
             # Each worker should have the environment variable CUDA_VISIBLE_DEVICES defined as the value of
             # OMPI_COMM_WORLD_LOCAL_RANK, which gets sent by MPI to the worker. This assigment must take place
             # *on* the worker, which requires hijacking the executable that MPI runs
@@ -151,9 +157,10 @@ def run_compiled_instrument(binary: Path, target: CBinaryTarget, options: str, c
     # In normal operation, the binary is provided with options
     command.extend([str(binary), *options.split()])
     # which we then execute:
-    try:
-        proc = run(command, check=True, capture_output=capture)
-    except CalledProcessError as error:
-        raise RuntimeError(f'Execution of {command} failed with error {error}')
+    result = run(command, capture_output=capture)
+    if result.returncode and capture:
+        raise RuntimeError(f'Execution of {command} failed with output\n{result.stdout}\n and error\n{result.stderr}')
+    elif result.returncode:
+        raise RuntimeError(f'Execution of {command} failed, see above for error message(s)')
 
-    return proc.stdout if capture else ""
+    return (result.stdout + result.stderr) if capture else ""
