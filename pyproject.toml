@@ -10,6 +10,7 @@ dependencies = [
     'numpy',
     'pooch',
     'confuse==2.0.1',
+    'zenlog==1.1,',
     "importlib_metadata; python_version<'3.8'",
 ]
 dynamic = ["version"]

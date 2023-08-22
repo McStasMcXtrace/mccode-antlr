@@ -101,7 +101,7 @@ def compile_instrument(instrument: Instr, target: CBinaryTarget, output: Union[s
     if any('OPENACC' in word for word in flags) and any('NeXus' in word for word in flags):
         flags.append('-D__GNUC__')
 
-    command = [target.compiler, *target.flags, *flags, '-o', str(output), '-']
+    command = [target.compiler, *flags, '-o', str(output), '-']
     source = instrument_source(instrument, **kwargs)
     source_file = Path().joinpath(output.parts[-1]).with_suffix('.c')
     print(f'Source and executable in {source_file}')

@@ -12,16 +12,16 @@ from mccode.reader import Registry
 class TestInstrExample:
     """Holds parameters for a single instr file %Example: test case"""
     sourcefile: Path
-    testnb: int
-    parvals: str = ""
+    test_number: int
+    parameter_values: str = ""
     detector: str = ""
-    targetval: float = nan
-    testval: float = nan
+    target_value: float = nan
+    test_value: float = nan
     compiled: bool = False
-    compiletime: timedelta = field(default_factory=timedelta)
-    didrun: bool = False
-    runtime: timedelta = field(default_factory=timedelta)
-    errmsg: str = ""
+    compile_time: timedelta = field(default_factory=timedelta)
+    ran: bool = False
+    run_time: timedelta = field(default_factory=timedelta)
+    error_message: str = ""
 
     @classmethod
     def list_from_file(cls, filename: Path) -> list[Self]:
@@ -36,21 +36,21 @@ class TestInstrExample:
         return [cls(filename, 1)]
 
     def get_display_name(self):
-        return f'{self.sourcefile.stem}_{self.testnb}' if self.testnb > 1 else self.sourcefile.stem
+        return f'{self.sourcefile.stem}_{self.test_number}' if self.test_number > 1 else self.sourcefile.stem
 
     def get_json_repr(self):
         jr = dict(displayname=self.get_display_name(),
                   sourcefile=self.sourcefile.as_posix(),
-                  testnb=self.testnb,
-                  parvals=self.parvals,
+                  testnb=self.test_number,
+                  parvals=self.parameter_values,
                   detector=self.detector,
-                  targetval=self.targetval,
-                  testval=self.testval,
+                  targetval=self.target_value,
+                  testval=self.test_value,
                   compiled=self.compiled,
-                  compiletime=str(self.compiletime),
-                  didrun=self.didrun,
-                  runtime=str(self.runtime),
-                  errmsg=self.errmsg)
+                  compiletime=str(self.compile_time),
+                  didrun=self.ran,
+                  runtime=str(self.run_time),
+                  errmsg=self.error_message)
         return jr
 
     def save(self, path: Path):
@@ -174,10 +174,13 @@ def mcxtrace_test_compiler(target, work_dir, file_path):
 
 
 def mccode_test_runner(target, binary_path, test_parameters: str, n_particles: int):
+    import shutil
     from tempfile import mkdtemp
     from mccode.compiler.c import run_compiled_instrument
 
-    output_path = mkdtemp(prefix=binary_path.stem, dir=binary_path.parent.resolve())
+    output_path = Path(mkdtemp(prefix=binary_path.stem, dir=binary_path.parent.resolve()))
+    # The McCode C runtime won't use an existing directory ...
+    shutil.rmtree(output_path)
     # common default parameters: output directory, seed value, number of particles
     parameters = f'--dir {output_path} -s 1000 -n {n_particles} ' + test_parameters
     try:
@@ -224,7 +227,7 @@ def mcxtrace_test(search_pattern=None, instr_count=None, skip_non_test: bool = F
 
 
 def _mccode_test(compiler, runner, registry: Registry, search_pattern=None, instr_count=None,
-                skip_non_test: bool = False, n_particles: int = 1000):
+                skip_non_test: bool = False, n_particles: int = 1000, workdir: Path = None):
     """Run McCode instrument test(s) using the provided `compiler` and `runner` functions to handle those tasks.
 
     Each takes the expected working directory name (a string) and the path to the instr file as input.
@@ -242,7 +245,8 @@ def _mccode_test(compiler, runner, registry: Registry, search_pattern=None, inst
         skip_non_test: a flag to control whether instr files which do not specify test cases should be compiled and run
     """
     import re
-    import logging
+    # import logging
+    from zenlog import log as logging
     import tempfile
     from datetime import datetime
     logging.info(f"Finding test instruments in: {registry}")
@@ -266,59 +270,81 @@ def _mccode_test(compiler, runner, registry: Registry, search_pattern=None, inst
 
     binaries = dict()
 
+    # By default, use a temporary directory -- but allow the user to specify someplace else:
+    created = False
+    if workdir is None:
+        created = True
+        workdir = tempfile.mkdtemp()
+    if not isinstance(workdir, Path):
+        workdir = Path(workdir)
+    if not workdir.exists():
+        created = True
+        workdir.mkdir(parents=True)
+    if not workdir.is_dir():
+        raise RuntimeError(f'Expected {workdir} to be a directory, but it is not.')
+
     # Move into a temporary directory to ensure compilation/run times are from scratch
-    with tempfile.TemporaryDirectory() as workdir:
-        logging.info("Compiling instruments")
-        for test in tests:
-            print(test)
-            if test.sourcefile not in binaries and (test.testnb != 0 or not skip_non_test):
-                t1 = datetime.now()
-                binaries[test.sourcefile] = compiler(workdir, test.sourcefile)
-                test.compiletime = datetime.now() - t1
 
-                if binaries[test.sourcefile][0]:
-                    logging.info(f'%-{test.sourcefile.stem:>{longest_name}s}: {test.compiletime}')
-                else:
-                    logging.info(f'%-{test.sourcefile.stem:>{longest_name}s}: COMPILE ERROR')
-            else:
-                logging.info(f'%-{test.sourcefile.stem:>{longest_name}s}: COMPILE skipped')
-
-        logging.info("Running tests")
-        for test in tests:
-            if not binaries.get(test.sourcefile, (False, None))[0]:
-                logging.info(f'%-{test.sourcefile.stem:>{longest_name}s}: No compile')
-                continue
-            if test.testnb < 1:
-                logging.info(f'%-{test.sourcefile.stem:>{longest_name}s}: No test')
-                continue
-
+    logging.info("Compiling instruments")
+    for test in tests:
+        print(test)
+        if test.sourcefile not in binaries and (test.test_number != 0 or not skip_non_test):
             t1 = datetime.now()
-            test.didrun, stdout, output_dir = runner(binaries[test.sourcefile][1], test.parvals, n_particles)
-            test.runtime = datetime.now() - t1
+            binaries[test.sourcefile] = compiler(workdir, test.sourcefile)
+            test.compile_time = datetime.now() - t1
 
-            if test.didrun:
-                logging.info(f'%-{test.sourcefile.stem:>{longest_name}s}: {test.runtime}')
+            if binaries[test.sourcefile][0]:
+                logging.info(f'%-{test.sourcefile.stem:>{longest_name}s}: {test.compile_time}')
             else:
-                logging.info(f'%-{test.sourcefile.stem:>{longest_name}s}: RUNTIME ERROR')
-                continue
+                logging.info(f'%-{test.sourcefile.stem:>{longest_name}s}: COMPILE ERROR')
+        else:
+            logging.info(f'%-{test.sourcefile.stem:>{longest_name}s}: COMPILE skipped')
 
-            detector_output = _monitor_name_file_name_match(output_dir, test.detector)
-            test.testval = - 1
-            if detector_output is None or not detector_output.is_file():
-                rdet = re.compile(f'{test.detector}_I= ([0-9+-eE.]+)')
-                matches = rdet.findall(stdout)
-                if len(matches):
-                    test.testval = float(matches[0][0])
-            else:
-                with open(detector_output, 'r') as detector_file:
-                    detector_lines = detector_file.readlines()
-                detector_pattern = re.compile('#values: ([0-9+-e.]+) ([0-9+-e.]+) ([0-9]+)')
-                detector_matches = [detector_pattern.match(line) for line in detector_lines]
-                detector_matches = [dm for dm in detector_matches if dm is not None]
-                if len(detector_matches):
-                    test.testval = float(detector_matches[0].group(1))
+    logging.info("Running tests")
+    for test in tests:
+        if not binaries.get(test.sourcefile, (False, None))[0]:
+            logging.info(f'%-{test.sourcefile.stem:>{longest_name}s}: No compile')
+            continue
+        if test.test_number < 1:
+            logging.info(f'%-{test.sourcefile.stem:>{longest_name}s}: No test')
+            continue
 
-            test.testcomplete = True
+        t1 = datetime.now()
+        test.ran, stdout, output_dir = runner(binaries[test.sourcefile][1], test.parameter_values, n_particles)
+        test.run_time = datetime.now() - t1
+
+        if test.ran:
+            logging.info(f'%-{test.sourcefile.stem:>{longest_name}s}: {test.run_time}')
+        else:
+            logging.info(f'%-{test.sourcefile.stem:>{longest_name}s}: RUNTIME ERROR')
+            logging.debug(stdout)
+            test.error_message = stdout
+            continue
+
+        detector_output = _monitor_name_file_name_match(output_dir, test.detector)
+        test.test_value = - 1
+        if detector_output is None or not detector_output.is_file():
+            rdet = re.compile(f'{test.detector}_I= ([0-9+-eE.]+)')
+            matches = rdet.findall(stdout)
+            if len(matches):
+                test.test_value = float(matches[0][0])
+        else:
+            with open(detector_output, 'r') as detector_file:
+                detector_lines = detector_file.readlines()
+            detector_pattern = re.compile('#values: ([0-9+-e.]+) ([0-9+-e.]+) ([0-9]+)')
+            detector_matches = [detector_pattern.match(line) for line in detector_lines]
+            detector_matches = [dm for dm in detector_matches if dm is not None]
+            if len(detector_matches):
+                test.test_value = float(detector_matches[0].group(1))
+
+        test.testcomplete = True
+
+    if created:
+        import shutil
+        shutil.rmtree(workdir)
+    else:
+        logging.info(f'Test compiled binaries and test case output directories are located under {workdir}.\n'
+                     'You may wish to clean-up this directory to recover disk space.')
 
     # Since we let the context manager control the output directories, save the test results ... here?
     for test in tests:
@@ -334,6 +360,7 @@ def _mccode_test(compiler, runner, registry: Registry, search_pattern=None, inst
 
 def main(name, program):
     from argparse import ArgumentParser
+    from zenlog import log
     parser = ArgumentParser(name, description=f'Test instrument compilation and runtime for {name}')
     parser.add_argument('-s', '--search', help='Regular expression positive filter for instrument names', default=None)
     parser.add_argument('-c', '--count', type=int, help='Maximum number of instruments to test', default=None)
@@ -341,6 +368,12 @@ def main(name, program):
     parser.add_argument('--mpi', type=int, help='Number of mpi processes to use', default=None)
     parser.add_argument('--nexus', action='store_true', help='Whether to use NeXus output')
     parser.add_argument('-n', '--ncount', type=int, help='Number of particles to simulate per test', default=1000)
+
+    # logging.basicConfig(level=logging.DEBUG, format='{asctime} {levelname} {message}', style='{')
+    # logging.basicConfig(level=logging.DEBUG)
+
+    log.level('debug')
+
 
     args = parser.parse_args()
     results = program(search_pattern=args.search, instr_count=args.count, skip_non_test=args.skip, mpi=args.mpi,
