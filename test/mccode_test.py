@@ -22,6 +22,8 @@ class TestInstrExample:
     ran: bool = False
     run_time: timedelta = field(default_factory=timedelta)
     error_message: str = ""
+    stdout: str = ""
+    test_complete: bool = False
 
     @classmethod
     def list_from_file(cls, filename: Path) -> list[Self]:
@@ -50,7 +52,10 @@ class TestInstrExample:
                   compiletime=str(self.compile_time),
                   didrun=self.ran,
                   runtime=str(self.run_time),
-                  errmsg=self.error_message)
+                  errmsg=self.error_message,
+                  stdout=self.stdout,
+                  complete=self.test_complete
+                  )
         return jr
 
     def save(self, path: Path):
@@ -292,6 +297,7 @@ def _mccode_test(compiler, runner, registry: Registry, search_pattern=None, inst
             t1 = datetime.now()
             binaries[test.sourcefile] = compiler(workdir, test.sourcefile)
             test.compile_time = datetime.now() - t1
+            test.compiled = True
 
             if binaries[test.sourcefile][0]:
                 logging.info(f'%-{test.sourcefile.stem:>{longest_name}s}: {test.compile_time}')
@@ -312,32 +318,33 @@ def _mccode_test(compiler, runner, registry: Registry, search_pattern=None, inst
         t1 = datetime.now()
         test.ran, stdout, output_dir = runner(binaries[test.sourcefile][1], test.parameter_values, n_particles)
         test.run_time = datetime.now() - t1
+        test.stdout = stdout.decode() if isinstance(stdout, bytes) else stdout
 
         if test.ran:
             logging.info(f'%-{test.sourcefile.stem:>{longest_name}s}: {test.run_time}')
         else:
             logging.info(f'%-{test.sourcefile.stem:>{longest_name}s}: RUNTIME ERROR')
-            logging.debug(stdout)
-            test.error_message = stdout
+            logging.debug(test.stdout)
+            test.error_message = test.stdout
             continue
 
         detector_output = _monitor_name_file_name_match(output_dir, test.detector)
+        logging.debug(f'Detector output stored in {detector_output}')
         test.test_value = - 1
         if detector_output is None or not detector_output.is_file():
             rdet = re.compile(f'{test.detector}_I= ([0-9+-eE.]+)')
-            matches = rdet.findall(stdout)
+            matches = rdet.findall(test.stdout)
             if len(matches):
                 test.test_value = float(matches[0][0])
         else:
             with open(detector_output, 'r') as detector_file:
                 detector_lines = detector_file.readlines()
-            detector_pattern = re.compile('#values: ([0-9+-e.]+) ([0-9+-e.]+) ([0-9]+)')
-            detector_matches = [detector_pattern.match(line) for line in detector_lines]
-            detector_matches = [dm for dm in detector_matches if dm is not None]
+            detector_pattern = re.compile('# values: ([0-9+-e.]+) ([0-9+-e.]+) ([0-9]+)')
+            detector_matches = [detector_pattern.match(line) for line in detector_lines if detector_pattern.match(line)]
             if len(detector_matches):
                 test.test_value = float(detector_matches[0].group(1))
 
-        test.testcomplete = True
+        test.test_complete = True
 
     if created:
         import shutil
@@ -346,7 +353,7 @@ def _mccode_test(compiler, runner, registry: Registry, search_pattern=None, inst
         logging.info(f'Test compiled binaries and test case output directories are located under {workdir}.\n'
                      'You may wish to clean-up this directory to recover disk space.')
 
-    # Since we let the context manager control the output directories, save the test results ... here?
+    # Since the output directories may no longer exist, save the test results ... here?
     for test in tests:
         test.save(Path())
 
