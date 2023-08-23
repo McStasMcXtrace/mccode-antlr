@@ -1,31 +1,31 @@
 from dataclasses import dataclass, field
-from ..common import Value
+from ..common import Expr, unary_expr, binary_expr
 from enum import Enum
 
 def _value_float_tuple(n, v=0.):
-    return tuple(Value.float(v) for _ in range(n))
+    return tuple(Expr.float(v) for _ in range(n))
 
 
-def cos_value(v: Value):
+def cos_value(v: Expr):
     from math import cos
-    return v.apply_elementwise_function(cos, 'cos')
+    return unary_expr(cos, 'cos', v)
 
 
-def sin_value(v: Value):
+def sin_value(v: Expr):
     from math import sin
-    return v.apply_elementwise_function(sin, 'sin')
+    return unary_expr(sin, 'sin', v)
 
 
-def atan2_value(va: Value, vb: Value):
+def atan2_value(va: Expr, vb: Expr):
     from math import atan2
-    return Value.apply_elementwise_binary_function(atan2, 'atan2', va, vb)
+    return binary_expr(atan2, 'atan2', va, vb)
 
 
-def degree_to_radian(v: Value):
+def degree_to_radian(v: Expr):
     from math import pi
-    if v.is_a(Value.Type.str):
-        return v * Value.str('PI/180')
-    return v * (pi / 180)
+    if v.is_id:
+        return v * (Expr.float('PI') / Expr.float(180))
+    return v * Expr.float(pi / 180)
 
 
 @dataclass
@@ -34,11 +34,21 @@ class Orientation:
         axes = 1
         coordinates = 2
 
-    position: tuple[Value, Value, Value] = field(default_factory=lambda: _value_float_tuple(3))
-    _axes: tuple[Value, Value, Value, Value, Value, Value, Value, Value, Value] \
+    position: tuple[Expr, Expr, Expr] = field(default_factory=lambda: _value_float_tuple(3))
+    _axes: tuple[Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr] \
         = field(default_factory=lambda: _value_float_tuple(9))
-    _coordinates: tuple[Value, Value, Value, Value, Value, Value, Value, Value, Value] \
+    _coordinates: tuple[Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr] \
         = field(default_factory=lambda: _value_float_tuple(9))
+
+    def __str__(self):
+        y = [self._axes[0], self._axes[1], self._axes[2], self.position[0],
+             self._axes[3], self._axes[4], self._axes[5], self.position[1],
+             self._axes[6], self._axes[7], self._axes[8], self.position[2]]
+        x = [f'{x}' for x in y]
+        widths = [max(len(x[i+4*j]) for j in range(3)) for i in range(4)]
+        line_fmt = [f'>{w+2:d}s' for w in widths]
+        lines = '\n'.join(' '.join(f'{x[i+4*j]:{f:s}}' for i, f in zip(range(4), line_fmt)) for j in range(3))
+        return lines
 
     @property
     def affine_matrix(self, which=None):
@@ -46,30 +56,36 @@ class Orientation:
         m = ((t[0], t[1], t[2], self.position[0]),
              (t[3], t[4], t[5], self.position[1]),
              (t[6], t[7], t[8], self.position[2]),
-             (Value.float(0), Value.float(0), Value.float(0), Value.float(1)))
+             (Expr.float(0), Expr.float(0), Expr.float(0), Expr.float(1)))
         return m
 
     @property
     def angles(self):
+        from zenlog import log
         def abs_ch(a, b):
-            v = abs(a) > abs(b)
-            return v.value == 1 if isinstance(v, Value) else v
+            # v = abs(a) > abs(b)
+            # return v.value == 1 if isinstance(v, Value) else v
+            return abs(a) > abs(b)
 
         # Inspired by eniius get_euler_angles
         x = atan2_value(-self._axes[7], self._axes[8])  # tan(x) = sin(x) / cos(x) = -(-sx*cy)/(cx*cy)
         z = atan2_value(-self._axes[3], self._axes[0])  # tan(z) = sin(z) / cos(z) = -(-cy*sz)/(cy*cz)
         # Ensure we know the sign of cos(y), not just its magnitude:
         cos_x, cos_z = [cos_value(a) for a in (x, z)]
-        if not x.is_a(Value.Type.str) and not z.is_a(Value.Type.str):
+        # if not x.is_a(Value.Type.str) and not z.is_a(Value.Type.str):
+        # elif not x.is_a(Value.Type.str):
+        # elif not z.is_a(Value.Type.str):
+        if not x.is_id and not z.is_id:
             if abs_ch(cos_x, cos_z):
                 cos_a, sin_a, cos_y_cos_a, sin_y_sin_a = cos_x, sin_value(x), self._axes[8], -self._axes[7]
             else:
                 cos_a, sin_a, cos_y_cos_a, sin_y_sin_a = cos_z, sin_value(z), self._axes[0], -self._axes[3]
-        elif not x.is_a(Value.Type.str):
+        elif not x.is_id:
             cos_a, sin_a, cos_y_cos_a, sin_y_sin_a = cos_x, sin_value(x), self._axes[8], -self._axes[7]
-        elif not z.is_a(Value.Type.str):
+        elif not z.is_id:
             cos_a, sin_a, cos_y_cos_a, sin_y_sin_a = cos_z, sin_value(z), self._axes[0], -self._axes[3]
         else:
+            log.debug(self)
             raise RuntimeError("How do we prevent division by zero when both x and z are strings?")
         y = atan2_value(self._axes[6], cos_y_cos_a / cos_a if abs_ch(cos_a, sin_a) else sin_y_sin_a / sin_a)
         return x, y, z
@@ -93,23 +109,23 @@ class Orientation:
         return Orientation(v, axes, coordinates)
 
 
-def from_at_rotated(at: tuple[Value, Value, Value], rotated: tuple[Value, Value, Value]):
+def from_at_rotated(at: tuple[Expr, Expr, Expr], rotated: tuple[Expr, Expr, Expr]):
     return Orientation.from_at_rotated(at, rotated)
 
 
-def matrix_det_2(m: tuple[Value, Value, Value, Value]):
+def matrix_det_2(m: tuple[Expr, Expr, Expr, Expr]):
     """Determinant of a (flat, row ordered) 2x2 matrix"""
     return m[0] * m[3] - m[1] * m[2]
 
 
-def matrix_det_3(m: tuple[Value, Value, Value, Value, Value, Value, Value, Value, Value]):
+def matrix_det_3(m: tuple[Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr]):
     """Determinant of a (flat, row ordered) 3x3 matrix"""
     def d(i, j, k, l):
         return matrix_det_2((m[i], m[j], m[k], m[l]))
     return m[0] * d(4, 5, 7, 8) - m[1] * d(3, 5, 6, 8) + m[2] * d(3, 4, 6, 7)
 
 
-def matrix_inverse_3(m: tuple[Value, Value, Value, Value, Value, Value, Value, Value, Value]):
+def matrix_inverse_3(m: tuple[Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr]):
     """Inverse of a (flat, row ordered) 3x3 matrix"""
     det = abs(matrix_det_3(m))
 
@@ -121,8 +137,8 @@ def matrix_inverse_3(m: tuple[Value, Value, Value, Value, Value, Value, Value, V
             d(3, 4, 6, 7), d(1, 0, 7, 6), d(0, 1, 3, 4))
 
 
-def matrix_matrix_multiply_3(a: tuple[Value, Value, Value, Value, Value, Value, Value, Value, Value],
-                             b: tuple[Value, Value, Value, Value, Value, Value, Value, Value, Value]):
+def matrix_matrix_multiply_3(a: tuple[Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr],
+                             b: tuple[Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr]):
     """Matrix multiplication of two (flat, row-ordered) matrices"""
     x00 = a[0] * b[0] + a[1] * b[3] + a[2] * b[6]
     x01 = a[0] * b[1] + a[1] * b[4] + a[2] * b[7]
@@ -136,7 +152,7 @@ def matrix_matrix_multiply_3(a: tuple[Value, Value, Value, Value, Value, Value, 
     return x00, x01, x02, x10, x11, x12, x20, x21, x22
 
 
-def matrix_matrix_multiply_4(a: tuple[Value, ...], b: tuple[Value, ...]):
+def matrix_matrix_multiply_4(a: tuple[Expr, ...], b: tuple[Expr, ...]):
     """Matrix multiplication of two (flat, row-ordered) 4x4 matrices"""
     x00 = a[0] * b[0] + a[1] * b[4] + a[2] * b[8] + a[3] * b[12]
     x01 = a[0] * b[1] + a[1] * b[5] + a[2] * b[9] + a[3] * b[13]
@@ -157,8 +173,8 @@ def matrix_matrix_multiply_4(a: tuple[Value, ...], b: tuple[Value, ...]):
     return x00, x01, x02, x03, x10, x11, x12, x13, x20, x21, x22, x23, x30, x31, x32, x33
 
 
-def matrix_vector_multiply_3(m: tuple[Value, Value, Value, Value, Value, Value, Value, Value, Value],
-                             v: tuple[Value, Value, Value]):
+def matrix_vector_multiply_3(m: tuple[Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr],
+                             v: tuple[Expr, Expr, Expr]):
     """Multiplication of a (flat, row-ordered) 3x3 matrix with a column 3-vector"""
     x0 = m[0] * v[0] + m[1] * v[1] + m[2] * v[2]
     x1 = m[3] * v[0] + m[4] * v[1] + m[4] * v[2]
@@ -166,8 +182,8 @@ def matrix_vector_multiply_3(m: tuple[Value, Value, Value, Value, Value, Value, 
     return x0, x1, x2
 
 
-def vector_matrix_multiply_3(v: tuple[Value, Value, Value],
-                             m: tuple[Value, Value, Value, Value, Value, Value, Value, Value, Value]):
+def vector_matrix_multiply_3(v: tuple[Expr, Expr, Expr],
+                             m: tuple[Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr]):
     """Multiplication of a row 3-vector with a (flat, row-ordered) 3x3 matrix"""
     x0 = v[0] * m[0] + v[1] * m[3] + v[2] * m[6]
     x1 = v[0] * m[1] + v[1] * m[4] + v[2] * m[7]
@@ -175,7 +191,7 @@ def vector_matrix_multiply_3(v: tuple[Value, Value, Value],
     return x0, x1, x2
 
 
-def affine_inverse(a: tuple[Value, ...]):
+def affine_inverse(a: tuple[Expr, ...]):
     """Special 4x4 (flat, row-ordered) matrix inverse.
 
     The affine matrix *must* be a _projective transformation matrix_ and acts on augmented vectors,
@@ -194,5 +210,5 @@ def affine_inverse(a: tuple[Value, ...]):
     inv_a = (inv_r[0], inv_r[1], inv_r[2], -neg_inv_t[0],
              inv_r[3], inv_r[4], inv_r[5], -neg_inv_t[1],
              inv_r[6], inv_r[7], inv_r[8], -neg_inv_t[2],
-             Value.float(0), Value.float(0), Value.float(0), Value.float(1))
+             Expr.float(0), Expr.float(0), Expr.float(0), Expr.float(1))
     return inv_a

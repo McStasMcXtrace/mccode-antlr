@@ -318,7 +318,7 @@ def cogen_funnel(source, ok_to_skip):
                     "    // SPLIT with available livebatchsize ",
                     f"    long mult_{comp.name};",
                     f"    livebatchsize = sort_absorb_last(particles, pbuffer, livebatchsize, gpu_innerloop, 1, &mult_{comp.name});",
-                    "    //printf(\"livebatchsize: %cld, split: %cld\\n\",  livebatchsize, mult);", '%', '%',
+                    "    //printf(\"livebatchsize: %ld, split: %ld\\n\",  livebatchsize, mult);",
                 ])
                 print(f'-> SPLIT within buffer at component {comp.name}')
 

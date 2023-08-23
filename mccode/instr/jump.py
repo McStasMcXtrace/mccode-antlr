@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from ..common import Value
+from ..common import Expr
 
 
 @dataclass
@@ -7,5 +7,5 @@ class Jump:
     target: str
     relative_target: int
     iterate: bool
-    condition: Value
+    condition: Expr
     absolute_target: int = -1

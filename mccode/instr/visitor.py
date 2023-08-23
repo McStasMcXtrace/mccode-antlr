@@ -1,10 +1,8 @@
 from ..grammar import McInstrParser, McInstrVisitor
-from ..common import InstrumentParameter, ComponentParameter, Value, MetaData
+from ..common import InstrumentParameter, MetaData, Expr
 from .instr import Instr
 from .instance import Instance
-from .orientation import Orientation
 from .jump import Jump
-from .group import Group
 
 
 class InstrVisitor(McInstrVisitor):
@@ -39,19 +37,19 @@ class InstrVisitor(McInstrVisitor):
         name = str(ctx.Identifier())
         unit = None if ctx.instrument_parameter_unit() is None else self.visit(ctx.instrument_parameter_unit())
         value = None if ctx.Assign() is None else self.visit(ctx.expr())
-        return InstrumentParameter(name, unit, Value.float(value))
+        return InstrumentParameter(name, unit, Expr.float(value))
 
     def visitInstrumentParameterInteger(self, ctx: McInstrParser.InstrumentParameterIntegerContext):
         name = str(ctx.Identifier())
         unit = None if ctx.instrument_parameter_unit() is None else self.visit(ctx.instrument_parameter_unit())
         value = None if ctx.Assign() is None else self.visit(ctx.expr())
-        return InstrumentParameter(name, unit, Value.int(value))
+        return InstrumentParameter(name, unit, Expr.int(value))
 
     def visitInstrumentParameterString(self, ctx: McInstrParser.InstrumentParameterStringContext):
         name = str(ctx.Identifier())
         unit = None if ctx.instrument_parameter_unit() is None else self.visit(ctx.instrument_parameter_unit())
         value = None if ctx.Assign() is None else str(ctx.StringLiteral())
-        return InstrumentParameter(name, unit, Value.str(value))
+        return InstrumentParameter(name, unit, Expr.str(value))
 
     def visitInstrument_parameter_unit(self, ctx: McInstrParser.Instrument_parameter_unitContext):
         return str(ctx.StringLiteral())
@@ -91,7 +89,7 @@ class InstrVisitor(McInstrVisitor):
         if ctx.orientation() is not None:
             rotate = self.visit(ctx.orientation())
         else:
-            rotate = ((Value.int(0), Value.int(0), Value.int(0)), None)
+            rotate = ((Expr.int(0), Expr.int(0), Expr.int(0)), None)
         instance = Instance(name, comp, at, rotate)
         if ctx.instance_parameters() is not None:
             for param_name, param_value in self.visit(ctx.instance_parameters()):
@@ -143,7 +141,7 @@ class InstrVisitor(McInstrVisitor):
         return str(ctx.Identifier()), str(ctx.StringLiteral())
 
     def visitSplit(self, ctx: McInstrParser.SplitContext):
-        return Value.int(10) if ctx.expr() is None else self.visit(ctx.expr())
+        return Expr.int(10) if ctx.expr() is None else self.visit(ctx.expr())
 
     def visitWhen(self, ctx: McInstrParser.WhenContext):
         return self.visit(ctx.expr())
@@ -188,14 +186,14 @@ class InstrVisitor(McInstrVisitor):
         if ctx.Previous() is not None:
             count = 1 if ctx.IntegerLiteral() is None else int(str(ctx.IntegerLiteral()))
             return self.state.last_component(count, removable_ok=False)
-        self.state.get_component(str(ctx.Identifier()))
+        return self.state.get_component(str(ctx.Identifier()))
 
     def visitCoords(self, ctx: McInstrParser.CoordsContext):
-        return tuple([Value.best(self.visit(x)) for x in ctx.expr()])
+        return tuple([Expr.best(self.visit(x)) for x in ctx.expr()])
 
     def visitReference(self, ctx: McInstrParser.ReferenceContext):
         # ABSOLUTE or RELATIVE ABSOLUTE -> None
-        return None if ctx.Absolute() is not None else self.visit(ctx.component_ref())
+        return self.visit(ctx.component_ref()) if ctx.Absolute() is None else None
 
     def visitDependency(self, ctx: McInstrParser.DependencyContext):
         return str(ctx.StringLiteral())

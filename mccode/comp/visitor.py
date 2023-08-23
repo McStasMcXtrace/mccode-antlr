@@ -1,6 +1,6 @@
 from ..grammar import McCompParser as Parser, McCompVisitor
 from .comp import Comp
-from ..common import ComponentParameter, Value, MetaData
+from ..common import ComponentParameter, Expr, MetaData
 
 
 class CompVisitor(McCompVisitor):
@@ -59,7 +59,7 @@ class CompVisitor(McCompVisitor):
         if ctx.Assign() is not None:
             # protect against a literal '0' provided ... which doesn't match IntegerLiteral for some reason
             value = 0 if ctx.expr() is None else self.visit(ctx.expr())
-        return ComponentParameter(name=name, value=Value(Value.Type.float, value))
+        return ComponentParameter(name=name, value=Expr.float(value))
 
     def visitComponentParameterInteger(self, ctx: Parser.ComponentParameterIntegerContext):
         name = str(ctx.Identifier())
@@ -67,14 +67,14 @@ class CompVisitor(McCompVisitor):
         if ctx.Assign() is not None:
             # protect against a literal '0' provided ... which doesn't match IntegerLiteral for some reason
             value = 0 if ctx.expr() is None else self.visit(ctx.expr())
-        return ComponentParameter(name=name, value=Value(Value.Type.int, value))
+        return ComponentParameter(name=name, value=Expr.int(value))
 
     def visitComponentParameterString(self, ctx: Parser.ComponentParameterStringContext):
         name = str(ctx.Identifier())
         default = None
         if ctx.Assign() is not None:
             default = 'NULL' if ctx.StringLiteral() is None else self.visit(ctx.StringLiteral())
-        return ComponentParameter(name=name, value=Value(Value.Type.str, default))
+        return ComponentParameter(name=name, value=Expr.str(default))
 
     def visitComponentParameterVector(self, ctx: Parser.ComponentParameterVectorContext):
         name = str(ctx.Identifier(0))
@@ -85,7 +85,7 @@ class CompVisitor(McCompVisitor):
                 default = str(ctx.Identifier(1))
             elif ctx.initializerlist() is not None:
                 default = self.visit(ctx.initializerlist())
-        return ComponentParameter(name=name, value=Value(Value.Type.float_array, default))
+        return ComponentParameter(name=name, value=Expr.float(default))
 
     def visitComponentParameterSymbol(self, ctx: Parser.ComponentParameterSymbolContext):
         raise RuntimeError("McCode symbol parameter type not supported yet")
@@ -103,7 +103,7 @@ class CompVisitor(McCompVisitor):
                 default = str(ctx.Identifier(1))
             elif ctx.initializerlist() is not None:
                 default = self.visit(ctx.initializerlist())
-        return ComponentParameter(name=name, value=Value(Value.Type.int_array, default))
+        return ComponentParameter(name=name, value=Expr.int(default))
 
     def visitDependency(self, ctx: Parser.DependencyContext):
         self.parent.add_c_flags(self.visit(ctx.StringLiteral()))

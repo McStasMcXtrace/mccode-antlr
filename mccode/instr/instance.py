@@ -1,7 +1,8 @@
+from zenlog import log
 from dataclasses import dataclass, field
 from typing import Self
 from ..comp import Comp
-from ..common import ComponentParameter, Value, MetaData, parameter_name_present, RawC, blocks_to_raw_c
+from ..common import Expr, ComponentParameter, MetaData, parameter_name_present, RawC, blocks_to_raw_c
 from .orientation import Orientation
 from .jump import Jump
 
@@ -14,14 +15,14 @@ class Instance:
     """
     name: str
     type: Comp
-    at_relative: tuple[tuple[Value, Value, Value], Self]
-    rotate_relative: tuple[tuple[Value, Value, Value], Self]
+    at_relative: tuple[tuple[Expr, Expr, Expr], Self]
+    rotate_relative: tuple[tuple[Expr, Expr, Expr], Self]
     orientation: Orientation = None
     parameters: tuple[ComponentParameter] = field(default_factory=tuple)
     removable: bool = False
     cpu: bool = False
-    split: Value = None
-    when: Value = None
+    split: Expr = None
+    when: Expr = None
     group: str = None
     extend: tuple[RawC] = field(default_factory=tuple)
     jump: tuple[Jump] = field(default_factory=tuple)
@@ -38,8 +39,10 @@ class Instance:
             raise RuntimeError(f"Multiple definitions of {name} in component instance {self.name}")
         p = self.type.get_parameter(name)
         if not p.compatible_value(value):
+            log.debug(f'{p=}, {name=}, {value=}')
             raise RuntimeError(f"Provided value for parameter {name} is not compatible with {self.type.name}")
-        v = Value(p.value.data_type, value.value if isinstance(value, Value) else value)
+        v = value if isinstance(value, Expr) else Expr.best(value)
+        # v = Value(p.value.data_type, value.value if isinstance(value, Value) else value)
         self.parameters += (ComponentParameter(p.name, v), )
 
     def get_parameter(self, name: str):
@@ -62,8 +65,9 @@ class Instance:
         self.split = count
 
     def WHEN(self, expr):
-        if not expr.is_a(Value.Type.str):
-            raise RuntimeError(f'Evaluated WHEN statement {expr.value} would be constant at runtime!')
+        if expr.is_contant:
+            # if not expr.is_a(Value.Type.str):
+            raise RuntimeError(f'Evaluated WHEN statement {expr} would be constant at runtime!')
         self.when = expr
 
     def GROUP(self, name: str):
@@ -88,8 +92,8 @@ class Instance:
         return tuple(md.values())
 
 
-def from_at_relative_rotated_relative(at: tuple[Value, Value, Value], at_relative: Instance,
-                                      rotated: tuple[Value, Value, Value], rotated_relative: Instance):
+def from_at_relative_rotated_relative(at: tuple[Expr, Expr, Expr], at_relative: Instance,
+                                      rotated: tuple[Expr, Expr, Expr], rotated_relative: Instance):
     if at_relative is None or at_relative.orientation is None:
         global_at = at
     else:

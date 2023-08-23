@@ -30,6 +30,7 @@ double checked_setpos_getdistance(int current_index, char* first_component, char
 
 
 def cogen_comp_init_position(index, comp, last, instr):
+    from zenlog import log
     ref = None if index == 0 else instr.components[last]
     var = f'_{comp.name}_var'
     lines = [
@@ -45,10 +46,12 @@ def cogen_comp_init_position(index, comp, last, instr):
     x, y, z = comp.rotate_relative[0]
     rel = comp.rotate_relative[1]
     if rel is None:
+        log.debug(f'{comp.name} has absolute orientation with rotation ({x}, {y}, {z})')
         lines.append(
             f'    rot_set_rotation({var}._rotation_absolute, ({x})*DEG2RAD, ({y})*DEG2RAD, ({z})*DEG2RAD);'
         )
     else:
+        log.debug(f'{comp.name} has relative orientation to {rel.name} with rotation ({x}, {y}, {z})')
         lines.extend([
             f'    rot_set_rotation(tr1, ({x})*DEG2RAD, ({y})*DEG2RAD, ({z})*DEG2RAD);',
             f'    rot_mul(tr1, _{rel.name}_var._rotation_absolute, {var}._rotation_absolute);'
@@ -67,8 +70,10 @@ def cogen_comp_init_position(index, comp, last, instr):
     x, y, z = comp.at_relative[0]
     rel = comp.at_relative[1]
     if rel is None:
+        log.debug(f'{comp.name} has absolute positioning with rotation ({x}, {y}, {z})')
         lines.append(f'    {var}._position_absolute = coords_set({x}, {y}, {z});')
     else:
+        log.debug(f'{comp.name} has relative positioning to {rel.name} with rotation ({x}, {y}, {z})')
         lines.extend([
             f'    tc1 = coords_set({x}, {y}, {z});',
             f'    rot_transpose(_{rel.name}_var._rotation_absolute, tr1);',
@@ -91,7 +96,7 @@ def cogen_comp_init_position(index, comp, last, instr):
 
 
 def cogen_comp_setpos(index, comp, last, instr, component_declared_parameters):
-    from ..common import Value
+    from ..common import Expr
 
     def parameter_line(p):
         # cogen_comp_init_par skipped any parameters which had "val" which evaluates False
@@ -101,16 +106,18 @@ def cogen_comp_setpos(index, comp, last, instr, component_declared_parameters):
             return ''
         pl = []
         fullname = f'_{comp.name}_var._parameters.{p.name}'
-        if p.value.is_a(Value.Type.str):
+        if p.value.is_id:
+            pl.append(f"  {fullname} = {p.value if p.value is not None else 0};")
+        elif p.value.is_str:
             if p.value.has_value and p.value.value != '0' and p.value.value != 'NULL':
                 pl.extend([
                     f'  if ({p.value} && strlen({p.value}))',
                     f'    stracpy({fullname}, {p.value} ? {p.value} : "", 16384);',
                     '  else'
                 ])
-            pl.append(f"  {fullname}[0]='\\0';")
-        elif p.value.is_a(Value.Type.float_array) or p.value.is_a(Value.Type.int_array):
-            if p.value.has_value and p.value.holds_array:
+            pl.append(f"  {fullname}[0] = '\\0';")
+        elif p.value.is_vector:
+            if p.value.holds_vector:
                 for i, v in enumerate(p.value.value):
                     pl.append(f'  {fullname}[{i}] = {v};')
             else:
@@ -130,7 +137,7 @@ def cogen_comp_setpos(index, comp, last, instr, component_declared_parameters):
         "{ /* sets initial component parameters, position and rotation */",
         # init parameters. These can then be used in position/rotation syntax
         # all these parameters have a #define pointing to the real name space in structure
-        f'  SIG_MESSAGE("[_{comp.name}_setpos] component {comp.name}={comp.type.name}() SETTING [{f}:{n}]")',
+        f'  SIG_MESSAGE("[_{comp.name}_setpos] component {comp.name}={comp.type.name}() SETTING [{f}:{n}]");',
         f'  stracpy(_{comp.name}_var._name, "{comp.name}", {min(len(comp.name)+1, 16384)});',
         f'  stracpy(_{comp.name}_var._type, "{comp.type.name}", {min(len(comp.type.name)+1, 16384)});',
         f'  _{comp.name}_var._index={index};',

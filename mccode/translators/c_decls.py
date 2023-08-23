@@ -143,7 +143,7 @@ def component_type_declaration(comp, typedefs: list, declared_parameters: dict):
     # The call tree for functions that access `comp->def->out_par` is such that the pointer is not used before it
     # is replaced, so at least there is no ambiguity between DECLARE-found parameters and OUTPUT PARAMETERS in cogen.
 
-    from ..common import Value
+    from ..common import Expr
     from .c_listener import extract_c_declared_variables
     warnings = 0
     lines = [
@@ -153,20 +153,15 @@ def component_type_declaration(comp, typedefs: list, declared_parameters: dict):
     ]
     # TODO Veryify that the cogen.c iteration over `comp->def->set_par` does not somehow include DEFINITION PARAMETERS
     for par in comp.setting:
-        if par.value.is_a(Value.Type.float_array) or par.value.is_a(Value.Type.int_array):
-            if par.value.holds_array:
+        # if par.value.is_a(Value.Type.float_array) or par.value.is_a(Value.Type.int_array):
+        if par.value.is_vector:
+            if len(par.value):
                 # this is only possible if the value is a tuple of numbers, so no str representations of calculations
                 c_type = par.value.mccode_c_type.translate(str.maketrans('', '', ' *'))  # strip the trailing ' *'
-                lines.append(f'  {c_type} {par.name}[{len(par.value.value)}];')
-            elif par.value.has_value:
-                print(f'The parameter {par.name} of {comp.name} appears to be default-initialized')
-                print(f'with a non-numeric initializer list: {comp.value}')
-                print(f'This will cause errors as initializer-lists can only contain literal numbers.')
-                warnings += 1
-                lines.append(f'  {par.value.mccode_c_type} {par.name};')
+                lines.append(f'  {c_type} {par.name}[{len(par.value)}];')
             else:
                 lines.append(f'  {par.value.mccode_c_type} {par.name};')
-        if par.value.is_a(Value.Type.str):
+        if par.value.is_str:
             # TODO FIXME The cogen implementation *ALSO* makes static arrays for `vector` parameters?
 
             # the mccode runtime does not want to allocate or deallocate the memory for this string.

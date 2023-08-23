@@ -1,5 +1,5 @@
 from typing import Union
-from ..common import Value, InstrumentParameter
+from ..common import Expr, InstrumentParameter
 from ..instr import Instr, Instance
 from ..reader import Reader, Registry
 
@@ -11,9 +11,9 @@ class Assembler:
         self.instrument = Instr(name, source='interactive')
         self.reader = Reader(registries=registries) if registries is not None else Reader()
 
-    def _handle_at_rotate(self, a=None) -> tuple[tuple[Value, Value, Value], Union[Instance,  None]]:
+    def _handle_at_rotate(self, a=None) -> tuple[tuple[Expr, Expr, Expr], Union[Instance,  None]]:
         if a is None:
-            return (Value.float(0), Value.float(0), Value.float(0)), None
+            return (Expr.float(0), Expr.float(0), Expr.float(0)), None
         if hasattr(a, '__len__') and len(a) == 3:
             a = a, 'ABSOLUTE'
         if not hasattr(a, '__len__') or len(a) != 2:
@@ -29,7 +29,7 @@ class Assembler:
                 raise RuntimeError(f'No logic pathway for instance reference {ref}')
         if not hasattr(v, '__len__') or len(v) != 3:
             raise RuntimeError('Position/orientation must have three elements')
-        v = tuple(x if isinstance(Value, x) else Value.best(x) for x in v)
+        v = tuple(x if isinstance(Expr, x) else Expr.best(x) for x in v)
         return (v[0], v[1], v[2]), ref
 
     def component(self, name: str, type_name: str, at=None, rotate=None, parameters=None):
@@ -52,7 +52,7 @@ class Assembler:
                     value, unit = value['value'], value['unit']
                 else:
                     unit = ''
-                value = InstrumentParameter(name, unit, value if isinstance(value, Value) else Value.best(value))
+                value = InstrumentParameter(name, unit, value if isinstance(value, Expr) else Expr.best(value))
             self.instrument.add_parameter(value)
 
 
