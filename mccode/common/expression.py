@@ -36,53 +36,65 @@ from zenlog import log
 #         eval(obj)
 
 
-class IT(Enum):
-    identifier = 1
-    value = 2
+class ObjectType(Enum):
+    value = 1
+    initializer_list = 2
+    identifier = 3
+    function = 4
 
     @property
     def is_id(self):
-        return self == IT.identifier
+        return self == ObjectType.identifier
 
-class ST(Enum):
+    @property
+    def is_function(self):
+        return self == ObjectType.function
+
+
+class ShapeType(Enum):
     scalar = 1
     vector = 2
 
     @property
     def mccode_c_type(self):
-        return '' if self == ST.scalar else '*'
+        return '' if self == ShapeType.scalar else '*'
 
     def compatible(self, other):
         return self == other
 
     @property
     def is_scalar(self):
-        return self == ST.scalar
+        return self == ShapeType.scalar
 
     @property
     def is_vector(self):
-        return self == ST.vector
+        return self == ShapeType.vector
 
 
-class DT(Enum):
+class DataType(Enum):
+    undefined = 0
     float = 1
     int = 2
     str = 3
 
     def compatible(self, other):
-        if self == other:
+        if self == DataType.undefined or other == DataType.undefined or self == other:
             return True
-        if (self == DT.float and other == DT.int) or (self == DT.int and other == DT.float):
+        if (self == DataType.float and other == DataType.int) or (self == DataType.int and other == DataType.float):
             return True
         return False
 
     # promotion rules:
     def __add__(self, other):
+        if self == DataType.undefined:
+            return other
+        if other == DataType.undefined:
+            return self
         if self == other:
             return self
-        if (self == DT.float and other == DT.int) or (self == DT.int and other == DT.float):
-            return DT.int
-        return DT.str
+        if (self == DataType.float and other == DataType.int) or (self == DataType.int and other == DataType.float):
+            return DataType.int
+        return DataType.str
 
     __sub__ = __add__
     __mul__ = __add__
@@ -90,15 +102,15 @@ class DT(Enum):
 
     @property
     def is_str(self):
-        return self == DT.str
+        return self == DataType.str
 
     @property
     def mccode_c_type(self):
-        if self == DT.float:
+        if self == DataType.float:
             return "double"
-        if self == DT.int:
+        if self == DataType.int:
             return "int"
-        if self == DT.str:
+        if self == DataType.str:
             return "char *"
         raise RuntimeError("No known conversion from non-enumerated data type")
 
@@ -108,14 +120,32 @@ class BinaryOp:
         self.op = op
         self.left = left
         self.right = right
-        self.dt = left.dt + right.dt
+        self.data_type = left.data_type + right.data_type
+
+    def _str_repr_(self, lstr, rstr):
+        if '__call__' == self.op:
+            return f'{lstr}({rstr})'
+        if '__getitem__' == self.op:
+            return f'{lstr}[{rstr}]'
+        if '__pow__' == self.op:
+            return f'{lstr}^{rstr}'
+        if '__lt__' == self.op:
+            return f'{lstr}<{rstr}'
+        if '__gt__' == self.op:
+            return f'{lstr}>{rstr}'
+        if '__eq__' == self.op:
+            return f'{lstr}=={rstr}'
+        if any(x in self.op for x in '+-'):
+            return f'({lstr} {self.op} {rstr})'
+        if any(x in self.op for x in '*/'):
+            return f'{lstr} {self.op} {rstr}'
+        return f'{self.op}({lstr}, {rstr})'
 
     def __str__(self):
-        if any(x in self.op for x in '+-'):
-            return f'({self.left} {self.op} {self.right})'
-        if any(x in self.op for x in '*/'):
-            return f'{self.left} {self.op} {self.right}'
-        return f'{self.op}({self.left}, {self.right})'
+        return self._str_repr_(str(self.left), str(self.right))
+
+    def __repr__(self):
+        return self._str_repr_(repr(self.left), repr(self.right))
 
     def __hash__(self):
         return hash(str(self))
@@ -133,11 +163,19 @@ class BinaryOp:
     def __mul__(self, other):
         if other.is_zero:
             return other
+        if other.is_value(1):
+            return self
+        if other.is_value(-1):
+            return -self
         return BinaryOp('*', self, other)
 
     def __truediv__(self, other):
         if other.is_zero:
             raise RuntimeError('Division by zero')
+        if other.is_value(1):
+            return self
+        if other.is_value(-1):
+            return -self
         return BinaryOp('/', self, other)
 
     def __neg__(self):
@@ -162,10 +200,17 @@ class BinaryOp:
     def is_id(self):
         return False
 
+    @property
+    def is_str(self):
+        return False
+
     def __eq__(self, other):
         if not isinstance(other, BinaryOp):
             return False
         return self.op == other.op and self.left == other.left and self.right == other.right
+
+    def is_value(self, other):
+        return self == other
 
     @property
     def is_scalar(self):
@@ -183,12 +228,20 @@ class UnaryOp:
     def __init__(self, op, value):
         self.op = op
         self.value = value
-        self.dt = value.dt
+        self.data_type = value.data_type
+
+    def _str_repr_(self, vstr):
+        if '__group__' == self.op:
+            return f'({vstr})'
+        if any(x in self.op for x in '+-'):
+            return f'{self.op}{vstr}'
+        return f'{self.op}({self.value})'
 
     def __str__(self):
-        if any(x in self.op for x in '+-'):
-            return f'{self.op}{self.value}'
-        return f'{self.op}({self.value})'
+        return self._str_repr_(str(self.value))
+
+    def __repr__(self):
+        return self._str_repr_(repr(self.value))
 
     def __hash__(self):
         return hash(str(self))
@@ -206,11 +259,19 @@ class UnaryOp:
     def __mul__(self, other):
         if other.is_zero:
             return other
+        if other.is_value(1):
+            return self
+        if other.is_value(-1):
+            return -self
         return BinaryOp('*', self, other)
 
     def __truediv__(self, other):
         if other.is_zero:
             raise RuntimeError('Division by zero')
+        if other.is_value(1):
+            return self
+        if other.is_value(-1):
+            return -self
         return BinaryOp('/', self, other)
 
     def __neg__(self):
@@ -239,6 +300,10 @@ class UnaryOp:
     def is_id(self):
         return False
 
+    @property
+    def is_str(self):
+        return False
+
     def __eq__(self, other):
         if not isinstance(other, UnaryOp):
             return False
@@ -252,6 +317,9 @@ class UnaryOp:
     def is_vector(self):
         return self.value.is_vector
 
+    def is_value(self, value):
+        return self == value
+
     def __len__(self):
         return len(self.value)
 
@@ -261,11 +329,43 @@ class UnaryOp:
 
 
 class Value:
-    def __init__(self, value, dt):
-        self.value = value
-        self.it = dt != DT.str and isinstance(value, str)
-        self.dt = dt
-        self.st = ST.vector if not isinstance(value, str) and hasattr(value, '__len__') else ST.scalar
+    def __init__(self, value, data_type=None, object_type=None, shape_type=None):
+        self._value = value
+        if data_type is None or not isinstance(data_type, DataType):
+            data_type = DataType.undefined
+        if object_type is None or not isinstance(object_type, ObjectType):
+            object_type = ObjectType.identifier if data_type != DataType.str and isinstance(value, str) else ObjectType.value
+        if shape_type is None or not isinstance(shape_type, ShapeType):
+            shape_type = ShapeType.vector if not isinstance(value, str) and hasattr(value, '__len__') else ShapeType.scalar
+        self._object = object_type
+        self._data = data_type
+        self._shape = shape_type
+
+    @property
+    def value(self):
+        return self._value
+
+    @property
+    def object_type(self):
+        return self._object
+
+    @property
+    def data_type(self):
+        return self._data
+
+    @property
+    def shape_type(self):
+        return self._shape
+
+    @value.setter
+    def value(self, value):
+        log.debug(f'Updating Value from {self._value} to {value}')
+        self._object = self.data_type != DataType.str and isinstance(value, str)
+        self._value = value
+
+    @data_type.setter
+    def data_type(self, dt):
+        self._data = dt
 
     @property
     def has_value(self):
@@ -279,16 +379,16 @@ class Value:
         return f'{self.value}'
 
     def __repr__(self):
-        return f'{self.st} {self.dt} {self.value}'
+        return f'{self.shape_type} {self.data_type} {self.value}'
 
     def __hash__(self):
         return hash(str(self))
 
     def compatible(self, other, id_ok=False):
         if isinstance(other, (UnaryOp, BinaryOp)):
-            return False
+            return id_ok
         value = other if isinstance(other, Value) else Value.best(other)
-        return (id_ok and value.is_str) or (self.dt.compatible(value.dt) and self.st.compatible(value.st))
+        return (id_ok and value.is_str) or (self.data_type.compatible(value.data_type) and self.shape_type.compatible(value.shape_type))
 
     @classmethod
     def float(cls, value):
@@ -296,7 +396,7 @@ class Value:
             v = float(value) if value is not None else None
         except ValueError:
             v = value
-        return cls(v, DT.float)
+        return cls(v, DataType.float)
 
     @classmethod
     def int(cls, value):
@@ -304,32 +404,40 @@ class Value:
             v = int(value) if value is not None else None
         except ValueError:
             v = value
-        return cls(v, DT.int)
+        return cls(v, DataType.int)
 
     @classmethod
     def str(cls, value):
-        return cls(value, DT.str)
+        return cls(value, DataType.str)
 
     @classmethod
     def id(cls, value):
-        return cls(value, DT.str)
+        return cls(value, DataType.str)
+
+    @classmethod
+    def array(cls, value, dt=None):
+        return cls(value, data_type=dt, object_type=None, shape_type=ShapeType.vector)
+
+    @classmethod
+    def function(cls, value, dt=None):
+        return cls(value, object_type=ObjectType.function)
 
     @classmethod
     def best(cls, value):
         if isinstance(value, str):
-            return cls(value, DT.str)
+            return cls(value, DataType.str)
         if isinstance(value, int) or (isinstance(value, float) and value.is_integer()):
-            return cls(value, DT.int)
-        return cls(value, DT.float)
+            return cls(value, DataType.int)
+        return cls(value, DataType.float)
 
     @property
     def is_id(self):
-        return self.dt != DT.str and isinstance(self.value, str)
+        return self.data_type != DataType.str and isinstance(self.value, str)
         # return self.it
 
     @property
     def is_str(self):
-        return self.dt.is_str
+        return self.data_type.is_str
 
     @property
     def is_op(self):
@@ -339,49 +447,72 @@ class Value:
     def is_zero(self):
         return not self.is_id and self.value == 0
 
+    def is_value(self, v):
+        return not self.is_id and v.is_value(self.value) if hasattr(v, 'is_value') else self.value == v
+
     @property
     def is_scalar(self):
-        return self.st.is_scalar
+        return self.shape_type.is_scalar
 
     @property
     def is_vector(self):
-        return self.st.is_vector
+        return self.shape_type.is_vector
 
     def __len__(self):
         return len(self.value) if self.is_vector else 1
 
     def __add__(self, other):
+        other = other if isinstance(other, (Value, UnaryOp, BinaryOp)) else Value.best(other)
         if self.is_zero:
             return other
         if other.is_zero:
             return self
-        if other.is_op or self.is_id or other.is_id:
+        if other.is_op and isinstance(other, UnaryOp) and other.op == '-':
+            return self - other.value
+        if self.is_id and (isinstance(other, Value) and not isinstance(other.value, str) and other < 0):
+            return self - (-other.value)
+        if other.is_op or self.is_id or other.is_id or isinstance(other, BinaryOp):
             return BinaryOp('+', self, other)
-        pdt = self.dt + other.dt
+        pdt = self.data_type + other.data_type
         return BinaryOp('+', self, other) if pdt.is_str else Value(self.value + other.value, pdt)
 
     def __sub__(self, other):
+        other = other if isinstance(other, (Value, UnaryOp, BinaryOp)) else Value.best(other)
         if self.is_zero:
-            return other
+            return -other
         if other.is_zero:
             return self
-        if other.is_op or self.is_id or other.is_id:
+        if other.is_op and isinstance(other, UnaryOp) and other.op == '-':
+            return self + other.value
+        if self.is_id and (isinstance(other, Value) and not isinstance(other.value, str) and other < 0):
+            return self + (-other.value)
+        if other.is_op or self.is_id or other.is_id or isinstance(other, BinaryOp):
             return BinaryOp('-', self, other)
-        pdt = self.dt - other.dt
+        pdt = self.data_type - other.data_type
         return BinaryOp('-', self, other) if pdt.is_str else Value(self.value - other.value, pdt)
 
     def __mul__(self, other):
-        pdt = self.dt * other.dt
+        other = other if isinstance(other, (Value, UnaryOp, BinaryOp)) else Value.best(other)
+        pdt = self.data_type * other.data_type
         if self.is_zero or other.is_zero:
-            return Value(0, DT.int if pdt.is_str else pdt)
+            return Value(0, DataType.int if pdt.is_str else pdt)
+        if self.is_value(1):
+            return other
+        if self.is_value(-1):
+            return -other
         if other.is_op or self.is_id or other.is_id:
             return BinaryOp('*', self, other)
         return BinaryOp('*', self, other) if pdt.is_str else Value(self.value * other.value, pdt)
 
     def __truediv__(self, other):
-        pdt = self.dt / other.dt
+        other = other if isinstance(other, (Value, UnaryOp, BinaryOp)) else Value.best(other)
+        pdt = self.data_type / other.data_type
         if self.is_zero:
-            return Value(0, DT.int if pdt.is_str else pdt)
+            return Value(0, DataType.int if pdt.is_str else pdt)
+        if other.is_value(1):
+            return self
+        if other.is_value(-1):
+            return -self
         if other.is_zero:
             raise RuntimeError('Division by zero!')
         if other.is_op or self.is_id or other.is_id:
@@ -389,44 +520,56 @@ class Value:
         return BinaryOp('/', self, other) if pdt.is_str else Value(self.value / other.value, pdt)
 
     def __neg__(self):
-        return UnaryOp('-', self) if self.is_id or self.dt.is_str else Value(-self.value, self.dt)
+        return UnaryOp('-', self) if self.is_id or self.data_type.is_str else Value(-self.value, self.data_type)
 
     def __pos__(self):
-        return Value(self.value, self.dt)
+        return Value(self.value, self.data_type)
 
     def __abs__(self):
-        return UnaryOp('abs', self) if self.is_id or self.dt.is_str else Value(abs(self.value), self.dt)
+        return UnaryOp('abs', self) if self.is_id or self.data_type.is_str else Value(abs(self.value), self.data_type)
 
     def __eq__(self, other):
+        other = other if isinstance(other, (Value, UnaryOp, BinaryOp)) else Value.best(other)
         if other.is_op:
             return False
         return self.value == other.value
 
     def __lt__(self, other):
+        other = other if isinstance(other, (Value, UnaryOp, BinaryOp)) else Value.best(other)
         if self.is_id or other.is_op or other.is_id:
             return BinaryOp('__lt__', self, other)
         return self.value < other.value
 
     def __gt__(self, other):
+        other = other if isinstance(other, (Value, UnaryOp, BinaryOp)) else Value.best(other)
         if self.is_id or other.is_op or other.is_id:
             return BinaryOp('__gt__', self, other)
         return self.value > other.value
 
+    def __pow__(self, power):
+        if not isinstance(power, (Value, UnaryOp, BinaryOp)):
+            power = Value.best(power)
+        if self.is_zero or self.is_value(1):
+            return self
+        if power.is_zero:
+            return Value(1, data_type=self.data_type)
+        return BinaryOp('__pow__', self, power)
+
     @property
     def mccode_c_type(self):
-        return self.dt.mccode_c_type + self.st.mccode_c_type
+        return self.data_type.mccode_c_type + self.shape_type.mccode_c_type
 
     @property
     def mccode_c_type_name(self):
-        if self.dt == DT.float and self.st == ST.scalar:
+        if self.data_type == DataType.float and self.shape_type == ShapeType.scalar:
             return "instr_type_double"
-        if self.dt == DT.int and self.st == ST.scalar:
+        if self.data_type == DataType.int and self.shape_type == ShapeType.scalar:
             return "instr_type_int"
-        if self.dt == DT.str and self.st == ST.scalar:
+        if self.data_type == DataType.str and self.shape_type == ShapeType.scalar:
             return "instr_type_string"
-        if self.dt == DT.float and self.st == ST.vector:
+        if self.data_type == DataType.float and self.shape_type == ShapeType.vector:
             return "instr_type_vector"
-        if self.dt == DT.int and self.st == ST.vector:
+        if self.data_type == DataType.int and self.shape_type == ShapeType.vector:
             return "instr_type_vector"
         raise RuntimeError("No known conversion from non-enumerated data type")
 
@@ -446,19 +589,46 @@ class Expr:
 
     @classmethod
     def float(cls, value):
+        if isinstance(value, cls):
+            # Make sure the held expression *thinks* it's a float:
+            if value.expr.data_type != DataType.float:
+                value.expr.data_type = DataType.float
+            return value
         return cls(Value.float(value))
 
     @classmethod
     def int(cls, value):
+        if isinstance(value, cls):
+            # Make sure the held expression *thinks* it's a float:
+            if value.expr.data_type != DataType.int:
+                log.error(f'Why does {value} think it is a {value.expr.data_type} and not {DataType.int}?')
+                value.expr.data_type = DataType.int
+            return value
         return cls(Value.int(value))
 
     @classmethod
     def str(cls, value):
+        if isinstance(value, cls):
+            # Make sure the held expression *thinks* it's a float:
+            if value.expr.data_type != DataType.str:
+                log.error(f'Why does {value} think it is a {value.expr.data_type} and not {DataType.str}?')
+                value.expr.data_type = DataType.str
+            return value
         return cls(Value.str(value))
 
     @classmethod
     def id(cls, value):
+        if isinstance(value, cls):
+            return value
         return cls(Value.id(value))
+
+    @classmethod
+    def array(cls, value):
+        return cls(Value.array(value))
+
+    @classmethod
+    def function(cls, value):
+        return cls(Value.function(value))
 
     @classmethod
     def best(cls, value):
@@ -483,6 +653,9 @@ class Expr:
     @property
     def is_scalar(self):
         return self.expr.is_scalar
+
+    def is_value(self, value):
+        return self.expr.is_value(value)
 
     @property
     def is_vector(self):
@@ -566,6 +739,8 @@ def unary_expr(func, name, v):
     if isinstance(v, UnaryOp) and ((name in ops and v.op == ops[name]) or (v.op in ops and name == ops[v.op])):
         return Expr(v.value)
     if isinstance(v, Value) and not v.is_id:
+        if v.is_str or isinstance(v.value, str):
+            raise RuntimeError(f'How is a _string_ valued parameter, {v} not an identifier?')
         return Expr(Value.best(func(v.value)))
     return Expr(UnaryOp(name, v))
 

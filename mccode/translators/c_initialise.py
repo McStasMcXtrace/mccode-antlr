@@ -1,3 +1,4 @@
+from zenlog import log
 
 _GETDISTANCE_FCT = """
 double index_getdistance(int first_index, int second_index)
@@ -30,7 +31,6 @@ double checked_setpos_getdistance(int current_index, char* first_component, char
 
 
 def cogen_comp_init_position(index, comp, last, instr):
-    from zenlog import log
     ref = None if index == 0 else instr.components[last]
     var = f'_{comp.name}_var'
     lines = [
@@ -106,7 +106,8 @@ def cogen_comp_setpos(index, comp, last, instr, component_declared_parameters):
             return ''
         pl = []
         fullname = f'_{comp.name}_var._parameters.{p.name}'
-        if p.value.is_id:
+        log.info(f'{fullname} = {p}')
+        if p.value.is_id or p.value.is_op:
             pl.append(f"  {fullname} = {p.value if p.value is not None else 0};")
         elif p.value.is_str:
             if p.value.has_value and p.value.value != '0' and p.value.value != 'NULL':

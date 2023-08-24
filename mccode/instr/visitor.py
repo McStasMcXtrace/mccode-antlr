@@ -189,7 +189,9 @@ class InstrVisitor(McInstrVisitor):
         return self.state.get_component(str(ctx.Identifier()))
 
     def visitCoords(self, ctx: McInstrParser.CoordsContext):
-        return tuple([Expr.best(self.visit(x)) for x in ctx.expr()])
+        # A coordinate is _always_ a float, even when represented by an expression or identifier
+        # Actually implement the visitExpr variants correctly?
+        return tuple([Expr.float(self.visit(x)) for x in ctx.expr()])
 
     def visitReference(self, ctx: McInstrParser.ReferenceContext):
         # ABSOLUTE or RELATIVE ABSOLUTE -> None
@@ -281,45 +283,44 @@ class InstrVisitor(McInstrVisitor):
         return -right if ctx.Plus() is None else right
 
     def visitExpressionGrouping(self, ctx: McInstrParser.ExpressionGroupingContext):
-        return self.visit(ctx.expr())
+        from ..common import UnaryOp
+        return Expr(UnaryOp('__group__', self.visit(ctx.expr())))
 
     def visitExpressionFloat(self, ctx: McInstrParser.ExpressionFloatContext):
-        return float(str(ctx.FloatingLiteral()))
+        return Expr.float(str(ctx.FloatingLiteral()))
 
     def visitExpressionArrayAccess(self, ctx: McInstrParser.ExpressionArrayAccessContext):
-        return f'{ctx.Identifier()}[{self.visit(ctx.expr())}]'
+        from ..common import BinaryOp, Value, ShapeType, ObjectType
+        array = Expr(Value(str(ctx.Identifer()), object_type=ObjectType.identifier, shape_type=ShapeType.vector))
+        return Expr(BinaryOp('__getitem__', array, self.visit(ctx.expr())))
 
     def visitExpressionIdentifier(self, ctx: McInstrParser.ExpressionIdentifierContext):
-        return str(ctx.Identifier())
+        from ..common import Value, ObjectType
+        return Expr(Value(str(ctx.Identifier()), object_type=ObjectType.identifier))
 
     def visitExpressionInteger(self, ctx: McInstrParser.ExpressionIntegerContext):
-        return int(str(ctx.IntegerLiteral()))
+        return Expr.int(str(ctx.IntegerLiteral()))
 
     def visitExpressionExponentiation(self, ctx: McInstrParser.ExpressionExponentiationContext):
         base = self.visit(ctx.base)
         exponent = self.visit(ctx.exponent)
-        if isinstance(base, str) or isinstance(exponent, str):
-            return f'powf({base}, {exponent})'
         return base ** exponent
 
     def visitExpressionBinaryPM(self, ctx: McInstrParser.ExpressionBinaryPMContext):
         left = self.visit(ctx.left)
         right = self.visit(ctx.right)
-        if isinstance(left, str) or isinstance(right, str):
-            return f"{left} {'+' if ctx.Minus() is None else '-'} {right}"
         return left + right if ctx.Minus() is None else left - right
 
     def visitExpressionFunctionCall(self, ctx: McInstrParser.ExpressionFunctionCallContext):
-        return f'{ctx.Identifier()}({self.visit(ctx.expr())}'
+        from ..common import BinaryOp, Value, ObjectType
+        function = Value(str(ctx.Identifier()), object_type=ObjectType.function)
+        return Expr(BinaryOp('__call__', function, self.visit(ctx.expr())))
 
     def visitExpressionBinaryMD(self, ctx: McInstrParser.ExpressionBinaryMDContext):
         left, right = self.visit(ctx.left), self.visit(ctx.right)
-        if isinstance(left, str) or isinstance(right, str):
-            return f"{left} {'*' if ctx.Div() is None else '/'} {right}"
         return left * right if ctx.Div() is None else left / right
 
     def visitInitializerlist(self, ctx: McInstrParser.InitializerlistContext):
+        from ..common import Value, ObjectType, ShapeType
         values = [self.visit(x) for x in ctx.values()]
-        if any(isinstance(x, str) for x in values):
-            return '{' + ','.join([str(x) for x in values]) + '}'
-        return tuple(values)
+        return Expr(Value(values, object_type=ObjectType.initializer_list, shape_type=ShapeType.vector))

@@ -1,29 +1,73 @@
 from dataclasses import dataclass, field
 from ..common import Expr, unary_expr, binary_expr
 from enum import Enum
+from zenlog import log
+
 
 def _value_float_tuple(n, v=0.):
     return tuple(Expr.float(v) for _ in range(n))
 
 
-def cos_value(v: Expr):
+def cos_degree(theta_degree):
+    from math import pi, cos
+    return cos(theta_degree / 180 * pi)
+
+
+def sin_degree(theta_degree):
+    from math import pi, sin
+    return sin(theta_degree / 180 * pi)
+
+
+def atan2_degree(y, x):
+    from math import pi, atan2
+    return atan2(y, x) / pi * 180
+
+
+def cos_value(v: Expr, degrees=True):
+    """The cosine of an angle expressed in degrees or radian"""
     from math import cos
-    return unary_expr(cos, 'cos', v)
+    if v.is_value(0):
+        return Expr.float(1)
+    if (degrees and v.is_value(Expr.float(90))) or (not degrees and v.is_value(Expr.float('PI')/Expr.float(2))):
+        return Expr.float(0)
+    if (degrees and v.is_value(Expr.float(180))) or (not degrees and v.is_value(Expr.float('PI'))):
+        return Expr.float(-1)
+    return unary_expr(cos_degree if degrees else cos, 'cos', v)
 
 
-def sin_value(v: Expr):
+def sin_value(v: Expr, degrees=True):
     from math import sin
-    return unary_expr(sin, 'sin', v)
+    if v.is_value(0):
+        return Expr.float(0)
+    if (degrees and v.is_value(Expr.float(90))) or (not degrees and v.is_value(Expr.float('PI') / Expr.float(2))):
+        return Expr.float(1)
+    if (degrees and v.is_value(Expr.float(180))) or (not degrees and v.is_value(-Expr.float('PI') / Expr.float(2))):
+        return Expr.float(-1)
+    return unary_expr(sin_degree if degrees else sin, 'sin', v)
 
 
-def atan2_value(va: Expr, vb: Expr):
+def atan2_value(va: Expr, vb: Expr, degrees=True):
     from math import atan2
-    return binary_expr(atan2, 'atan2', va, vb)
+    zero = Expr.float(0)
+    full = Expr.float(180) if degrees else Expr.float('PI')
+    half = full / Expr.float(2)
+    if va.is_value(0):
+        if vb.is_op:
+            return [zero, full]
+        return [zero if vb > zero else full]
+    if vb.is_value(0):
+        if va.is_op:
+            return [-half, half]
+        return [half if va > zero else -half]
+    return [binary_expr(atan2_degree if degrees else atan2, 'atan2', va, vb)]
 
 
 def degree_to_radian(v: Expr):
     from math import pi
     if v.is_id:
+        if v == Expr.float('PI'):
+            log.error(f'Convert {v} to radian')
+            raise RuntimeError('What?!')
         return v * (Expr.float('PI') / Expr.float(180))
     return v * Expr.float(pi / 180)
 
@@ -34,7 +78,9 @@ class Orientation:
         axes = 1
         coordinates = 2
 
+    degrees: bool
     position: tuple[Expr, Expr, Expr] = field(default_factory=lambda: _value_float_tuple(3))
+    angles: tuple[Expr, Expr, Expr] = field(default_factory=lambda: _value_float_tuple(3))
     _axes: tuple[Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr] \
         = field(default_factory=lambda: _value_float_tuple(9))
     _coordinates: tuple[Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr] \
@@ -58,42 +104,71 @@ class Orientation:
              (t[6], t[7], t[8], self.position[2]),
              (Expr.float(0), Expr.float(0), Expr.float(0), Expr.float(1)))
         return m
-
-    @property
-    def angles(self):
-        from zenlog import log
-        def abs_ch(a, b):
-            # v = abs(a) > abs(b)
-            # return v.value == 1 if isinstance(v, Value) else v
-            return abs(a) > abs(b)
-
-        # Inspired by eniius get_euler_angles
-        x = atan2_value(-self._axes[7], self._axes[8])  # tan(x) = sin(x) / cos(x) = -(-sx*cy)/(cx*cy)
-        z = atan2_value(-self._axes[3], self._axes[0])  # tan(z) = sin(z) / cos(z) = -(-cy*sz)/(cy*cz)
-        # Ensure we know the sign of cos(y), not just its magnitude:
-        cos_x, cos_z = [cos_value(a) for a in (x, z)]
-        # if not x.is_a(Value.Type.str) and not z.is_a(Value.Type.str):
-        # elif not x.is_a(Value.Type.str):
-        # elif not z.is_a(Value.Type.str):
-        if not x.is_id and not z.is_id:
-            if abs_ch(cos_x, cos_z):
-                cos_a, sin_a, cos_y_cos_a, sin_y_sin_a = cos_x, sin_value(x), self._axes[8], -self._axes[7]
-            else:
-                cos_a, sin_a, cos_y_cos_a, sin_y_sin_a = cos_z, sin_value(z), self._axes[0], -self._axes[3]
-        elif not x.is_id:
-            cos_a, sin_a, cos_y_cos_a, sin_y_sin_a = cos_x, sin_value(x), self._axes[8], -self._axes[7]
-        elif not z.is_id:
-            cos_a, sin_a, cos_y_cos_a, sin_y_sin_a = cos_z, sin_value(z), self._axes[0], -self._axes[3]
-        else:
-            log.debug(self)
-            raise RuntimeError("How do we prevent division by zero when both x and z are strings?")
-        y = atan2_value(self._axes[6], cos_y_cos_a / cos_a if abs_ch(cos_a, sin_a) else sin_y_sin_a / sin_a)
-        return x, y, z
+    #
+    # @property
+    # def angles(self):
+    #     from math import pi
+    #     from zenlog import log
+    #     from itertools import product
+    #
+    #     def abs_ch(a, b):
+    #         if a.is_zero and not b.is_zero:
+    #             return False
+    #         if not a.is_zero and b.is_zero:
+    #             return True
+    #         # v = abs(a) > abs(b)
+    #         # return v.value == 1 if isinstance(v, Value) else v
+    #         return abs(a) > abs(b)
+    #
+    #     def xyz(anx, anz):
+    #         cos_x, cos_z = [cos_value(ang) for ang in (anx, anz)]
+    #         log.info(f'{cos_x = }, {cos_z = }')
+    #         if not anx.is_id and not anz.is_id:
+    #             if abs_ch(cos_x, cos_z):
+    #                 cos_a, sin_a, cos_y_cos_a, cos_y_sin_a = cos_x, sin_value(anx), self._axes[8], -self._axes[7]
+    #             else:
+    #                 cos_a, sin_a, cos_y_cos_a, cos_y_sin_a = cos_z, sin_value(anz), self._axes[0], -self._axes[3]
+    #         elif not anx.is_id:
+    #             cos_a, sin_a, cos_y_cos_a, cos_y_sin_a = cos_x, sin_value(anx), self._axes[8], -self._axes[7]
+    #         elif not anz.is_id:
+    #             cos_a, sin_a, cos_y_cos_a, cos_y_sin_a = cos_z, sin_value(anz), self._axes[0], -self._axes[3]
+    #         else:
+    #             return []
+    #         log.info(f'cos_y * cos_a = {cos_y_cos_a} {cos_y_cos_a.is_zero}, cos_y * sin_a = {cos_y_sin_a} {cos_y_sin_a.is_zero}')
+    #         if cos_a.is_zero:
+    #             cos_y = cos_y_sin_a / sin_a
+    #         elif sin_a.is_zero:
+    #             cos_y = cos_y_cos_a / cos_a
+    #         else:
+    #             cos_y = cos_y_cos_a / cos_a if abs_ch(cos_y_cos_a, cos_y_sin_a) else cos_y_sin_a / sin_a
+    #         log.error(f'Find the arctan of y={self._axes[6]} and x={cos_y}')
+    #         y = atan2_value(self._axes[6], cos_y, degrees=self.degrees)
+    #         return [(anx, why, anz) for why in y]
+    #
+    #     log.info(self)
+    #
+    #     # Inspired by eniius get_euler_angles
+    #     # tan(x) = sin(x) / cos(x) = -(-sx*cy)/(cx*cy)
+    #     x = atan2_value(-self._axes[7], self._axes[8], degrees=self.degrees)
+    #     log.info(f'x could be {x}')
+    #     # tan(z) = sin(z) / cos(z) = -(-cy*sz)/(cy*cz)
+    #     z = atan2_value(-self._axes[3], self._axes[0], degrees=self.degrees)
+    #     log.info(f'z could be {z}')
+    #     # Ensure we know the sign of cos(y), not just its magnitude:
+    #     xyz_lists = list(xyz(x, y) for x, y in product(x, z))
+    #     xyzs = [xyz for xyz_list in xyz_lists for xyz in xyz_list]
+    #     if len(xyzs) == 0:
+    #         raise RuntimeError('Why are there *no* solutions for the y angle?')
+    #     if len(xyzs) > 1:
+    #         log.critical(f'Check that all of {xyzs} are the same solution!')
+    #     x, y, z = xyzs[0]
+    #     log.critical(f'y is {y}')
+    #     return x, y, z
 
     @staticmethod
-    def from_at_rotated(at, rotated):
-        cx, cy, cz = [cos_value(degree_to_radian(r)) for r in rotated]
-        sx, sy, sz = [sin_value(degree_to_radian(r)) for r in rotated]
+    def from_at_rotated(at, rotated, degrees=True):
+        cx, cy, cz = [cos_value(r if degrees else degree_to_radian(r), degrees=degrees) for r in rotated]
+        sx, sy, sz = [sin_value(r if degrees else degree_to_radian(r), degrees=degrees) for r in rotated]
         # Rotation matrices following the McCode first x then y then z method of applying rotations.
         # The 3x3 rotation matrix part (which rotates the *axes* of a coordinate system):
         axes = (cy * cz, sx * sy * cz + cx * sz, sx * sz - cx * sy * cz,
@@ -106,7 +181,7 @@ class Orientation:
                        -sy, sx * cy, cx * cy)
         # The 3 vector part:
         v = at[0], at[1], at[2]
-        return Orientation(v, axes, coordinates)
+        return Orientation(degrees, v, rotated, axes, coordinates)
 
 
 def from_at_rotated(at: tuple[Expr, Expr, Expr], rotated: tuple[Expr, Expr, Expr]):

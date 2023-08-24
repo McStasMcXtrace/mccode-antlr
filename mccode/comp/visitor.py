@@ -178,45 +178,44 @@ class CompVisitor(McCompVisitor):
         return -right if ctx.Plus() is None else right
 
     def visitExpressionGrouping(self, ctx: Parser.ExpressionGroupingContext):
-        return self.visit(ctx.expr())
+        from ..common import UnaryOp
+        return Expr(UnaryOp('__group__', self.visit(ctx.expr())))
 
     def visitExpressionFloat(self, ctx: Parser.ExpressionFloatContext):
-        return float(str(ctx.FloatingLiteral()))
+        return Expr.float(str(ctx.FloatingLiteral()))
 
     def visitExpressionArrayAccess(self, ctx: Parser.ExpressionArrayAccessContext):
-        return f'{ctx.Identifier()}[{self.visit(ctx.expr())}]'
+        from ..common import BinaryOp, Value, ShapeType, ObjectType
+        array = Expr(Value(str(ctx.Identifer()), object_type=ObjectType.identifier, shape_type=ShapeType.vector))
+        return Expr(BinaryOp('__getitem__', array, self.visit(ctx.expr())))
 
     def visitExpressionIdentifier(self, ctx: Parser.ExpressionIdentifierContext):
-        return str(ctx.Identifier())
+        from ..common import Value, ObjectType
+        return Expr(Value(str(ctx.Identifier()), object_type=ObjectType.identifier))
 
     def visitExpressionInteger(self, ctx: Parser.ExpressionIntegerContext):
-        return int(str(ctx.IntegerLiteral()))
+        return Expr.int(str(ctx.IntegerLiteral()))
 
     def visitExpressionExponentiation(self, ctx: Parser.ExpressionExponentiationContext):
         base = self.visit(ctx.base)
         exponent = self.visit(ctx.exponent)
-        if isinstance(base, str) or isinstance(exponent, str):
-            return f'powf({base}, {exponent})'
         return base ** exponent
 
     def visitExpressionBinaryPM(self, ctx: Parser.ExpressionBinaryPMContext):
         left = self.visit(ctx.left)
         right = self.visit(ctx.right)
-        if isinstance(left, str) or isinstance(right, str):
-            return f"{left} {'+' if ctx.Minus() is None else '-'} {right}"
         return left + right if ctx.Minus() is None else left - right
 
     def visitExpressionFunctionCall(self, ctx: Parser.ExpressionFunctionCallContext):
-        return f'{ctx.Identifier()}({self.visit(ctx.expr())}'
+        from ..common import BinaryOp, Value, ObjectType
+        function = Value(str(ctx.Identifier()), object_type=ObjectType.function)
+        return Expr(BinaryOp('__call__', function, self.visit(ctx.expr())))
 
     def visitExpressionBinaryMD(self, ctx: Parser.ExpressionBinaryMDContext):
         left, right = self.visit(ctx.left), self.visit(ctx.right)
-        if isinstance(left, str) or isinstance(right, str):
-            return f"{left} {'*' if ctx.Div() is None else '/'} {right}"
         return left * right if ctx.Div() is None else left / right
 
     def visitInitializerlist(self, ctx: Parser.InitializerlistContext):
+        from ..common import Value, ObjectType, ShapeType
         values = [self.visit(x) for x in ctx.values()]
-        if any(isinstance(x, str) for x in values):
-            return '{' + ','.join([str(x) for x in values]) + '}'
-        return tuple(values)
+        return Expr(Value(values, object_type=ObjectType.initializer_list, shape_type=ShapeType.vector))
