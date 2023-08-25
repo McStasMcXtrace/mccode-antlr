@@ -1,4 +1,5 @@
 """Translates a McComp instrument from its intermediate form to a C runtime source file."""
+from zenlog import log
 from collections import namedtuple
 from dataclasses import dataclass
 from ..reader import Registry, LIBC_REGISTRY
@@ -37,23 +38,25 @@ class CInclude:
 
 
 def sort_include_hierarchy(includes: set[CInclude]):
-    print(f'sort includes {" ".join(str(x) for x in includes)}')
+    log.debug(f'sort includes {" ".join(str(x) for x in includes)}')
     # find the 'root' of the tree, a parent which is _not_ a named include:
-    root = list(set([x.parent for x in includes]).difference(set([x.name for x in includes])))
-    if len(root) != 1:
-        raise RuntimeError(f'Expected a single root parent but have {root} for\n{includes}')
-    for include in includes:
-        include.root = root[0]
-    # Sort the includes such that if A includes B and C, and C includes B, then we get [C:B, A:C, A:B]
-    # Or a more complicated case: G:(Z,A,W), Z:(B,Y), A:X, W(Y) -> [Z:Y, W:Y, A:X, B:W, Z:B, G:A, G:Z, G:W]
-    used, output = [], []
-    for include in sorted(includes, reverse=True):
-        if include.name not in used:
-            output.append(include)
-            used.append(include.name)
-    # Reduce output to [C:B, A:C], or [Z:Y, A:X, B:W, Z:B, G:A, G:Z], which would include the named libraries correctly
-    print(f"sorted to {'  '.join(str(x) for x in output)}")
-    return output
+    roots = list(set([x.parent for x in includes]).difference(set([x.name for x in includes])))
+    full_output = []
+    for root in roots:
+        for include in includes:
+            include.root = root
+        # Sort the includes such that if A includes B and C, and C includes B, then we get [C:B, A:C, A:B]
+        # Or a more complicated case: G:(Z,A,W), Z:(B,Y), A:X, W(Y) -> [Z:Y, W:Y, A:X, B:W, Z:B, G:A, G:Z, G:W]
+        used, output = [], []
+        for include in sorted(includes, reverse=True):
+            if include.name not in used:
+                output.append(include)
+                used.append(include.name)
+        # Reduce output to [C:B, A:C], or [Z:Y, A:X, B:W, Z:B, G:A, G:Z], which would include the libraries correctly
+        log.debug(f"sorted to {'  '.join(str(x) for x in output)}")
+        # Maybe there's a case where the specified root matters?
+        full_output = output
+    return full_output
 
 
 class CTargetVisitor(TargetVisitor, target_language='c'):
@@ -113,11 +116,11 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
         from .c_listener import extract_c_declared_variables_and_defined_types as parse
         typedefs = set()
         for include in self.includes:
-            print(f'library {include.name}')
+            log.debug(f'library {include.name}')
             # The files '%include'-d can themselves use the '%include' mechanism :/
             declares, defined_types = parse(include.content, user_types=list(typedefs))
             typedefs = typedefs.union(set(defined_types))
-            print(f'{include.name} done')
+            log.debug(f'{include.name} done')
         # types can also be defined in component 'SHARE' blocks:
         for block in [share for comp in self.source.component_types() if len(comp.share) for share in comp.share]:
             declares, defined_types = parse(block.source, user_types=list(typedefs))
@@ -146,8 +149,8 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
             decs = parse(raw_c_obj.source, user_types=self.typedefs)
             n = sum(init is not None for c, init in decs.values())
             if n:
-                print(f'Warning USERVARS block from {name} contains {n} assignments (= sign).')
-                print('        Move them to an EXTEND section. May fail at compile')
+                log.critical(f'Warning USERVARS block from {name} contains {n} assignments (= sign).')
+                log.critical('        Move them to an EXTEND section. May fail at compile')
             # check if the variable name includes a pointer specification or is literal array
             sc = str.maketrans('', '', '*[] ')  # for '* name' or '***** name' or 'name[]' -> 'name'
             name_pointer_array = [(x.translate(sc), '*' in x, '[' in x and ']' in x) for x in decs]
@@ -155,7 +158,7 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
 
         declares = set()  # will be (CDeclaration(name, type, init, is_pointer, is_array, orig), )
         for raw_user_vars_c_block in self.source.user:
-            declares.union(extract_declares(self.source.name, raw_user_vars_c_block))
+            declares = declares.union(extract_declares(self.source.name, raw_user_vars_c_block))
 
         # Check for differing repeated declarations -- these are set elements with the same name:
         if len(set([d.name for d in declares])) != len(declares):
@@ -164,9 +167,10 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
         # Look for USERVAR section(s) in the set of component definitions too:
         comp_declares = dict()
         for component in self.source.component_types():
-            comp_declares[component.name] = set()
+            temp_set = set()
             for raw_user_vars_c_block in component.user:
-                comp_declares[component.name].union(extract_declares(component.name, raw_user_vars_c_block))
+                temp_set = temp_set.union(extract_declares(component.name, raw_user_vars_c_block))
+            comp_declares[component.name] = temp_set
             # Check for differing repeated declarations in this component:
             if len(set([d.name for d in comp_declares[component.name]])) != len(comp_declares[component.name]):
                 raise RuntimeError(f"One or more component USERVARS repeated in {component.name}")
@@ -216,19 +220,22 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
         self._parse_libraries_for_typedefs()
 
         # pull together the per-component-type defined parameters into a dictionary... since this is required
-        # in multiple places :/
-        # TODO Update component_declared parameters to use CDeclaration as well.
+        # in multiple places :/  -- now using CDeclaration named tuples
+        sc = str.maketrans('', '', '*[] ')  # for '* name' or '*name', or '****   name' or 'name[]' -> 'name'
         for typ in inst.component_types():
-            declared_parameters = dict()
+            declared_parameters = set()
             for block in typ.declare:
-                declared_parameters.update(extract_c_declared_variables(block.source, user_types=self.typedefs))
-            self.component_declared_parameters[typ.name] = declared_parameters
-
+                decs = extract_c_declared_variables(block.source, user_types=self.typedefs)
+                npa = [(x.translate(sc), '*' in x, '[' in x and ']' in x) for x in decs]
+                c_decs = [CDeclaration(n, t, i, p,  a, o) for (n, p, a), (o, (t, i)) in zip(npa, decs.items())]
+                declared_parameters = declared_parameters.union(c_decs)
+            self.component_declared_parameters[typ.name] = list(declared_parameters)
         self._determine_uservars()
 
     def visit_header(self):
         from .c_header import header_pre_runtime, header_post_runtime
         # Get the unique list of USERVAR declarations:
+        log.debug(f'Instrument uservars = {self.instrument_uservars}')
         uuv = set().union(self.instrument_uservars)
         for x in self.component_uservars:
             uuv.union(x)

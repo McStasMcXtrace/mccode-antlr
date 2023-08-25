@@ -1,3 +1,4 @@
+from zenlog import log
 """
 /*******************************************************************************
 * cogen_decls: write the declaration part from the instrument description
@@ -132,7 +133,7 @@ def declarations_pre_libraries(source, typedefs: list, component_declared_parame
     return '\n'.join(contents), warnings
 
 
-def component_type_declaration(comp, typedefs: list, declared_parameters: dict):
+def component_type_declaration(comp, typedefs: list, declared_parameters: list):
     """Declare the *component type* structures needed for component instances.
     Includes the component parameters structure and positioning code.
     """
@@ -154,14 +155,11 @@ def component_type_declaration(comp, typedefs: list, declared_parameters: dict):
     # TODO Veryify that the cogen.c iteration over `comp->def->set_par` does not somehow include DEFINITION PARAMETERS
     for par in comp.setting:
         # if par.value.is_a(Value.Type.float_array) or par.value.is_a(Value.Type.int_array):
-        if par.value.is_vector:
-            if len(par.value):
-                # this is only possible if the value is a tuple of numbers, so no str representations of calculations
-                c_type = par.value.mccode_c_type.translate(str.maketrans('', '', ' *'))  # strip the trailing ' *'
-                lines.append(f'  {c_type} {par.name}[{len(par.value)}];')
-            else:
-                lines.append(f'  {par.value.mccode_c_type} {par.name};')
-        if par.value.is_str:
+        if par.value.vector_known:
+            # this is only possible if the value is a tuple of numbers, so no str representations of calculations
+            c_type = par.value.mccode_c_type.translate(str.maketrans('', '', ' *'))  # strip the trailing ' *'
+            lines.append(f'  {c_type} {par.name}[{len(par.value)}];')
+        elif par.value.is_str:
             # TODO FIXME The cogen implementation *ALSO* makes static arrays for `vector` parameters?
 
             # the mccode runtime does not want to allocate or deallocate the memory for this string.
@@ -174,16 +172,17 @@ def component_type_declaration(comp, typedefs: list, declared_parameters: dict):
 
     # This is the loop over the *replaced* `comp->def->out_par` e.g., found DECLARE parameters
     lines.append(f"/* Component type '{comp.name}' private parameters */")
-    for name, (declared_type, initialized) in declared_parameters.items():
-        # name could include any pointer or static array indicators, e.g. `* {name}` or `{name}[]`,
-        # so we don't need to check for these. The type name should always be the base type, e.g
-        # `{type} * {name}` would have `{type}` not `{type} *`
-        # TODO Switch these to use CDeclarations, then we have (.name, .type, .init, .is_pointer, .is_array, .orig)
-        #      and the append would be f'  {x.type} {x.orig}; /* {"Not initialized" if x.init is None else x.init} */'
-        #      But of course, we need to do a bit more work to initialize any static array, so we instead would
-        #      branch on x.is_array and then either count the number of initializer elements or punt to 16384 elements
-        #      as McCode-3 does.
-        lines.append(f'  {declared_type} {name}; /* {"Not initialized" if initialized is None else initialized} */')
+    for x in declared_parameters:
+        # Switch these to use CDeclarations, then we have (.name, .type, .init, .is_pointer, .is_array, .orig)
+        # and the append would be f'  {x.type} {x.orig}; /* {"Not initialized" if x.init is None else x.init} */'
+        # But of course, we need to do a bit more work to initialize any static array, so we instead would
+        # branch on x.is_array and then either count the number of initializer elements or punt to 16384 elements
+        # as McCode-3 does.
+        if x.is_array:
+            n_inits = 16384 if x.init is None or not isinstance(x.init, str) else min(len(x.init.split(',')), 16384)
+            lines.append(f' {x.type} {x.name}[{n_inits}]; /* {"Not initialized" if x.init is None else x.init} */')
+        else:
+            lines.append(f'  {x.type} {x.orig}; /* {"Not initialized" if x.init is None else x.init} */')
 
     if len(comp.setting) + len(declared_parameters) == 0:
         lines.append(f'  char {comp.name}_has_no_parameters;')

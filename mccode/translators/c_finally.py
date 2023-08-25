@@ -26,7 +26,7 @@ def cogen_finally(source, declared_parameters):
         ])
         for par in source.parameters:
             # ensure there's no conflict of names
-            lines.append(f'  #define {par.name} (instrument->_parameters.{par.name}')
+            lines.append(f'  #define {par.name} (instrument->_parameters.{par.name})')
         for block in source.final:
             lines.append(block.to_c())
         for par in source.parameters:

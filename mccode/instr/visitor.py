@@ -89,7 +89,9 @@ class InstrVisitor(McInstrVisitor):
         if ctx.orientation() is not None:
             rotate = self.visit(ctx.orientation())
         else:
-            rotate = ((Expr.int(0), Expr.int(0), Expr.int(0)), None)
+            # In the case of "AT (x, y, z) ABSOLUTE" or "AT (x, y, z) RELATIVE identifier"
+            # We must use *the same* relative information for the rotation -- at[1] is None or a valid instance:
+            rotate = ((Expr.int(0), Expr.int(0), Expr.int(0)), at[1])
         instance = Instance(name, comp, at, rotate)
         if ctx.instance_parameters() is not None:
             for param_name, param_value in self.visit(ctx.instance_parameters()):
@@ -138,7 +140,8 @@ class InstrVisitor(McInstrVisitor):
         return str(ctx.Identifier()), self.visit(ctx.expr())
 
     def visitInstanceParameterString(self, ctx: McInstrParser.InstanceParameterStringContext):
-        return str(ctx.Identifier()), str(ctx.StringLiteral())
+        # A string-literal instance parameter is never an identifier
+        return str(ctx.Identifier()), Expr.str(str(ctx.StringLiteral()))
 
     def visitSplit(self, ctx: McInstrParser.SplitContext):
         return Expr.int(10) if ctx.expr() is None else self.visit(ctx.expr())
@@ -295,8 +298,11 @@ class InstrVisitor(McInstrVisitor):
         return Expr(BinaryOp('__getitem__', array, self.visit(ctx.expr())))
 
     def visitExpressionIdentifier(self, ctx: McInstrParser.ExpressionIdentifierContext):
-        from ..common import Value, ObjectType
-        return Expr(Value(str(ctx.Identifier()), object_type=ObjectType.identifier))
+        from ..common import Value, ObjectType, parameter_name_present
+        # check if this identifier is an InstrumentParameter name:
+        name = str(ctx.Identifier())
+        obj = ObjectType.parameter if parameter_name_present(self.state.parameters, name) else ObjectType.identifier
+        return Expr(Value(name, object_type=obj))
 
     def visitExpressionInteger(self, ctx: McInstrParser.ExpressionIntegerContext):
         return Expr.int(str(ctx.IntegerLiteral()))
@@ -324,3 +330,38 @@ class InstrVisitor(McInstrVisitor):
         from ..common import Value, ObjectType, ShapeType
         values = [self.visit(x) for x in ctx.values()]
         return Expr(Value(values, object_type=ObjectType.initializer_list, shape_type=ShapeType.vector))
+
+    def visitExpressionBinaryAnd(self, ctx: McInstrParser.ExpressionBinaryAndContext):
+        from ..common import BinaryOp
+        left, right = [self.visit(x) for x in (ctx.left, ctx.right)]
+        return BinaryOp('__and__', left, right)
+
+    def visitExpressionBinaryOr(self, ctx: McInstrParser.ExpressionBinaryOrContext):
+        from ..common import BinaryOp
+        left, right = [self.visit(x) for x in (ctx.left, ctx.right)]
+        return BinaryOp('__or__', left, right)
+
+    def visitExpressionBinaryEqual(self, ctx: McInstrParser.ExpressionBinaryEqualContext):
+        from ..common import BinaryOp
+        left, right = [self.visit(x) for x in (ctx.left, ctx.right)]
+        return BinaryOp('__eq__', left, right)
+
+    def visitExpressionBinaryLessEqual(self, ctx: McInstrParser.ExpressionBinaryLessEqualContext):
+        from ..common import BinaryOp
+        left, right = [self.visit(x) for x in (ctx.left, ctx.right)]
+        return BinaryOp('__le__', left, right)
+
+    def visitExpressionBinaryGreaterEqual(self, ctx: McInstrParser.ExpressionBinaryGreaterEqualContext):
+        from ..common import BinaryOp
+        left, right = [self.visit(x) for x in (ctx.left, ctx.right)]
+        return BinaryOp('__ge__', left, right)
+
+    def visitExpressionBinaryLess(self, ctx: McInstrParser.ExpressionBinaryLessContext):
+        from ..common import BinaryOp
+        left, right = [self.visit(x) for x in (ctx.left, ctx.right)]
+        return BinaryOp('__lt__', left, right)
+
+    def visitExpressionBinaryGreater(self, ctx: McInstrParser.ExpressionBinaryGreaterContext):
+        from ..common import BinaryOp
+        left, right = [self.visit(x) for x in (ctx.left, ctx.right)]
+        return BinaryOp('__gt__', left, right)

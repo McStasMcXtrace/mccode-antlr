@@ -40,12 +40,12 @@ class Instr:
         self.parameters += (a,)
 
     def last_component(self, count: int = 1, removable_ok: bool = True):
-        if len(self.components) <= count:
+        if len(self.components) < count:
             raise RuntimeError(f"Only {len(self.components)} components defined -- can not go back {count}.")
         if removable_ok:
             return self.components[-count]
         fixed = [comp for comp in self.components if not comp.removable]
-        if len(fixed) <= count:
+        if len(fixed) < count:
             raise RuntimeError(f"Only {len(fixed)} fixed components defined -- can not go back {count}.")
         return fixed[-count]
 

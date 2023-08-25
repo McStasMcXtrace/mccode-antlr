@@ -77,7 +77,7 @@ def cogen_comp_init_position(index, comp, last, instr):
         lines.extend([
             f'    tc1 = coords_set({x}, {y}, {z});',
             f'    rot_transpose(_{rel.name}_var._rotation_absolute, tr1);',
-            '    tc2 = rot_apply(tr1, tc1);'
+            '    tc2 = rot_apply(tr1, tc1);',
             f'    {var}._position_absolute = coords_add(_{rel.name}_var._position_absolute, tc2);'
         ])
     if index == 0:
@@ -106,10 +106,11 @@ def cogen_comp_setpos(index, comp, last, instr, component_declared_parameters):
             return ''
         pl = []
         fullname = f'_{comp.name}_var._parameters.{p.name}'
-        log.info(f'{fullname} = {p}')
+        # log.info(f'{fullname} = {p}')
         if p.value.is_id or p.value.is_op:
             pl.append(f"  {fullname} = {p.value if p.value is not None else 0};")
         elif p.value.is_str:
+            log.critical(f'{fullname} = {p.value}')
             if p.value.has_value and p.value.value != '0' and p.value.value != 'NULL':
                 pl.extend([
                     f'  if ({p.value} && strlen({p.value}))',
@@ -118,7 +119,7 @@ def cogen_comp_setpos(index, comp, last, instr, component_declared_parameters):
                 ])
             pl.append(f"  {fullname}[0] = '\\0';")
         elif p.value.is_vector:
-            if p.value.holds_vector:
+            if p.value.vector_known:
                 for i, v in enumerate(p.value.value):
                     pl.append(f'  {fullname}[{i}] = {v};')
             else:
@@ -147,20 +148,16 @@ def cogen_comp_setpos(index, comp, last, instr, component_declared_parameters):
 
     # <<< This is the first call to `cogen_comp_init_par`: `cogen_comp_init_par(comp, instr, "SETTING")
     # With `section == "SETTING"` the first call picks out `comp->def->set_par`
-    # TODO figure this out?! 'SETTING' parameters can be over-ridden by same-named instrument parameters??
     for par in comp.type.setting:
         # For each component definition SETTING PARAMETER the same-named instance parameter is retrieved
         lines.append(parameter_line(comp.get_parameter(par.name)))  # use instance parameter if it exists, otherwise par
     # >>> End of first call to `cogen_comp_init_par`
     # <<< Start of second call to `cogen_comp_init_par`: `cogen_comp_init_par(comp, instr, "PRIVATE")`
-    declared_parameters = component_declared_parameters[comp.type.name]
-    for name, (declared_type, initialized_value) in declared_parameters.items():
-        # {declared_type} {name} = {initialized_value} -- name could be `* identifier`, `identifier[]` or `identifier`
-        if any(x in name for x in '*[]'):
-            name = name.translate(str.maketrans('', '', '*[] '))
-            initialized_value = 'NULL' if initialized_value is None else initialized_value
+    for c_dec in component_declared_parameters[comp.type.name]:
+        # c_dec is a CDeclare named tuple with (name, type, init, is_pointer, is_array, orig)
+        initialized_value = 'NULL' if ((c_dec.is_pointer or c_dec.is_array) and c_dec.init is None) else c_dec.init
         if initialized_value is not None:
-            lines.append(f' _{comp.name}_var.parameters.{name} = {initialized_value}')
+            lines.append(f'  _{comp.name}_var._parameters.{c_dec.name} = {initialized_value};')
     # >>> End of second call to `cogen_comp_init_par`
 
     # position/rotation

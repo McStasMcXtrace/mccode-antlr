@@ -32,9 +32,9 @@ class Instance:
     def __post_init__(self):
         log.info(f'Finishing up initalization of instance {self.name}')
         if self.orientation is None:
-            self.orientation = DependentOrientation.from_dependent_orientations(
-                self.at_relative[1].orientation, self.at_relative[0],
-                self.rotate_relative[1].orientation, self.rotate_relative[0])
+            at, at_rel = self.at_relative[0], None if self.at_relative[1] is None else self.at_relative[1].orientation
+            rt, rt_rel = self.rotate_relative[0], None if self.rotate_relative[1] is None else self.rotate_relative[1].orientation
+            self.orientation = DependentOrientation.from_dependent_orientations(at_rel, at, rt_rel, rt)
 
     def set_parameter(self, name: str, value):
         if not parameter_name_present(self.type.define, name) and not parameter_name_present(self.type.setting, name):
@@ -51,7 +51,10 @@ class Instance:
             log.debug(f'{p=}, {name=}, {value=}')
             raise RuntimeError(f"Provided value for parameter {name} is not compatible with {self.type.name}")
         v = value if isinstance(value, Expr) else Expr.best(value)
-        # v = Value(p.value.data_type, value.value if isinstance(value, Value) else value)
+
+        # is this parameter value *actually* an instrument parameter *name*
+        if v.is_id or v.is_str:
+            pass
         self.parameters += (ComponentParameter(p.name, v), )
 
     def get_parameter(self, name: str):
@@ -74,7 +77,7 @@ class Instance:
         self.split = count
 
     def WHEN(self, expr):
-        if expr.is_contant:
+        if expr.is_constant:
             # if not expr.is_a(Value.Type.str):
             raise RuntimeError(f'Evaluated WHEN statement {expr} would be constant at runtime!')
         self.when = expr
@@ -83,7 +86,7 @@ class Instance:
         self.group = name
 
     def EXTEND(self, *blocks):
-        self.group += blocks_to_raw_c(*blocks)
+        self.extend += blocks_to_raw_c(*blocks)
 
     def JUMP(self, *jumps):
         self.jump += jumps

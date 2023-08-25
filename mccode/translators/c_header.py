@@ -21,11 +21,11 @@ def header_pre_runtime(is_mcstas, source, runtime: dict, config: dict, typedefs:
     # Append variables from instr USERVARS block to particle struct
     # Also store these strings in the appropriate instrument list for later def/undef as state variables
 
-    uservar_string = '//user variables and comp - injections:' if len(uservars) else ''
+    uservar_string = '//user variables and comp - injections:\n' if len(uservars) else ''
     uservar_string += '\n'.join([f'  {x.type} {x.name};' for x in uservars])
 
     # Shouldn't we exclude array-valued names here?
-    getvar = '\n'.join([f'  (!str_comp("{x.name}",name)){{rval=*((double*)(&(p->{x.name})));s=0;}}' for x in uservars])
+    getvar = '\n'.join([f'  if(!str_comp("{x.name}",name)){{rval=*((double*)(&(p->{x.name})));s=0;}}' for x in uservars])
 
     # Array valued names seem OK here, since a user can type-cast correctly
     getvar_void = '\n'.join(
@@ -42,7 +42,7 @@ def header_pre_runtime(is_mcstas, source, runtime: dict, config: dict, typedefs:
          for x in uservars if x.is_array or x.is_pointer])
 
     getuservar_byid = '\n'.join(
-        [f'  case{i}: {{rval*=( (double *)(&(p->{x.name})) ); s=0; break}}' for i, x in enumerate(uservars)])
+        [f'  case {i}: {{rval=*( (double *)(&(p->{x.name})) ); s=0; break;}}' for i, x in enumerate(uservars)])
 
     uservar_init = ''
     for x in uservars:

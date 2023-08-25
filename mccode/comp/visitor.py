@@ -1,7 +1,7 @@
 from ..grammar import McCompParser as Parser, McCompVisitor
 from .comp import Comp
 from ..common import ComponentParameter, Expr, MetaData
-
+from zenlog import log
 
 class CompVisitor(McCompVisitor):
     def __init__(self, parent, filename):
@@ -73,19 +73,22 @@ class CompVisitor(McCompVisitor):
         name = str(ctx.Identifier())
         default = None
         if ctx.Assign() is not None:
-            default = 'NULL' if ctx.StringLiteral() is None else self.visit(ctx.StringLiteral())
+            default = 'NULL' if ctx.StringLiteral() is None else str(ctx.StringLiteral())
+        log.critical(f'{name} = {default}')
         return ComponentParameter(name=name, value=Expr.str(default))
 
     def visitComponentParameterVector(self, ctx: Parser.ComponentParameterVectorContext):
+        from ..common import Value, DataType, ShapeType
         name = str(ctx.Identifier(0))
         default = None
-        if ctx.assign() is not None:
+        if ctx.Assign() is not None:
             default = "NULL"
             if ctx.Identifier(1) is not None:
                 default = str(ctx.Identifier(1))
             elif ctx.initializerlist() is not None:
                 default = self.visit(ctx.initializerlist())
-        return ComponentParameter(name=name, value=Expr.float(default))
+        value = Expr(Value(default, data_type=DataType.float, shape_type=ShapeType.vector))
+        return ComponentParameter(name=name, value=value)
 
     def visitComponentParameterSymbol(self, ctx: Parser.ComponentParameterSymbolContext):
         raise RuntimeError("McCode symbol parameter type not supported yet")
@@ -95,6 +98,7 @@ class CompVisitor(McCompVisitor):
         return self.visitComponentParameterVector(ctx)
 
     def visitComponentParameterIntegerArray(self, ctx: Parser.ComponentParameterIntegerArrayContext):
+        from ..common import Value, DataType, ShapeType
         name = str(ctx.Identifier(0))
         default = None
         if ctx.assign() is not None:
@@ -103,7 +107,8 @@ class CompVisitor(McCompVisitor):
                 default = str(ctx.Identifier(1))
             elif ctx.initializerlist() is not None:
                 default = self.visit(ctx.initializerlist())
-        return ComponentParameter(name=name, value=Expr.int(default))
+        value = Expr(Value(default, data_type=DataType.int, shape_type=ShapeType.vector))
+        return ComponentParameter(name=name, value=value)
 
     def visitDependency(self, ctx: Parser.DependencyContext):
         self.parent.add_c_flags(self.visit(ctx.StringLiteral()))
@@ -219,3 +224,38 @@ class CompVisitor(McCompVisitor):
         from ..common import Value, ObjectType, ShapeType
         values = [self.visit(x) for x in ctx.values()]
         return Expr(Value(values, object_type=ObjectType.initializer_list, shape_type=ShapeType.vector))
+
+    def visitExpressionBinaryAnd(self, ctx: Parser.ExpressionBinaryAndContext):
+        from ..common import BinaryOp
+        left, right = [self.visit(x) for x in (ctx.left, ctx.right)]
+        return BinaryOp('__and__', left, right)
+
+    def visitExpressionBinaryOr(self, ctx: Parser.ExpressionBinaryOrContext):
+        from ..common import BinaryOp
+        left, right = [self.visit(x) for x in (ctx.left, ctx.right)]
+        return BinaryOp('__or__', left, right)
+
+    def visitExpressionBinaryEqual(self, ctx: Parser.ExpressionBinaryEqualContext):
+        from ..common import BinaryOp
+        left, right = [self.visit(x) for x in (ctx.left, ctx.right)]
+        return BinaryOp('__eq__', left, right)
+
+    def visitExpressionBinaryLessEqual(self, ctx: Parser.ExpressionBinaryLessEqualContext):
+        from ..common import BinaryOp
+        left, right = [self.visit(x) for x in (ctx.left, ctx.right)]
+        return BinaryOp('__le__', left, right)
+
+    def visitExpressionBinaryGreaterEqual(self, ctx: Parser.ExpressionBinaryGreaterEqualContext):
+        from ..common import BinaryOp
+        left, right = [self.visit(x) for x in (ctx.left, ctx.right)]
+        return BinaryOp('__ge__', left, right)
+
+    def visitExpressionBinaryLess(self, ctx: Parser.ExpressionBinaryLessContext):
+        from ..common import BinaryOp
+        left, right = [self.visit(x) for x in (ctx.left, ctx.right)]
+        return BinaryOp('__lt__', left, right)
+
+    def visitExpressionBinaryGreater(self, ctx: Parser.ExpressionBinaryGreaterContext):
+        from ..common import BinaryOp
+        left, right = [self.visit(x) for x in (ctx.left, ctx.right)]
+        return BinaryOp('__gt__', left, right)

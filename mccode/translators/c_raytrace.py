@@ -134,12 +134,12 @@ def cogen_raytrace(source, ok_to_skip):
         lines.append(f'    }} /* end of component {comp.name} [{index}] */')
 
     # /* now we close the SPLIT loops, unrolled from last to 1st */
-    for comp in source.components:
+    for comp in reversed(source.components):
         if comp.split is not None:
             lines.extend([
                 '#ifndef NOSPLIT',
-                f'    }} /* end split at {comp.name} */',
-                f'    }} /* end if(!ABSORBED) relating to SPLIT at {comp.name} */',
+                f'    }} /* end SPLIT at {comp.name} */',
+                f'    }} /* if (!ABSORBED) relating to SPLIT at {comp.name} */',
                 '#endif'
             ])
 

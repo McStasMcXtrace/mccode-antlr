@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from datetime import timedelta
 from pathlib import Path
 from typing import Self
+from zenlog import log
 
 from numpy import nan
 
@@ -24,6 +25,19 @@ class TestInstrExample:
     error_message: str = ""
     stdout: str = ""
     test_complete: bool = False
+
+    def __post_init__(self):
+        import re
+        if '.instr' in self.parameter_values:
+            rinstr = re.compile(r'[a-zA-Z][a-zA-Z0-9_\-]*\.instr')
+            new_param = rinstr.sub('', self.parameter_values)
+            log.info(f'Removing .instr from {self.parameter_values} now {new_param}')
+            self.parameter_values = new_param
+        if '-n' in self.parameter_values:
+            rn = re.compile(r'-n[0-9eE\.]*')
+            new_param = rn.sub('', self.parameter_values)
+            log.info(f'Removing -n from {self.parameter_values}, now {new_param}')
+            self.parameter_values = new_param
 
     @classmethod
     def list_from_file(cls, filename: Path) -> list[Self]:
@@ -161,7 +175,9 @@ def mccode_test_compiler(work_dir, file_path, target, registry, generator):
                   embed_instrument_file=False, verbose=False)
     try:
         binary_path = compile_instrument(inst, target, output, generator=generator, config=config)
-    except RuntimeError:
+    except RuntimeError as err:
+        log.critical(f'Failed to produce a binary for {file_path}')
+        log.info(err)
         return False, Path()
     return True, binary_path
 

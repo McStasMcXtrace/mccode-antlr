@@ -101,7 +101,7 @@ def cogen_comp_trace_class(is_mcstas, comp, source, declared_parameters, instr_u
 
     # Check if there are any user-defined parameter types ... (something which wasn't set previously?)
     # This is the 'symbol' type
-    declared_types = [t for _, (t, _) in declared_parameters.items()]
+    declared_types = [x.type for x in declared_parameters]
     # there must be a better way than this
     is_symbol = [t == 'symbol' for t in declared_types]
     # TODO FIXME This should be looping through setting parameters. It is probably wrong.
@@ -112,12 +112,12 @@ def cogen_comp_trace_class(is_mcstas, comp, source, declared_parameters, instr_u
                 f'  if(_comp->_index == {i}) {{ '
             ])
             # loop through the symbol types and set the component-instance values from ... somewhere
-            for name, init in [(n, i) for iss, (n, (t, i)) in zip(is_symbol, declared_parameters.items()) if iss]:
+            for c_dec in declared_parameters:
                 # Use the user-defined instance parameter if it exists, or attempt to use a default otherwise?
-                inst_param = [p for p in inst.parameters if p.name == name]
-                v = inst_param[0].value if len(inst_param) else init
+                inst_param = [p for p in inst.parameters if p.name == c_dec.name]
+                v = inst_param[0].value if len(inst_param) else c_dec.init
                 if v is not None:
-                    lines.append(f'    {name} = {v};')
+                    lines.append(f'    {c_dec.name} = {v};')
             lines.append('  }')
 
     # output the actual TRACE block(s)

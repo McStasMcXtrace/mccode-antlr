@@ -1,6 +1,7 @@
 from io import StringIO
 from ..instr import Instr, Instance
 from ..comp import Comp
+from zenlog import log
 
 MCSTAS_GENERATOR = dict(project=1, name="mcstas", fancy="McStas", url='http://www.mcstas.org')
 MCXTRACE_GENERATOR = dict(project=2, name='mcxtrace', fancy='McXtrace', url='http://www.mcxtrace.org')
@@ -141,6 +142,7 @@ class TargetVisitor:
             # Any component jumping elsewhere can not be skipped
             if len(comp.jump):
                 return False
+            return True
 
         can_skip_transform = [can_skip(comp) for comp in self.source.components]
 

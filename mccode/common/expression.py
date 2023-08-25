@@ -41,10 +41,15 @@ class ObjectType(Enum):
     initializer_list = 2
     identifier = 3
     function = 4
+    parameter = 5
 
     @property
     def is_id(self):
         return self == ObjectType.identifier
+
+    @property
+    def is_parameter(self):
+        return self == ObjectType.parameter
 
     @property
     def is_function(self):
@@ -117,10 +122,15 @@ class DataType(Enum):
 
 class BinaryOp:
     def __init__(self, op, left, right):
+        if isinstance(left, Expr):
+            left = left.expr
+        if isinstance(right, Expr):
+            right = right.expr
         self.op = op
         self.left = left
         self.right = right
         self.data_type = left.data_type + right.data_type
+        self.style = 'C'  # there should be a better way to do this
 
     def _str_repr_(self, lstr, rstr):
         if '__call__' == self.op:
@@ -128,13 +138,21 @@ class BinaryOp:
         if '__getitem__' == self.op:
             return f'{lstr}[{rstr}]'
         if '__pow__' == self.op:
-            return f'{lstr}^{rstr}'
+            return f'{lstr}^{rstr}' if 'C' == self.style else f'{lstr}**{rstr}'
         if '__lt__' == self.op:
             return f'{lstr}<{rstr}'
         if '__gt__' == self.op:
             return f'{lstr}>{rstr}'
+        if '__le__' == self.op:
+            return f'{lstr}<={rstr}'
+        if '__ge__' == self.op:
+            return f'{lstr}>={rstr}'
         if '__eq__' == self.op:
             return f'{lstr}=={rstr}'
+        if '__or__' == self.op:
+            return f'{lstr} || {rstr}' if 'C' == self.style else f'{lstr} or {rstr}'
+        if '__and__' == self.op:
+            return f'{lstr} && {rstr}' if 'C' == self.style else f'{lstr} and {rstr}'
         if any(x in self.op for x in '+-'):
             return f'({lstr} {self.op} {rstr})'
         if any(x in self.op for x in '*/'):
@@ -201,6 +219,10 @@ class BinaryOp:
         return False
 
     @property
+    def is_parameter(self):
+        return False
+
+    @property
     def is_str(self):
         return False
 
@@ -220,12 +242,18 @@ class BinaryOp:
     def is_vector(self):
         return self.left.is_vector or self.right.is_vector
 
+    @property
+    def vector_known(self):
+        return self.left.vector_known and self.right.vector_known
+
     def __len__(self):
         return max(len(self.left), len(self.right))
 
 
 class UnaryOp:
     def __init__(self, op, value):
+        if isinstance(value, Expr):
+            value = value.expr
         self.op = op
         self.value = value
         self.data_type = value.data_type
@@ -301,6 +329,10 @@ class UnaryOp:
         return False
 
     @property
+    def is_parameter(self):
+        return False
+
+    @property
     def is_str(self):
         return False
 
@@ -316,6 +348,10 @@ class UnaryOp:
     @property
     def is_vector(self):
         return self.value.is_vector
+
+    @property
+    def vector_known(self):
+        return self.value.vector_known
 
     def is_value(self, value):
         return self == value
@@ -372,14 +408,17 @@ class Value:
         return self.value is not None
 
     @property
-    def holds_vector(self):
+    def vector_known(self):
         return self.is_vector and self.has_value and not isinstance(self.value, str)
 
+    def _str_repr_(self):
+        return f'_instrument_var._parameters.{self.value}' if self.is_parameter else f'{self.value}'
+
     def __str__(self):
-        return f'{self.value}'
+        return self._str_repr_()
 
     def __repr__(self):
-        return f'{self.shape_type} {self.data_type} {self.value}'
+        return f'{self.shape_type} {self.data_type} {self._str_repr_()}'
 
     def __hash__(self):
         return hash(str(self))
@@ -433,7 +472,10 @@ class Value:
     @property
     def is_id(self):
         return self.data_type != DataType.str and isinstance(self.value, str)
-        # return self.it
+
+    @property
+    def is_parameter(self):
+        return self.object_type.is_parameter
 
     @property
     def is_str(self):
@@ -647,6 +689,10 @@ class Expr:
         return self.expr.is_id
 
     @property
+    def is_parameter(self):
+        return self.expr.is_parameter
+
+    @property
     def is_str(self):
         return self.expr.is_str
 
@@ -673,8 +719,8 @@ class Expr:
         return self.is_constant and self.expr.has_value
 
     @property
-    def holds_vector(self):
-        return self.is_constant and self.expr.holds_vector
+    def vector_known(self):
+        return self.is_constant and self.expr.vector_known
 
     @property
     def value(self):
