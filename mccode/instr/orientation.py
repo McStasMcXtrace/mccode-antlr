@@ -2,6 +2,12 @@ from dataclasses import dataclass, field
 from ..common import Expr, unary_expr, binary_expr
 from enum import Enum
 from zenlog import log
+from typing import Self
+
+Vector = tuple[Expr, Expr, Expr]
+Angles = tuple[Expr, Expr, Expr]
+Rotation = tuple[Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr]
+Affine = tuple[Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr]
 
 
 def _value_float_tuple(n, v=0.):
@@ -71,6 +77,21 @@ def degree_to_radian(v: Expr):
         return v * (Expr.float('PI') / Expr.float(180))
     return v * Expr.float(pi / 180)
 
+def _rotation_angles_to_axes_coordinates(rotated: Angles, degrees=True):
+    cx, cy, cz = [cos_value(r if degrees else degree_to_radian(r), degrees=degrees) for r in rotated]
+    sx, sy, sz = [sin_value(r if degrees else degree_to_radian(r), degrees=degrees) for r in rotated]
+    # Rotation matrices following the McCode first x then y then z method of applying rotations.
+    # The 3x3 rotation matrix part (which rotates the *axes* of a coordinate system):
+    axes = (cy * cz, sx * sy * cz + cx * sz, sx * sz - cx * sy * cz,
+            -cy * sz, cx * cz - sx * sy * sz, sx * cz + cx * sy * sz,
+            sy, -sx * cy, cx * cy)
+    # The coordinates of the same system rotate the opposite way, but still in the same order
+    # (All sin terms gain a negative sign)
+    coordinates = (cy * cz, sx * sy * cz - cx * sz, sx * sz + cx * sy * cz,
+                   cy * sz, cx * cz + sx * sy * sz, -sx * cz + cx * sy * sz,
+                   -sy, sx * cy, cx * cy)
+    return axes, coordinates
+
 
 @dataclass
 class Orientation:
@@ -79,12 +100,27 @@ class Orientation:
         coordinates = 2
 
     degrees: bool
-    position: tuple[Expr, Expr, Expr] = field(default_factory=lambda: _value_float_tuple(3))
-    angles: tuple[Expr, Expr, Expr] = field(default_factory=lambda: _value_float_tuple(3))
-    _axes: tuple[Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr] \
-        = field(default_factory=lambda: _value_float_tuple(9))
-    _coordinates: tuple[Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr] \
-        = field(default_factory=lambda: _value_float_tuple(9))
+    position: Vector = field(default_factory=lambda: _value_float_tuple(3))
+    _angles: Angles = field(default_factory=lambda: _value_float_tuple(3))
+    _axes: Rotation = field(default_factory=lambda: _value_float_tuple(9))
+    _coordinates: Rotation = field(default_factory=lambda: _value_float_tuple(9))
+
+    @staticmethod
+    def from_at_rotated(at: Vector, rotated: Angles, degrees=True):
+        axes, coordinates = _rotation_angles_to_axes_coordinates(rotated, degrees=degrees)
+        # The 3 vector part:
+        v = at[0], at[1], at[2]
+        return Orientation(degrees, v, rotated, axes, coordinates)
+
+    @property
+    def angles(self):
+        return self._angles
+
+    @angles.setter
+    def angles(self, rotated: Angles, degrees=True):
+        self._axes, self._coordinates = _rotation_angles_to_axes_coordinates(rotated, degrees=degrees)
+        self._angles = rotated
+
 
     def __str__(self):
         y = [self._axes[0], self._axes[1], self._axes[2], self.position[0],
@@ -104,7 +140,27 @@ class Orientation:
              (t[6], t[7], t[8], self.position[2]),
              (Expr.float(0), Expr.float(0), Expr.float(0), Expr.float(1)))
         return m
-    #
+
+    def affine(self, which):
+        t = self._axes if 'axes' in which else self._coordinates
+        m = (t[0], t[1], t[2], self.position[0],
+             t[3], t[4], t[5], self.position[1],
+             t[6], t[7], t[8], self.position[2],
+             Expr.float(0), Expr.float(0), Expr.float(0), Expr.float(1))
+        return m
+
+    def __mul__(self, other):
+        if not isinstance(other, Orientation):
+            raise RuntimeError('Orientation multiplication only defined between class objects')
+        if self.degrees != other.degrees:
+            raise RuntimeError('Inconsistent degree use between orientations')
+        # position and angles are *probably* wrong, how should we indicate that?
+        position = tuple(s + o for s, o in zip(self.position, other.position))
+        angles = tuple(s + o for s, o in zip(self.angles, other.angles))
+        axes = matrix_matrix_multiply_4(self.affine('axes'), other.affine('axes'))
+        coords = matrix_matrix_multiply_4(self.affine('coords'), other.affine('coords'))
+        return Orientation(self.degrees, position, angles, axes, coords)
+
     # @property
     # def angles(self):
     #     from math import pi
@@ -165,26 +221,77 @@ class Orientation:
     #     log.critical(f'y is {y}')
     #     return x, y, z
 
-    @staticmethod
-    def from_at_rotated(at, rotated, degrees=True):
-        cx, cy, cz = [cos_value(r if degrees else degree_to_radian(r), degrees=degrees) for r in rotated]
-        sx, sy, sz = [sin_value(r if degrees else degree_to_radian(r), degrees=degrees) for r in rotated]
-        # Rotation matrices following the McCode first x then y then z method of applying rotations.
-        # The 3x3 rotation matrix part (which rotates the *axes* of a coordinate system):
-        axes = (cy * cz, sx * sy * cz + cx * sz, sx * sz - cx * sy * cz,
-                -cy * sz, cx * cz - sx * sy * sz, sx * cz + cx * sy * sz,
-                sy, -sx * cy, cx * cy)
-        # The coordinates of the same system rotate the opposite way, but still in the same order
-        # (All sin terms gain a negative sign)
-        coordinates = (cy * cz, sx * sy * cz - cx * sz, sx * sz + cx * sy * cz,
-                       cy * sz, cx * cz + sx * sy * sz, -sx * cz + cx * sy * sz,
-                       -sy, sx * cy, cx * cy)
-        # The 3 vector part:
-        v = at[0], at[1], at[2]
-        return Orientation(degrees, v, rotated, axes, coordinates)
+
+def _add_to_chain(chain: tuple[Orientation], position: Vector, angles: Angles, degrees=True, copy=True):
+    orientation = Orientation.from_at_rotated(position, angles, degrees=degrees)
+    if copy:
+        from copy import deepcopy
+        chain = tuple([deepcopy(x) for x in chain])
+    chain += (orientation, )
+    return chain
 
 
-def from_at_rotated(at: tuple[Expr, Expr, Expr], rotated: tuple[Expr, Expr, Expr]):
+def _resolve_chain(chain: tuple[Orientation], origin: Orientation = None):
+    degree_set = set(x.degrees for x in chain)
+    if len(degree_set) < 2:
+        degrees = list(degree_set)[0] if len(degree_set) else True
+    else:
+        raise RuntimeError("Inconsistent degree use in orientation chain")
+
+    if origin is None:
+        zero = Expr.float(0), Expr.float(0), Expr.float(0)
+        origin = Orientation.from_at_rotated(zero, zero, degrees=degrees)
+
+    resolved = origin
+    for orientation in chain:
+        resolved *= orientation
+    return resolved
+
+
+@dataclass
+class DependentOrientation:
+    orientation: Orientation
+    dep_position: tuple[Orientation] = field(default_factory=tuple)
+    dep_rotation: tuple[Orientation] = field(default_factory=tuple)
+
+    @property
+    def degrees(self):
+        return self.orientation.degrees
+
+    def _resolved_position_chain(self, copy=True):
+        zero = Expr.float(0), Expr.float(0), Expr.float(0)
+        return _add_to_chain(self.dep_position, self.orientation.position, zero, degrees=self.degrees, copy=copy)
+
+    def _resolved_rotation_chain(self, copy=True):
+        zero = Expr.float(0), Expr.float(0), Expr.float(0)
+        return _add_to_chain(self.dep_rotation, zero, self.orientation.angles, degrees=self.degrees, copy=copy)
+
+    @classmethod
+    def from_dependent_orientation(cls, dep_on: Self, at: Vector, angles: Angles, degrees=True, copy=True):
+        return cls(Orientation.from_at_rotated(at, angles, degrees=degrees),
+                   () if dep_on is None else dep_on._resolved_position_chain(copy=copy),
+                   () if dep_on is None else dep_on._resolved_rotation_chain(copy=copy))
+
+    @classmethod
+    def from_dependent_orientations(cls, dep_at: Self, at: Vector, dep_angles: Self, angles: Angles, degrees=True, copy=True):
+        dep_pos = () if dep_at is None else dep_at._resolved_position_chain(copy=copy)
+        dep_ang = () if dep_angles is None else dep_angles._resolved_rotation_chain(copy=copy)
+        return cls(Orientation.from_at_rotated(at, angles, degrees=degrees), dep_pos, dep_ang)
+
+    def position(self, axes=None):
+        ra = _resolve_chain(self.dep_position).affine('axes' if axes is None else axes)
+        pos = self.orientation.position[0], self.orientation.position[1], self.orientation.position[2], Expr.float(1)
+        pos = matrix_vector_multiply_4(ra, pos)
+        return pos[0], pos[1], pos[2]
+
+    def rotation(self, axes=None):
+        ra = _resolve_chain(self.dep_rotation).affine('axes' if axes is None else axes)
+        afn = self.orientation.affine('axes' if axes is None else axes)
+        glob = matrix_matrix_multiply_4(afn, ra)
+        return glob[0], glob[1], glob[2], glob[4], glob[5], glob[6], glob[8], glob[9], glob[10]
+
+
+def from_at_rotated(at: Vector, rotated: Angles):
     return Orientation.from_at_rotated(at, rotated)
 
 
@@ -193,14 +300,14 @@ def matrix_det_2(m: tuple[Expr, Expr, Expr, Expr]):
     return m[0] * m[3] - m[1] * m[2]
 
 
-def matrix_det_3(m: tuple[Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr]):
+def matrix_det_3(m: Rotation):
     """Determinant of a (flat, row ordered) 3x3 matrix"""
     def d(i, j, k, l):
         return matrix_det_2((m[i], m[j], m[k], m[l]))
     return m[0] * d(4, 5, 7, 8) - m[1] * d(3, 5, 6, 8) + m[2] * d(3, 4, 6, 7)
 
 
-def matrix_inverse_3(m: tuple[Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr]):
+def matrix_inverse_3(m: Rotation):
     """Inverse of a (flat, row ordered) 3x3 matrix"""
     det = abs(matrix_det_3(m))
 
@@ -212,8 +319,7 @@ def matrix_inverse_3(m: tuple[Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr, Ex
             d(3, 4, 6, 7), d(1, 0, 7, 6), d(0, 1, 3, 4))
 
 
-def matrix_matrix_multiply_3(a: tuple[Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr],
-                             b: tuple[Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr]):
+def matrix_matrix_multiply_3(a: Rotation, b: Rotation):
     """Matrix multiplication of two (flat, row-ordered) matrices"""
     x00 = a[0] * b[0] + a[1] * b[3] + a[2] * b[6]
     x01 = a[0] * b[1] + a[1] * b[4] + a[2] * b[7]
@@ -227,7 +333,7 @@ def matrix_matrix_multiply_3(a: tuple[Expr, Expr, Expr, Expr, Expr, Expr, Expr, 
     return x00, x01, x02, x10, x11, x12, x20, x21, x22
 
 
-def matrix_matrix_multiply_4(a: tuple[Expr, ...], b: tuple[Expr, ...]):
+def matrix_matrix_multiply_4(a: Affine, b: Affine):
     """Matrix multiplication of two (flat, row-ordered) 4x4 matrices"""
     x00 = a[0] * b[0] + a[1] * b[4] + a[2] * b[8] + a[3] * b[12]
     x01 = a[0] * b[1] + a[1] * b[5] + a[2] * b[9] + a[3] * b[13]
@@ -248,8 +354,7 @@ def matrix_matrix_multiply_4(a: tuple[Expr, ...], b: tuple[Expr, ...]):
     return x00, x01, x02, x03, x10, x11, x12, x13, x20, x21, x22, x23, x30, x31, x32, x33
 
 
-def matrix_vector_multiply_3(m: tuple[Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr],
-                             v: tuple[Expr, Expr, Expr]):
+def matrix_vector_multiply_3(m: Rotation, v: Vector):
     """Multiplication of a (flat, row-ordered) 3x3 matrix with a column 3-vector"""
     x0 = m[0] * v[0] + m[1] * v[1] + m[2] * v[2]
     x1 = m[3] * v[0] + m[4] * v[1] + m[4] * v[2]
@@ -257,8 +362,16 @@ def matrix_vector_multiply_3(m: tuple[Expr, Expr, Expr, Expr, Expr, Expr, Expr, 
     return x0, x1, x2
 
 
-def vector_matrix_multiply_3(v: tuple[Expr, Expr, Expr],
-                             m: tuple[Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr]):
+def matrix_vector_multiply_4(m: Affine, v: tuple[Expr, Expr, Expr, Expr]):
+    """Multiplication of a (flat, row-ordered) 3x3 matrix with a column 3-vector"""
+    x0 = m[0] * v[0] + m[1] * v[1] + m[2] * v[2] + m[3] * v[3]
+    x1 = m[4] * v[0] + m[5] * v[1] + m[6] * v[2] + m[7] * v[3]
+    x2 = m[8] * v[0] + m[9] * v[1] + m[10] * v[2] + m[11] * v[3]
+    x3 = m[12] * v[0] + m[13] * v[1] + m[14] * v[2] + m[15] * v[3]
+    return x0, x1, x2, x3
+
+
+def vector_matrix_multiply_3(v: Vector, m: Rotation):
     """Multiplication of a row 3-vector with a (flat, row-ordered) 3x3 matrix"""
     x0 = v[0] * m[0] + v[1] * m[3] + v[2] * m[6]
     x1 = v[0] * m[1] + v[1] * m[4] + v[2] * m[7]
@@ -266,7 +379,7 @@ def vector_matrix_multiply_3(v: tuple[Expr, Expr, Expr],
     return x0, x1, x2
 
 
-def affine_inverse(a: tuple[Expr, ...]):
+def affine_inverse(a: Affine):
     """Special 4x4 (flat, row-ordered) matrix inverse.
 
     The affine matrix *must* be a _projective transformation matrix_ and acts on augmented vectors,

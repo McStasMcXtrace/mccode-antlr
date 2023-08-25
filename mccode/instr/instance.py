@@ -4,7 +4,7 @@ from typing import Self
 from ..comp import Comp
 from ..common import Expr, Value, UnaryOp, BinaryOp
 from ..common import DataType, ComponentParameter, MetaData, parameter_name_present, RawC, blocks_to_raw_c
-from .orientation import Orientation
+from .orientation import DependentOrientation
 from .jump import Jump
 
 @dataclass
@@ -18,7 +18,7 @@ class Instance:
     type: Comp
     at_relative: tuple[tuple[Expr, Expr, Expr], Self]
     rotate_relative: tuple[tuple[Expr, Expr, Expr], Self]
-    orientation: Orientation = None
+    orientation: DependentOrientation = None
     parameters: tuple[ComponentParameter] = field(default_factory=tuple)
     removable: bool = False
     cpu: bool = False
@@ -32,7 +32,9 @@ class Instance:
     def __post_init__(self):
         log.info(f'Finishing up initalization of instance {self.name}')
         if self.orientation is None:
-            self.orientation = from_at_relative_rotated_relative(*self.at_relative, *self.rotate_relative)
+            self.orientation = DependentOrientation.from_dependent_orientations(
+                self.at_relative[1].orientation, self.at_relative[0],
+                self.rotate_relative[1].orientation, self.rotate_relative[0])
 
     def set_parameter(self, name: str, value):
         if not parameter_name_present(self.type.define, name) and not parameter_name_present(self.type.setting, name):
@@ -98,16 +100,16 @@ class Instance:
         md.update({m.name: m for m in self.metadata})
         return tuple(md.values())
 
-
-def from_at_relative_rotated_relative(at: tuple[Expr, Expr, Expr], at_relative: Instance,
-                                      rotated: tuple[Expr, Expr, Expr], rotated_relative: Instance):
-    def g(which: str, triplet: tuple[Expr, Expr, Expr], relative: Instance):
-        if relative is None or relative.orientation is None:
-            return triplet
-        relative_triplet = relative.orientation.position if which == "at" else relative.orientation.angles
-        if 'rotated' == which:
-            log.info(f'Rotated relative {relative.name}: ({relative_triplet[0]}, {relative_triplet[1]}, {relative_triplet[2]})')
-        return triplet[0] + relative_triplet[0], triplet[1] + relative_triplet[1], triplet[2] + relative_triplet[2]
-    r = g('rotated', rotated, rotated_relative)
-    log.info(f'-> Global rotation ({r[0]}, {r[1]}, {r[2]})')
-    return Orientation.from_at_rotated(g('at', at, at_relative), r)
+#
+# def from_at_relative_rotated_relative(at: tuple[Expr, Expr, Expr], at_relative: Instance,
+#                                       rotated: tuple[Expr, Expr, Expr], rotated_relative: Instance):
+#     def g(which: str, triplet: tuple[Expr, Expr, Expr], relative: Instance):
+#         if relative is None or relative.orientation is None:
+#             return triplet
+#         relative_triplet = relative.orientation.position if which == "at" else relative.orientation.angles
+#         if 'rotated' == which:
+#             log.info(f'Rotated relative {relative.name}: ({relative_triplet[0]}, {relative_triplet[1]}, {relative_triplet[2]})')
+#         return triplet[0] + relative_triplet[0], triplet[1] + relative_triplet[1], triplet[2] + relative_triplet[2]
+#     r = g('rotated', rotated, rotated_relative)
+#     log.info(f'-> Global rotation ({r[0]}, {r[1]}, {r[2]})')
+#     return Orientation.from_at_rotated(g('at', at, at_relative), r)
