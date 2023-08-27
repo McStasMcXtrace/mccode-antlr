@@ -106,49 +106,93 @@ class Instr:
                 return registry.path(filename).absolute().resolve()
         return Path()
 
-    def _replace_env_getpath_cmd(self, flags: Union[str, bytes]):
-        """Replace CMD, ENV, and GETPATH directives from a flag string or byte-array"""
+    # def _replace_env_getpath_cmd(self, flags: Union[str, bytes]):
+    #     """Replace CMD, ENV, and GETPATH directives from a flag string or byte-array"""
+    #     # Mimics McCode-3/tools/Python/mccodelib/cflags.py:evaluate_dependency_str
+    #     #
+    #     is_bytes = isinstance(flags, bytes)
+    #     to_str = (lambda b: b.decode()) if is_bytes else (lambda b: b)
+    #     from_str = (lambda b: b.encode()) if is_bytes else (lambda b: b)
+    #
+    #     def getpath(chars):
+    #         return from_str(str(self._getpath(to_str(chars)).as_posix()))
+    #
+    #     def eval_cmd(chars):
+    #         from subprocess import run, CalledProcessError
+    #         try:
+    #             proc = run(to_str(chars), check=True, shell=True, capture_output=True)
+    #             output = proc.stdout
+    #         except CalledProcessError as error:
+    #             raise RuntimeError(f"Calling {to_str(chars)} resulted in error {error}")
+    #         output = [line.strip() for line in to_str(output).splitlines() if line.strip()]
+    #         if len(output) > 1:
+    #             raise RuntimeError(f"Calling {to_str(chars)} produced more than one line of output")
+    #         return from_str(output[0] if output else '')
+    #
+    #     def eval_env(chars):
+    #         from os import environ
+    #         return from_str(environ.get(to_str(chars), ''))
+    #
+    #     def replace(chars, start, replacer):
+    #         if start not in chars:
+    #             return chars
+    #         before, after = chars.split(start, 1)
+    #         if from_str('(') != after[0]:
+    #             raise ValueError(f'Missing opening parenthesis in dependency string after {to_str(start)}')
+    #         if from_str(')') not in after:
+    #             raise ValueError(f'Missing closing parenthesis in dependency string after {to_str(start)}')
+    #         dep, after = after[1:].split(from_str(')'), 1)
+    #         if start in dep:
+    #             raise ValueError(f'Nested {to_str(start)} in dependency string')
+    #         print(f'{type(before)} -- {before}')
+    #         print(f'{type(replacer(dep))}')
+    #         return before + replacer(dep) + replace(after, start, replacer)
+    #
+    #     keys = [b'ENV', b'GETPATH', b'CMD'] if is_bytes else ['ENV', 'GETPATH', 'CMD']
+    #
+    #     print(f'The input {flags} is a {type(flags)} object, so {is_bytes = }')
+    #     for key, worker in zip(keys, [eval_env, getpath, eval_cmd]):
+    #         flags = replace(flags, key, worker)
+    #
+    #     return flags
+
+    def _replace_env_getpath_cmd(self, flags: str):
+        """Replace CMD, ENV, and GETPATH directives from a flag string"""
         # Mimics McCode-3/tools/Python/mccodelib/cflags.py:evaluate_dependency_str
         #
-        is_bytes = isinstance(flags, bytes)
-        to_str = (lambda b: b.decode()) if is_bytes else (lambda b: b)
-        from_str = (lambda b: b.encode()) if is_bytes else (lambda b: b)
-
         def getpath(chars):
-            return from_str(str(self._getpath(to_str(chars)).as_posix()))
+            return self._getpath(chars).as_posix()
 
         def eval_cmd(chars):
             from subprocess import run, CalledProcessError
             try:
-                proc = run(to_str(chars), check=True, shell=True, capture_output=True)
+                proc = run(chars, check=True, shell=True, capture_output=True, text=True)
                 output = proc.stdout
             except CalledProcessError as error:
-                raise RuntimeError(f"Calling {to_str(chars)} resulted in error {error}")
-            output = [line.strip() for line in to_str(output).splitlines() if line.strip()]
+                raise RuntimeError(f"Calling {chars} resulted in error {error}")
+            output = [line.strip() for line in output.splitlines() if line.strip()]
             if len(output) > 1:
-                raise RuntimeError(f"Calling {to_str(chars)} produced more than one line of output")
-            return from_str(output[0] if output else '')
+                raise RuntimeError(f"Calling {chars} produced more than one line of output")
+            return output[0] if output else ''
 
         def eval_env(chars):
             from os import environ
-            return from_str(environ.get(to_str(chars), ''))
+            return environ.get(chars, '')
 
         def replace(chars, start, replacer):
             if start not in chars:
                 return chars
             before, after = chars.split(start, 1)
-            if from_str('(') != after[0]:
-                raise ValueError(f'Missing opening parenthesis in dependency string after {to_str(start)}')
-            if from_str(')') not in after:
-                raise ValueError(f'Missing closing parenthesis in dependency string after {to_str(start)}')
-            dep, after = after[1:].split(from_str(')'), 1)
+            if '(' != after[0]:
+                raise ValueError(f'Missing opening parenthesis in dependency string after {start}')
+            if ')' not in after:
+                raise ValueError(f'Missing closing parenthesis in dependency string after {start}')
+            dep, after = after[1:].split(')', 1)
             if start in dep:
-                raise ValueError(f'Nested {to_str(start)} in dependency string')
+                raise ValueError(f'Nested {start} in dependency string')
             return before + replacer(dep) + replace(after, start, replacer)
 
-        keys = [b'ENV', b'GETPATH', b'CMD'] if is_bytes else ['ENV', 'GETPATH', 'CMD']
-
-        for key, worker in zip(keys, [eval_env, getpath, eval_cmd]):
+        for key, worker in zip(['ENV', 'GETPATH', 'CMD'], [eval_env, getpath, eval_cmd]):
             flags = replace(flags, key, worker)
 
         return flags
