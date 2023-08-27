@@ -307,6 +307,9 @@ class InstrVisitor(McInstrVisitor):
     def visitExpressionInteger(self, ctx: McInstrParser.ExpressionIntegerContext):
         return Expr.int(str(ctx.IntegerLiteral()))
 
+    def visitExpressionZero(self, ctx: McInstrParser.ExpressionZeroContext):
+        return Expr.int(0)
+
     def visitExpressionExponentiation(self, ctx: McInstrParser.ExpressionExponentiationContext):
         base = self.visit(ctx.base)
         exponent = self.visit(ctx.exponent)
@@ -328,7 +331,7 @@ class InstrVisitor(McInstrVisitor):
 
     def visitInitializerlist(self, ctx: McInstrParser.InitializerlistContext):
         from ..common import Value, ObjectType, ShapeType
-        values = [self.visit(x) for x in ctx.values()]
+        values = [self.visit(x).expr.value for x in ctx.values()]
         return Expr(Value(values, object_type=ObjectType.initializer_list, shape_type=ShapeType.vector))
 
     def visitExpressionBinaryAnd(self, ctx: McInstrParser.ExpressionBinaryAndContext):

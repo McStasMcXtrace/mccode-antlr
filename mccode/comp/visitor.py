@@ -80,14 +80,16 @@ class CompVisitor(McCompVisitor):
     def visitComponentParameterVector(self, ctx: Parser.ComponentParameterVectorContext):
         from ..common import Value, DataType, ShapeType
         name = str(ctx.Identifier(0))
-        default = None
-        if ctx.Assign() is not None:
-            default = "NULL"
-            if ctx.Identifier(1) is not None:
-                default = str(ctx.Identifier(1))
-            elif ctx.initializerlist() is not None:
-                default = self.visit(ctx.initializerlist())
-        value = Expr(Value(default, data_type=DataType.float, shape_type=ShapeType.vector))
+        if ctx.Assign() is not None and ctx.initializerlist() is not None:
+            value = self.visit(ctx.initializerlist())
+            value._data = DataType.float
+        else:
+            default = None
+            if ctx.Assign() is not None:
+                default = "NULL"
+                if ctx.Identifier(1) is not None:
+                    default = str(ctx.Identifier(1))
+            value = Expr(Value(default, data_type=DataType.float, shape_type=ShapeType.vector))
         return ComponentParameter(name=name, value=value)
 
     def visitComponentParameterSymbol(self, ctx: Parser.ComponentParameterSymbolContext):
@@ -100,14 +102,16 @@ class CompVisitor(McCompVisitor):
     def visitComponentParameterIntegerArray(self, ctx: Parser.ComponentParameterIntegerArrayContext):
         from ..common import Value, DataType, ShapeType
         name = str(ctx.Identifier(0))
-        default = None
-        if ctx.assign() is not None:
-            default = "NULL"
-            if ctx.Identifier(1) is not None:
-                default = str(ctx.Identifier(1))
-            elif ctx.initializerlist() is not None:
-                default = self.visit(ctx.initializerlist())
-        value = Expr(Value(default, data_type=DataType.int, shape_type=ShapeType.vector))
+        if ctx.assign() is not None and ctx.initializerlist() is not None:
+            value = self.visit(ctx.initializerlist())
+            value._data = DataType.int
+        else:
+            default = None
+            if ctx.assign() is not None:
+                default = "NULL"
+                if ctx.Identifier(1) is not None:
+                    default = str(ctx.Identifier(1))
+            value = Expr(Value(default, data_type=DataType.int, shape_type=ShapeType.vector))
         return ComponentParameter(name=name, value=value)
 
     def visitDependency(self, ctx: Parser.DependencyContext):
@@ -220,6 +224,9 @@ class CompVisitor(McCompVisitor):
     def visitExpressionInteger(self, ctx: Parser.ExpressionIntegerContext):
         return Expr.int(str(ctx.IntegerLiteral()))
 
+    def visitExpressionZero(self, ctx: Parser.ExpressionZeroContext):
+        return Expr.int(0)
+
     def visitExpressionExponentiation(self, ctx: Parser.ExpressionExponentiationContext):
         base = self.visit(ctx.base)
         exponent = self.visit(ctx.exponent)
@@ -241,7 +248,8 @@ class CompVisitor(McCompVisitor):
 
     def visitInitializerlist(self, ctx: Parser.InitializerlistContext):
         from ..common import Value, ObjectType, ShapeType
-        values = [self.visit(x) for x in ctx.values]
+        values = [self.visit(x).expr.value for x in ctx.values]
+        log.critical(f'{values}')
         return Expr(Value(values, object_type=ObjectType.initializer_list, shape_type=ShapeType.vector))
 
     def visitExpressionBinaryAnd(self, ctx: Parser.ExpressionBinaryAndContext):

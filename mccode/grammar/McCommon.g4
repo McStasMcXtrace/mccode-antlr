@@ -37,7 +37,8 @@ initializerlist: '{' values+=expr (Comma values+=expr)* '}';
 assignment: Identifier Assign expr; // Not used in McCode, but *could* be used to enable, e.g., loops or other simple control
 
 expr
-  : IntegerLiteral                             #ExpressionInteger
+  : '0'                                        #ExpressionZero
+  | IntegerLiteral                             #ExpressionInteger
   | FloatingLiteral                            #ExpressionFloat
   | Identifier '[' expr ']'                    #ExpressionArrayAccess
   | Identifier '(' expr ')'                    #ExpressionFunctionCall

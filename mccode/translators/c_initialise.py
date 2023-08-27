@@ -120,6 +120,7 @@ def cogen_comp_setpos(index, comp, last, instr, component_declared_parameters):
             pl.append(f"  {fullname}[0] = '\\0';")
         elif p.value.is_vector:
             if p.value.vector_known:
+                log.error(f'for {fullname}, why can we not iterate over {p.value}\n{p.value.value}')
                 for i, v in enumerate(p.value.value):
                     pl.append(f'  {fullname}[{i}] = {v};')
             else:
