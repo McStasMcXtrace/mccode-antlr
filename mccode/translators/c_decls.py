@@ -43,7 +43,7 @@ def declarations_pre_libraries(source, typedefs: list, component_declared_parame
         return lines
 
     def instrument_structure():
-        n2 = len(source.components) + 2
+        n2 = len(source.components) + 1  # offset enables 1-based indexing at the cost of binary size/memory use
         lines = ["struct _instrument_struct {",
                  f"  char   _name[256]; /* the name of this instrument e.g. '{source.name}' */",
                  "/* Counters per component instance */",
@@ -213,7 +213,7 @@ def component_type_declaration(comp, typedefs: list, declared_parameters: list):
 def component_instance_declaration(instance, index):
     """Declare the *instance* variable of the component-type structure"""
     lines = [
-        f'/* component {instance.name} = {instance.type.name}() [{index}] DECLARE */',
+        f'/* component {instance.name} = {instance.type.name}() [{1 + index}] DECLARE */',
         f'_class_{instance.type.name} _{instance.name}_var;',
         f'#pragma acc declare create ( _{instance.name}_var )'
     ]

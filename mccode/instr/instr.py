@@ -88,7 +88,10 @@ class Instr:
                 self.groups[inst.group].add(id, inst)
 
     def component_types(self):
-        return set(inst.type for inst in self.components)
+        # # If component order is unimportant, we can use a set:
+        # return set(inst.type for inst in self.components)
+        # For comparison with the C code generator, we must keep the order of component definitions
+        return list(dict.fromkeys([inst.type for inst in self.components]))
 
     def collect_metadata(self):
         """Component definitions and instances can define metadata too, collect it all together here"""

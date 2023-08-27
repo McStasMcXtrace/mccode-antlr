@@ -1,4 +1,4 @@
-def header_pre_runtime(is_mcstas, source, runtime: dict, config: dict, typedefs: list, uservars: set):
+def header_pre_runtime(is_mcstas, source, runtime: dict, config: dict, typedefs: list, uservars: list):
     from datetime import datetime
 
     def jump_line(instance, jump):

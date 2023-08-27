@@ -52,7 +52,7 @@ def cogen_raytrace(source, ok_to_skip):
                 '#endif'
             ])
         # Coordinate transforms WRT PREVIOUS
-        lines.append(f'    /* begin component {comp.name}={comp.type.name}() [{index}] */')
+        lines.append(f'    /* begin component {comp.name}={comp.type.name}() [{1+index}] */')
         if not ok_to_skip[index]:
             lines.extend([
                 "    if (!_particle->flag_nocoordschange) { // flag activated by JUMP to pass coords change",
@@ -66,7 +66,7 @@ def cogen_raytrace(source, ok_to_skip):
                 "    }",
             ])
         lines.extend([
-            f'    if (!ABSORBED && _particle->_index == {index}) {{',
+            f'    if (!ABSORBED && _particle->_index == {1+index}) {{',
             '      _particle->flag_nocoordschange=0; /* Reset if we came here from a JUMP */',
         ])
         if comp.group is None or source.groups[comp.group].is_leader(index):
@@ -117,9 +117,9 @@ def cogen_raytrace(source, ok_to_skip):
             ln = group.last.name
             lid = group.last_id
             lines.extend([
-                f'      // GROUP {group.name}: from {fn} [{group.first_id}] to {ln} [{lid}]',
+                f'      // GROUP {group.name}: from {fn} [{group.first_id}] to {ln} [{1+lid}]',
                 # Skip over when SCATTERED in the group:
-                f'      if (SCATTERED) _particle->_index = {lid}; '
+                f'      if (SCATTERED) _particle->_index = {1+lid}; '
                 '// when SCATTERED in GROUP: reach exit of GROUP after {ln}',
                 #
             ])
@@ -131,7 +131,7 @@ def cogen_raytrace(source, ok_to_skip):
         lines.append('      _particle->_index++;')
         if not ok_to_skip[index]:
             lines.append('      if (!ABSORBED) { DEBUG_STATE(); }')
-        lines.append(f'    }} /* end of component {comp.name} [{index}] */')
+        lines.append(f'    }} /* end of component {comp.name} [{1+index}] */')
 
     # /* now we close the SPLIT loops, unrolled from last to 1st */
     for comp in reversed(source.components):

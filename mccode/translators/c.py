@@ -156,9 +156,12 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
             name_pointer_array = [(x.translate(sc), '*' in x, '[' in x and ']' in x) for x in decs]
             return [CDeclaration(n, t, i, p, a, o) for (n, p, a), (o, (t, i)) in zip(name_pointer_array, decs.items())]
 
-        declares = set()  # will be (CDeclaration(name, type, init, is_pointer, is_array, orig), )
+        # declares = set()  # will be (CDeclaration(name, type, init, is_pointer, is_array, orig), )
+        declares = []  # runtime-accessing by 'ID' only possible if order is preserved
         for raw_user_vars_c_block in self.source.user:
-            declares = declares.union(extract_declares(self.source.name, raw_user_vars_c_block))
+            # declares = declares.union(extract_declares(self.source.name, raw_user_vars_c_block))
+            declares.extend(extract_declares(self.source.name, raw_user_vars_c_block))
+            declares = list(dict.fromkeys(declares))
 
         # Check for differing repeated declarations -- these are set elements with the same name:
         if len(set([d.name for d in declares])) != len(declares):
@@ -167,10 +170,13 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
         # Look for USERVAR section(s) in the set of component definitions too:
         comp_declares = dict()
         for component in self.source.component_types():
-            temp_set = set()
+            # temp_set = set()
+            a_declares = []
             for raw_user_vars_c_block in component.user:
-                temp_set = temp_set.union(extract_declares(component.name, raw_user_vars_c_block))
-            comp_declares[component.name] = temp_set
+                # temp_set = temp_set.union(extract_declares(component.name, raw_user_vars_c_block))
+                a_declares.extend(extract_declares(component.name, raw_user_vars_c_block))
+                a_declares = list(dict.fromkeys(a_declares))
+            comp_declares[component.name] = a_declares
             # Check for differing repeated declarations in this component:
             if len(set([d.name for d in comp_declares[component.name]])) != len(comp_declares[component.name]):
                 raise RuntimeError(f"One or more component USERVARS repeated in {component.name}")
@@ -181,7 +187,7 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
             culprits = [x.name for x in self.source.component_types() if len(comp_declares[x.name])]
             raise RuntimeError(f'One or more component USERVARS repeated between components {culprits}')
         # And between all components and the instrument
-        nd.union(declares)
+        nd = nd.union(declares)
         if len(set([x.name for x in nd])) != len(nd):
             culprits = [x.name for x in self.source.component_types() if len(comp_declares[x.name])]
             raise RuntimeError(f'Conflicting USERVAR declarations between instrument {self.source.name} and {culprits}')
@@ -232,13 +238,22 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
             self.component_declared_parameters[typ.name] = list(declared_parameters)
         self._determine_uservars()
 
+    def _instrument_and_component_uservars(self):
+        uuv = [x for x in self.instrument_uservars]
+        for comp_name, comp_uv in self.component_uservars.items():
+            uuv.extend(comp_uv)
+            uuv = list(dict.fromkeys(uuv))
+        return uuv
+
     def visit_header(self):
         from .c_header import header_pre_runtime, header_post_runtime
         # Get the unique list of USERVAR declarations:
         log.debug(f'Instrument uservars = {self.instrument_uservars}')
-        uuv = set().union(self.instrument_uservars)
-        for x in self.component_uservars:
-            uuv.union(x)
+        # uuv = set().union(self.instrument_uservars)
+        # for x in self.component_uservars:
+        #     uuv = uuv.union(x)
+
+        uuv = self._instrument_and_component_uservars()
 
         is_mcstas = self.is_mcstas
         self.out(header_pre_runtime(is_mcstas, self.source, self.runtime, self.config, self.typedefs, uuv))
@@ -315,16 +330,12 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
 
     def enter_uservars(self):
         # After cogen_trace_section, the USERVAR particle struct members need to be defined for raytrace
-        uuv = set().union(self.instrument_uservars)
-        for x in self.component_uservars:
-            uuv.union(x)
+        uuv = self._instrument_and_component_uservars()
         self.out('\n'.join([f'#define {x.name} (_particle->{x.name})' for x in uuv]))
 
     def leave_uservars(self):
         # following TRACE before undef_trace_section, the USERVAR particle struct members need to be undef'd
-        uuv = set().union(self.instrument_uservars)
-        for x in self.component_uservars:
-            uuv.union(x)
+        uuv = self._instrument_and_component_uservars()
         self.out('\n'.join([f'#undef {x.name}' for x in uuv]))
 
     def visit_raytrace(self):
@@ -350,10 +361,7 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
     def visit_macros(self):
         from .c_macros import cogen_getvarpars_fct, cogen_getcompindex_fct, cogen_getparticlevar_fct
         self.out(cogen_getvarpars_fct(self.source))
-        uuv = set().union(self.instrument_uservars)
-        for x in self.component_uservars:
-            uuv.union(x)
-        self.out(cogen_getparticlevar_fct(uuv))
+        self.out(cogen_getparticlevar_fct(self._instrument_and_component_uservars()))
         self.out(cogen_getcompindex_fct(self.source))
         self.embed_file('metadata-r.c')
         self.embed_file('mccode_main.c')

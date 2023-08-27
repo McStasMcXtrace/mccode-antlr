@@ -109,7 +109,7 @@ def cogen_comp_trace_class(is_mcstas, comp, source, declared_parameters, instr_u
         for i, inst in [(i, inst) for i, inst in enumerate(source.components) if inst.type.name == comp.name]:
             lines.extend([
                 f'  /* check if this is component {inst.name} */',
-                f'  if(_comp->_index == {i}) {{ '
+                f'  if(_comp->_index == {1+i}) {{ '
             ])
             # loop through the symbol types and set the component-instance values from ... somewhere
             for c_dec in declared_parameters:
@@ -138,13 +138,13 @@ def cogen_comp_trace_class(is_mcstas, comp, source, declared_parameters, instr_u
 
     if len(extended):
         # combine the USERVARS from the instrument and this component type blocks:
-        uvs = set().union(instr_uservars).union(comp_uservars)
+        # uvs = set().union(instr_uservars).union(comp_uservars)
+        uvs = list(dict.fromkeys([*instr_uservars, *comp_uservars]))
         # So that the EXTEND block(s) can access them
         lines.extend([f'  #define {x.name} (_particle->{x.name})' for x in uvs])
         # `index` was defined above to be the component index into the full instrument list
-        # TODO verify that _comp->_index is (now) zero-based.
         for index, inst in extended:
-            lines.append(f'if (_comp->_index == {index}) {{ // EXTEND {inst.name}')
+            lines.append(f'if (_comp->_index == {1+index}) {{ // EXTEND {inst.name}')
             for ext in inst.extend:
                 lines.append(ext.to_c())
             lines.append("}")

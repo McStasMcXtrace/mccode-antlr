@@ -88,8 +88,8 @@ def cogen_comp_init_position(index, comp, last, instr):
         f'    {var}._position_relative = rot_apply({var}._rotation_absolute, tc1);',
         f'  }} /* {comp.name}={comp.type.name}() AT ROTATED */',
         f'  DEBUG_COMPONENT("{comp.name}", {var}._position_absolute, {var}._rotation_absolute);',
-        f'  instrument->_position_absolute[{index}] = {var}._position_absolute;',
-        f'  instrument->_position_relative[{index}] = {var}._position_relative;',
+        f'  instrument->_position_absolute[{1 + index}] = {var}._position_absolute;',
+        f'  instrument->_position_relative[{1 + index}] = {var}._position_relative;',
         f'  {var}._position_relative_is_zero = coords_test_zero({var}._position_relative);'
     ])
     return '\n'.join(lines)
@@ -142,8 +142,7 @@ def cogen_comp_setpos(index, comp, last, instr, component_declared_parameters):
         f'  SIG_MESSAGE("[_{comp.name}_setpos] component {comp.name}={comp.type.name}() SETTING [{f}:{n}]");',
         f'  stracpy(_{comp.name}_var._name, "{comp.name}", {min(len(comp.name)+1, 16384)});',
         f'  stracpy(_{comp.name}_var._type, "{comp.type.name}", {min(len(comp.type.name)+1, 16384)});',
-        f'  _{comp.name}_var._index={index};',
-        f'  int current_setpos_index = {index};'
+        f'  int current_setpos_index = _{comp.name}_var._index = {1 + index};'
     ]
 
     # <<< This is the first call to `cogen_comp_init_par`: `cogen_comp_init_par(comp, instr, "SETTING")
@@ -163,9 +162,10 @@ def cogen_comp_setpos(index, comp, last, instr, component_declared_parameters):
     # position/rotation
     lines.append(cogen_comp_init_position(index, comp, last, instr))
 
+    i1 = 1 + index
     lines.extend([
-        f'  instrument->counter_N[{index}] = instrument->counter_P[{index}] = instrument->counter_P2[{index}] = 0;',
-        f'  instrument->counter_AbsorbProp[{index}] = 0;',
+        f'  instrument->counter_N[{i1}] = instrument->counter_P[{i1}] = instrument->counter_P2[{i1}] = 0;',
+        f'  instrument->counter_AbsorbProp[{i1}] = 0;',
         f'  return(0);',
         f'}} /* _{comp.name}_setpos */'
     ])

@@ -43,7 +43,7 @@ def cogen_getcompindex_fct(instr):
         "{",
     ]
     for index, comp in enumerate(instr.components):
-        lines.append(f'  if (!strcmp(compname, "{comp.name}")) return {1 + index};')
+        lines.append(f'  if (!strcmp(compname, "{comp.name}")) return {1+index};')
 
     lines.extend([
         "  return -1;",
