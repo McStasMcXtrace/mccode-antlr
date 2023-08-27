@@ -5,7 +5,7 @@ from ..common import InstrumentParameter, MetaData, parameter_name_present, RawC
 from ..reader import Registry
 from .instance import Instance
 from .group import Group
-
+from zenlog import log
 
 @dataclass
 class Instr:
@@ -168,6 +168,7 @@ class Instr:
         # Each 'flag' in self.flags is from a single instrument component DEPENDENCY, and might contain duplicates:
         # If we accept that white space differences matter, we can deduplicate the strings 'easily'
         unique_flags = set(self.flags)
+        log.debug(f'{unique_flags = }')
         # The dependency strings are allowed to contain any of
         #       '@NEXUSFLAGS@', @MCCODE_LIB@, CMD(...), ENV(...), GETPATH(...)
         # each of which should be replaced by ... something. Start by replacing the 'static' (old-style) keywords

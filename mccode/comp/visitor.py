@@ -111,28 +111,38 @@ class CompVisitor(McCompVisitor):
         return ComponentParameter(name=name, value=value)
 
     def visitDependency(self, ctx: Parser.DependencyContext):
-        self.parent.add_c_flags(self.visit(ctx.StringLiteral()))
+        if ctx.StringLiteral() is not None:
+            self.parent.add_c_flags(str(ctx.StringLiteral()))
 
     def visitDeclareBlock(self, ctx: Parser.DeclareBlockContext):
         self.state.DECLARE(self.visit(ctx.unparsed_block()))
 
     def visitDeclareBlockCopy(self, ctx: Parser.DeclareBlockCopyContext):
-        copy_from = self.parent.get_component(str(ctx.Identifier()))
-        self.state.DECLARE(copy_from.declare, self.visit(ctx.unparsed_block()))
+        blocks = self.parent.get_component(str(ctx.Identifier())).declare
+        if ctx.Extend() is not None:
+            blocks = [x for x in blocks]
+            blocks.append(self.visit(ctx.unparsed_block()))
+        self.state.DECLARE(*blocks)
 
     def visitShareBlock(self, ctx: Parser.ShareBlockContext):
         self.state.SHARE(self.visit(ctx.unparsed_block()))
 
     def visitShareBlockCopy(self, ctx: Parser.ShareBlockCopyContext):
-        copy_from = self.parent.get_component(str(ctx.Identifier()))
-        self.state.SHARE(copy_from.share, self.visit(ctx.unparsed_block()))
+        blocks = self.parent.get_component(str(ctx.Identifier())).share
+        if ctx.Extend() is not None:
+            blocks = [x for x in blocks]
+            blocks.append(self.visit(ctx.unparsed_block()))
+        self.state.SHARE(*blocks)
 
     def visitInitializeBlock(self, ctx: Parser.InitializeBlockContext):
         self.state.INITIALIZE(self.visit(ctx.unparsed_block()))
 
     def visitInitializeBlockCopy(self, ctx: Parser.InitializeBlockCopyContext):
-        copy_from = self.parent.get_component(str(ctx.Identifier()))
-        self.state.INITIALIZE(copy_from.initialize, self.visit(ctx.unparsed_block()))
+        blocks = self.parent.get_component(str(ctx.Identifier())).initialize
+        if ctx.Extend() is not None:
+            blocks = [x for x in blocks]
+            blocks.append(self.visit(ctx.unparsed_block()))
+        self.state.INITIALIZE(*blocks)
 
     def visitUservars(self, ctx: Parser.UservarsContext):
         self.state.USERVARS(self.visit(ctx.unparsed_block()))
@@ -141,22 +151,31 @@ class CompVisitor(McCompVisitor):
         self.state.SAVE(self.visit(ctx.unparsed_block()))
 
     def visitSaveBlockCopy(self, ctx: Parser.SaveBlockCopyContext):
-        copy_from = self.parent.get_component(str(ctx.Identifier()))
-        self.state.SAVE(copy_from.save, self.visit(ctx.unparsed_block()))
+        blocks = self.parent.get_component(str(ctx.Identifier())).save
+        if ctx.Extend() is not None:
+            blocks = [x for x in blocks]
+            blocks.append(self.visit(ctx.unparsed_block()))
+        self.state.SAVE(*blocks)
 
     def visitFinallyBlock(self, ctx: Parser.FinallyBlockContext):
         self.state.FINALLY(self.visit(ctx.unparsed_block()))
 
     def visitFinallyBlockCopy(self, ctx: Parser.FinallyBlockCopyContext):
-        copy_from = self.parent.get_component(str(ctx.Identifier()))
-        self.state.FINALLY(copy_from.final, self.visit(ctx.unparsed_block()))
+        blocks = self.parent.get_component(str(ctx.Identifier())).final
+        if ctx.Extend() is not None:
+            blocks = [x for x in blocks]
+            blocks.append(self.visit(ctx.unparsed_block()))
+        self.state.FINALLY(*blocks)
 
     def visitDisplayBlock(self, ctx: Parser.DisplayBlockContext):
         self.state.DISPLAY(self.visit(ctx.unparsed_block()))
 
     def visitDisplayBlockCopy(self, ctx: Parser.DisplayBlockCopyContext):
-        copy_from = self.parent.get_component(str(ctx.Identifier()))
-        self.state.DISPLAY(copy_from.display, self.visit(ctx.unparsed_block()))
+        blocks = self.parent.get_component(str(ctx.Identifier())).display
+        if ctx.Extend() is not None:
+            blocks = [x for x in blocks]
+            blocks.append(self.visit(ctx.unparsed_block()))
+        self.state.DISPLAY(*blocks)
 
     def visitMetadata(self, ctx: Parser.MetadataContext):
         filename, line_number, metadata = self.visit(ctx.unparsed_block())
@@ -222,7 +241,7 @@ class CompVisitor(McCompVisitor):
 
     def visitInitializerlist(self, ctx: Parser.InitializerlistContext):
         from ..common import Value, ObjectType, ShapeType
-        values = [self.visit(x) for x in ctx.values()]
+        values = [self.visit(x) for x in ctx.values]
         return Expr(Value(values, object_type=ObjectType.initializer_list, shape_type=ShapeType.vector))
 
     def visitExpressionBinaryAnd(self, ctx: Parser.ExpressionBinaryAndContext):

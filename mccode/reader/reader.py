@@ -55,7 +55,7 @@ class Reader:
 
     def stream(self, name: str, which: str = None):
         from antlr4 import FileStream
-        return FileStream(str(self.locate(name, which=which).resolve()))
+        return FileStream(str(self.locate(name, which=which).resolve()), encoding='utf8')
 
     def add_component(self, name: str):
         if name in self.components:
@@ -64,7 +64,7 @@ class Reader:
         from ..grammar import McCompLexer, McCompParser
         from ..comp import CompVisitor
         filename = str(self.locate(name, ext='.comp').resolve())
-        lexer = McCompLexer(FileStream(filename))
+        lexer = McCompLexer(FileStream(filename, encoding='utf8'))
         tokens = CommonTokenStream(lexer)
         parser = McCompParser(tokens)
         visitor = CompVisitor(self, filename)  # The visitor needs to be able to call *this* method
@@ -95,7 +95,7 @@ class Reader:
         if not path.exists() and not path.is_file():
             raise RuntimeError(f'Can not locate instr file for {name}.')
         filename = str(path.resolve())
-        lexer = McInstrLexer(FileStream(filename))
+        lexer = McInstrLexer(FileStream(filename, encoding='utf8'))
         tokens = CommonTokenStream(lexer)
         parser = McInstrParser(tokens)
         visitor = InstrVisitor(self, filename)

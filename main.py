@@ -61,7 +61,7 @@ if __name__ == '__main__':
     if file is None:
         istream = InputStream(sys.stdin.readline())
     else:
-        istream = FileStream(str(file.resolve()))
+        istream = FileStream(str(file.resolve()), encoding='utf8')
 
     if 'comp' in file_ext:
         walk_comp(istream)
