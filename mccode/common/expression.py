@@ -120,16 +120,28 @@ class DataType(Enum):
         raise RuntimeError("No known conversion from non-enumerated data type")
 
 
+def _comb(f, s: list):
+    return ','.join(f(x) for x in s)
+
+
 class BinaryOp:
     def __init__(self, op, left, right):
         if isinstance(left, Expr):
             left = left.expr
         if isinstance(right, Expr):
             right = right.expr
+        if not isinstance(left, list):
+            left = [left]
+        if not isinstance(right, list):
+            right = [right]
         self.op = op
         self.left = left
         self.right = right
-        self.data_type = left.data_type + right.data_type
+        left_data_types = list(dict.fromkeys(x.data_type for x in left))
+        right_data_types = list(dict.fromkeys(x.data_type for x in right))
+        if len(left_data_types) != 1 or len(right_data_types) != 1:
+            raise RuntimeError('Multiple data types in one value not supported')
+        self.data_type = left_data_types[0] + right_data_types[0]
         self.style = 'C'  # there should be a better way to do this
 
     def _str_repr_(self, lstr, rstr):
@@ -160,10 +172,10 @@ class BinaryOp:
         return f'{self.op}({lstr}, {rstr})'
 
     def __str__(self):
-        return self._str_repr_(str(self.left), str(self.right))
+        return self._str_repr_(_comb(str, self.left), _comb(str, self.right))
 
     def __repr__(self):
-        return self._str_repr_(repr(self.left), repr(self.right))
+        return self._str_repr_(_comb(repr, self.left), _comb(repr, self.right))
 
     def __hash__(self):
         return hash(str(self))
@@ -236,40 +248,48 @@ class BinaryOp:
 
     @property
     def is_scalar(self):
-        return self.left.is_scalar and self.right.is_scalar
+        return len(self.left)==1 and len(self.right)==1 and self.left[0].is_scalar and self.right[0].is_scalar
 
     @property
     def is_vector(self):
-        return self.left.is_vector or self.right.is_vector
+        return len(self.left)==1 and len(self.right)==1 and self.left[0].is_vector or self.right[0].is_vector
 
     @property
     def vector_known(self):
-        return self.left.vector_known and self.right.vector_known
-
-    def __len__(self):
-        return max(len(self.left), len(self.right))
+        return len(self.left)==1 and len(self.right)==1 and self.left[0].vector_known and self.right[0].vector_known
+    #
+    # def __len__(self):
+    #     return max(len(self.left), len(self.right))
 
 
 class UnaryOp:
     def __init__(self, op, value):
         if isinstance(value, Expr):
             value = value.expr
+        if not isinstance(value, list):
+            value = [value]
         self.op = op
         self.value = value
-        self.data_type = value.data_type
+        data_types = list(dict.fromkeys(x.data_type for x in value))
+        if len(data_types) != 1:
+            raise RuntimeError('Multiple data types in one value not supported')
+        self.data_type = data_types[0]
+        self.style = 'C'  # there should be a better way to do this
 
     def _str_repr_(self, vstr):
         if '__group__' == self.op:
             return f'({vstr})'
+        if '__not__' == self.op:
+            return f'!{vstr}' if 'C' == self.style else f'not {vstr}'
         if any(x in self.op for x in '+-'):
             return f'{self.op}{vstr}'
-        return f'{self.op}({self.value})'
+        return f'{self.op}({vstr})'
 
     def __str__(self):
-        return self._str_repr_(str(self.value))
+        return self._str_repr_(_comb(str, self.value))
 
     def __repr__(self):
-        return self._str_repr_(repr(self.value))
+        return self._str_repr_(_comb(repr, self.value))
 
     def __hash__(self):
         return hash(str(self))
@@ -343,24 +363,24 @@ class UnaryOp:
 
     @property
     def is_scalar(self):
-        return self.value.is_scalar
+        return len(self.value) ==1 and self.value[0].is_scalar
 
     @property
     def is_vector(self):
-        return self.value.is_vector
+        return len(self.value) ==1 and self.value[0].is_vector
 
     @property
     def vector_known(self):
-        return self.value.vector_known
+        return len(self.value) ==1 and self.value[0].vector_known
 
     def is_value(self, value):
         return self == value
 
-    def __len__(self):
-        return len(self.value)
+    # def __len__(self):
+    #     return len(self.value)
 
     def __gt__(self, other):
-        log.debug(f'{self} > {other}')
+        log.debug(f'{self} > {other} has been called (but probably should not have been!)')
         return False
 
 
@@ -617,24 +637,25 @@ class Value:
 
 
 class Expr:
-    def __init__(self, expr: Union[Value, UnaryOp, BinaryOp]):
-        self.expr = expr
+    def __init__(self, expr: Union[Value, UnaryOp, BinaryOp, list[Union[Value, UnaryOp, BinaryOp]]]):
+        self.expr = expr if isinstance(expr, list) else [expr]
 
     def __str__(self):
-        return str(self.expr)
+        return ','.join(str(x) for x in self.expr)
 
     def __repr__(self):
-        return repr(self.expr)
+        return ','.join(repr(x) for x in self.expr)
 
     def __hash__(self):
-        return hash(self.expr)
+        return hash(str(self))
 
     @classmethod
     def float(cls, value):
         if isinstance(value, cls):
             # Make sure the held expression *thinks* it's a float:
-            if value.expr.data_type != DataType.float:
-                value.expr.data_type = DataType.float
+            for expr in value.expr:
+                if expr.data_type != DataType.float:
+                    expr.data_type = DataType.float
             return value
         return cls(Value.float(value))
 
@@ -642,9 +663,9 @@ class Expr:
     def int(cls, value):
         if isinstance(value, cls):
             # Make sure the held expression *thinks* it's a float:
-            if value.expr.data_type != DataType.int:
-                log.error(f'Why does {value} think it is a {value.expr.data_type} and not {DataType.int}?')
-                value.expr.data_type = DataType.int
+            for expr in value.expr:
+                if expr.data_type != DataType.int:
+                    expr.data_type = DataType.int
             return value
         return cls(Value.int(value))
 
@@ -652,9 +673,9 @@ class Expr:
     def str(cls, value):
         if isinstance(value, cls):
             # Make sure the held expression *thinks* it's a float:
-            if value.expr.data_type != DataType.str:
-                log.error(f'Why does {value} think it is a {value.expr.data_type} and not {DataType.str}?')
-                value.expr.data_type = DataType.str
+            for expr in value.expr:
+                if expr.data_type != DataType.str:
+                    expr.data_type = DataType.str
             return value
         return cls(Value.str(value))
 
@@ -678,104 +699,146 @@ class Expr:
 
     @property
     def is_op(self):
-        return self.expr.is_op
+        return len(self.expr) == 1 and self.expr[0].is_op
 
     @property
     def is_zero(self):
-        return self.expr.is_zero
+        return len(self.expr) == 1 and self.expr[0].is_zero
 
     @property
     def is_id(self):
-        return self.expr.is_id
+        return len(self.expr) == 1 and self.expr[0].is_id
 
     @property
     def is_parameter(self):
-        return self.expr.is_parameter
+        return len(self.expr) == 1 and self.expr[0].is_parameter
 
     @property
     def is_str(self):
-        return self.expr.is_str
+        return len(self.expr) == 1 and self.expr[0].is_str
 
     @property
     def is_scalar(self):
-        return self.expr.is_scalar
+        return len(self.expr) == 1 and self.expr[0].is_scalar
 
     def is_value(self, value):
-        return self.expr.is_value(value)
+        return len(self.expr) == 1 and self.expr[0].is_value(value)
 
     @property
     def is_vector(self):
-        return self.expr.is_vector
-
-    def __len__(self):
-        return len(self.expr)
+        return len(self.expr) == 1 and self.expr[0].is_vector
+    #
+    # def __len__(self):
+    #     return len(self.expr)
 
     @property
     def is_constant(self):
-        return isinstance(self.expr, Value) and not self.expr.is_id
+        return len(self.expr) == 1 and isinstance(self.expr[0], Value) and not self.expr[0].is_id
 
     @property
     def has_value(self):
-        return self.is_constant and self.expr.has_value
+        return self.is_constant and self.expr[0].has_value
 
     @property
     def vector_known(self):
-        return self.is_constant and self.expr.vector_known
+        return self.is_constant and self.expr[0].vector_known
 
     @property
     def value(self):
         if not self.is_constant:
             raise NotImplementedError("No conversion from expressions to constants ... yet")
-        return self.expr.value
+        return self.expr[0].value
 
     def compatible(self, other, id_ok=False):
-        other_expr = other.expr if isinstance(other, Expr) else other
-        return self.expr.compatible(other_expr, id_ok)
+        other_expr = other.expr[0] if (isinstance(other, Expr) and len(other.expr) == 1) else other
+        return len(self.expr) == 1 and self.expr[0].compatible(other_expr, id_ok)
 
     def __add__(self, other):
-        other_expr = other.expr if isinstance(other, Expr) else other
-        return Expr(self.expr + other_expr)
+        if len(self.expr) != 1:
+            raise RuntimeError('Can not add to array Expr')
+        other_expr = other.expr[0] if (isinstance(other, Expr) and len(other.expr) == 1) else other
+        return Expr(self.expr[0] + other_expr)
 
     def __sub__(self, other):
-        other_expr = other.expr if isinstance(other, Expr) else other
-        return Expr(self.expr - other_expr)
+        if len(self.expr) != 1:
+            raise RuntimeError('Can not subtract array Expr')
+        other_expr = other.expr[0] if (isinstance(other, Expr) and len(other.expr) == 1) else other
+        return Expr(self.expr[0] - other_expr)
 
     def __mul__(self, other):
-        other_expr = other.expr if isinstance(other, Expr) else other
-        return Expr(self.expr * other_expr)
+        if len(self.expr) != 1:
+            raise RuntimeError('Can not multiply array Expr')
+        other_expr = other.expr[0] if (isinstance(other, Expr) and len(other.expr) == 1) else other
+        return Expr(self.expr[0] * other_expr)
 
     def __truediv__(self, other):
-        other_expr = other.expr if isinstance(other, Expr) else other
-        return Expr(self.expr / other_expr)
+        if len(self.expr) != 1:
+            raise RuntimeError('Can not divide array Expr')
+        other_expr = other.expr[0] if (isinstance(other, Expr) and len(other.expr) == 1) else other
+        return Expr(self.expr[0] / other_expr)
 
     def __neg__(self):
-        return Expr(-self.expr)
+        return Expr([-x for x in self.expr])
 
     def __pos__(self):
         return self
 
     def __abs__(self):
-        return Expr(abs(self.expr))
+        return Expr([abs(x) for x in self.expr])
 
     def __eq__(self, other):
-        other_expr = other.expr if isinstance(other, Expr) else other
-        return self.expr == other_expr
+        if isinstance(other, Expr):
+            if len(other.expr) != len(self.expr):
+                return False
+            for o_expr, s_expr in zip(other.expr, self.expr):
+                if o_expr != s_expr:
+                    return False
+            return True
+        return len(self.expr) == 1 and self.expr[0] == other
 
     def __lt__(self, other):
-        other_expr = other.expr if isinstance(other, Expr) else other
-        return self.expr < other_expr
+        if isinstance(other, Expr):
+            if len(other.expr) != len(self.expr):
+                raise RuntimeError('Can not compare unequal-sized-array Expr objects')
+            for o_expr, s_expr in zip(other.expr, self.expr):
+                if o_expr <= s_expr:
+                    return False
+            return True
+        return len(self.expr) == 1 and self.expr[0] < other
 
     def __gt__(self, other):
-        other_expr = other.expr if isinstance(other, Expr) else other
-        return self.expr > other_expr
+        if isinstance(other, Expr):
+            if len(other.expr) != len(self.expr):
+                raise RuntimeError('Can not compare unequal-sized-array Expr objects')
+            for o_expr, s_expr in zip(other.expr, self.expr):
+                if o_expr >= s_expr:
+                    return False
+            return True
+        return len(self.expr) == 1 and self.expr[0] > other
 
     @property
     def mccode_c_type(self):
-        return self.expr.mccode_c_type
+        if len(self.expr) != 1:
+            raise RuntimeError('No McCode C type for array Expr objects')
+        return self.expr[0].mccode_c_type
 
     @property
     def mccode_c_type_name(self):
-        return self.expr.mccode_c_type_name
+        if len(self.expr) != 1:
+            raise RuntimeError('No McCode C type name for array Expr objects')
+        return self.expr[0].mccode_c_type_name
+
+    @property
+    def data_type(self):
+        if len(self.expr) != 1:
+            raise RuntimeError('No data type for array Expr objects')
+        return self.expr[0].data_type
+
+    @data_type.setter
+    def data_type(self, dt):
+        if len(self.expr) != 1:
+            raise RuntimeError('No data type for array Expr objects')
+        self.expr[0].data_type = dt
 
 
 def unary_expr(func, name, v):

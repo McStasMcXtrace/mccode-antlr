@@ -5,7 +5,7 @@ from typing import Union
 from pathlib import Path
 from mccode.instr import Instr
 from mccode.translators.c import CTargetVisitor
-
+from zenlog import log
 
 class CBinaryTarget:
     class Type(Flag):
@@ -72,7 +72,7 @@ def instrument_source(instrument: Instr, generator: dict, config: dict, verbose:
 
 
 def compile_instrument(instrument: Instr, target: CBinaryTarget, output: Union[str, Path] = None,
-                       recompile: bool = False, **kwargs):
+                       recompile: bool = False, dump_source: bool = True, **kwargs):
     from os import R_OK, access
     from subprocess import run, CalledProcessError
     from mccode.config import config
@@ -91,8 +91,6 @@ def compile_instrument(instrument: Instr, target: CBinaryTarget, output: Union[s
         raise RuntimeError(f"Output {output} exists but recompile is not requested.")
 
     # the type of binary requested determines (some of) the required flags:
-    print(f"{target.flags = }")
-    print(f"{target.extra_flags = }")
     flags = target.flags + target.extra_flags
     # the flags in an instrument *might* contain ENV, CMD, GETPATH directives which need to be expanded via decode:
     flags.extend([word for flag in instrument.decoded_flags() for word in flag.split()])
@@ -103,11 +101,12 @@ def compile_instrument(instrument: Instr, target: CBinaryTarget, output: Union[s
 
     command = [target.compiler, *flags, '-o', str(output), '-']
     source = instrument_source(instrument, **kwargs)
-    source_file = Path().joinpath(output.parts[-1]).with_suffix('.c')
-    print(f'Source and executable in {source_file}')
-    with open(source_file, 'w') as cfile:
-        cfile.write(source)
-    print(f"Compile using {command}")
+    if dump_source:
+        source_file = Path().joinpath(output.parts[-1]).with_suffix('.c')
+        log.info(f'Source written in {source_file}')
+        with open(source_file, 'w') as cfile:
+            cfile.write(source)
+    # print(f"Compile using {command}")
     result = run(command, input=source, text=True, capture_output=True)
     if result.returncode:
         raise RuntimeError(f"Compilation failed producing output\n{result.stdout}\n  and error\n{result.stderr}")

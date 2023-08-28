@@ -2,8 +2,8 @@ from zenlog import log
 from dataclasses import dataclass, field
 from typing import Self
 from ..comp import Comp
-from ..common import Expr, Value, UnaryOp, BinaryOp
-from ..common import DataType, ComponentParameter, MetaData, parameter_name_present, RawC, blocks_to_raw_c
+from ..common import Expr
+from ..common import ComponentParameter, MetaData, parameter_name_present, RawC, blocks_to_raw_c
 from .orientation import DependentOrientation
 from .jump import Jump
 
@@ -30,7 +30,6 @@ class Instance:
     metadata: tuple[MetaData] = field(default_factory=tuple)
 
     def __post_init__(self):
-        log.info(f'Finishing up initalization of instance {self.name}')
         if self.orientation is None:
             at, at_rel = self.at_relative[0], None if self.at_relative[1] is None else self.at_relative[1].orientation
             rt, rt_rel = self.rotate_relative[0], None if self.rotate_relative[1] is None else self.rotate_relative[1].orientation
@@ -42,18 +41,13 @@ class Instance:
         if parameter_name_present(self.parameters, name):
             raise RuntimeError(f"Multiple definitions of {name} in component instance {self.name}")
         p = self.type.get_parameter(name)
-        # if isinstance(value, Expr):
-        #     log.debug(f'value provided for {name} is an Expr == {value}')
-        # if isinstance(value, (Value, UnaryOp, BinaryOp)) and value.data_type == DataType.undefined:
-        #     log.debug(f'Assume that {value} is of data type {p.value.data_type}')
-        #     value.data_type = p.value.data_type
         if not p.compatible_value(value):
             log.debug(f'{p=}, {name=}, {value=}')
             raise RuntimeError(f"Provided value for parameter {name} is not compatible with {self.type.name}")
         v = value if isinstance(value, Expr) else Expr.best(value)
 
         # is this parameter value *actually* an instrument parameter *name*
-        if v.is_id or v.is_str:
+        if v.is_id:  # or v.is_str:
             pass
         self.parameters += (ComponentParameter(p.name, v), )
 
@@ -102,17 +96,3 @@ class Instance:
         md = {m.name: m for m in self.type.collect_metadata()}
         md.update({m.name: m for m in self.metadata})
         return tuple(md.values())
-
-#
-# def from_at_relative_rotated_relative(at: tuple[Expr, Expr, Expr], at_relative: Instance,
-#                                       rotated: tuple[Expr, Expr, Expr], rotated_relative: Instance):
-#     def g(which: str, triplet: tuple[Expr, Expr, Expr], relative: Instance):
-#         if relative is None or relative.orientation is None:
-#             return triplet
-#         relative_triplet = relative.orientation.position if which == "at" else relative.orientation.angles
-#         if 'rotated' == which:
-#             log.info(f'Rotated relative {relative.name}: ({relative_triplet[0]}, {relative_triplet[1]}, {relative_triplet[2]})')
-#         return triplet[0] + relative_triplet[0], triplet[1] + relative_triplet[1], triplet[2] + relative_triplet[2]
-#     r = g('rotated', rotated, rotated_relative)
-#     log.info(f'-> Global rotation ({r[0]}, {r[1]}, {r[2]})')
-#     return Orientation.from_at_rotated(g('at', at, at_relative), r)

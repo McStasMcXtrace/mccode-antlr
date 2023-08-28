@@ -425,6 +425,7 @@ statement
     |   iterationStatement
     |   jumpStatement
     |   ('__asm' | '__asm__') ('volatile' | '__volatile__') '(' (logicalOrExpression (',' logicalOrExpression)*)? (':' (logicalOrExpression (',' logicalOrExpression)*)?)* ')' ';'
+    |   multiLineMacroStatement
     ;
 
 labeledStatement
@@ -459,6 +460,10 @@ iterationStatement
     :   While '(' expression ')' statement
     |   Do statement While '(' expression ')' ';'
     |   For '(' forCondition ')' statement
+    ;
+
+multiLineMacroStatement
+    :   expression '(' (statement)* ')' ';'?
     ;
 
 //    |   'for' '(' expression? ';' expression?  ';' forUpdate? ')' statement

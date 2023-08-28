@@ -72,8 +72,7 @@ def degree_to_radian(v: Expr):
     from math import pi
     if v.is_id:
         if v == Expr.float('PI'):
-            log.error(f'Convert {v} to radian')
-            raise RuntimeError('What?!')
+            raise RuntimeError(f'Convert {v} to radian')
         return v * (Expr.float('PI') / Expr.float(180))
     return v * Expr.float(pi / 180)
 

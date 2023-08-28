@@ -74,7 +74,6 @@ class CompVisitor(McCompVisitor):
         default = None
         if ctx.Assign() is not None:
             default = 'NULL' if ctx.StringLiteral() is None else str(ctx.StringLiteral())
-        log.critical(f'{name} = {default}')
         return ComponentParameter(name=name, value=Expr.str(default))
 
     def visitComponentParameterVector(self, ctx: Parser.ComponentParameterVectorContext):
@@ -240,7 +239,8 @@ class CompVisitor(McCompVisitor):
     def visitExpressionFunctionCall(self, ctx: Parser.ExpressionFunctionCallContext):
         from ..common import BinaryOp, Value, ObjectType
         function = Value(str(ctx.Identifier()), object_type=ObjectType.function)
-        return Expr(BinaryOp('__call__', function, self.visit(ctx.expr())))
+        args = [self.visit(arg).expr[0] for arg in ctx.args]  # each is a Value, UnaryOp, or BinaryOp?
+        return Expr(BinaryOp('__call__', function, args))
 
     def visitExpressionBinaryMD(self, ctx: Parser.ExpressionBinaryMDContext):
         left, right = self.visit(ctx.left), self.visit(ctx.right)
@@ -248,19 +248,25 @@ class CompVisitor(McCompVisitor):
 
     def visitInitializerlist(self, ctx: Parser.InitializerlistContext):
         from ..common import Value, ObjectType, ShapeType
-        values = [self.visit(x).expr.value for x in ctx.values]
-        log.critical(f'{values}')
+        values = [self.visit(x).expr[0].value for x in ctx.values]
         return Expr(Value(values, object_type=ObjectType.initializer_list, shape_type=ShapeType.vector))
 
-    def visitExpressionBinaryAnd(self, ctx: Parser.ExpressionBinaryAndContext):
-        from ..common import BinaryOp
-        left, right = [self.visit(x) for x in (ctx.left, ctx.right)]
-        return BinaryOp('__and__', left, right)
-
-    def visitExpressionBinaryOr(self, ctx: Parser.ExpressionBinaryOrContext):
-        from ..common import BinaryOp
-        left, right = [self.visit(x) for x in (ctx.left, ctx.right)]
-        return BinaryOp('__or__', left, right)
+    def visitExpressionUnaryLogic(self, ctx: Parser.ExpressionUnaryLogicContext):
+        from ..common import UnaryOp
+        expr = self.visit(ctx.expr())
+        op = 'unknown'
+        if ctx.Not() is not None:
+            op = '__not__'
+        return UnaryOp(op, expr)
+    def visitExpressionBinaryLogic(self, ctx: Parser.ExpressionBinaryLogicContext):
+            from ..common import BinaryOp
+            left, right = [self.visit(x) for x in (ctx.left, ctx.right)]
+            op = 'unknown'
+            if ctx.AndAnd() is not None:
+                op = '__and__'
+            elif ctx.OrOr() is not None:
+                op = '__or__'
+            return BinaryOp(op, left, right)
 
     def visitExpressionBinaryEqual(self, ctx: Parser.ExpressionBinaryEqualContext):
         from ..common import BinaryOp
@@ -286,3 +292,6 @@ class CompVisitor(McCompVisitor):
         from ..common import BinaryOp
         left, right = [self.visit(x) for x in (ctx.left, ctx.right)]
         return BinaryOp('__gt__', left, right)
+
+    def visitExpressionString(self, ctx: Parser.ExpressionStringContext):
+        return Expr.str(str(ctx.StringLiteral()))

@@ -65,7 +65,8 @@ def declarations_pre_libraries(source, typedefs: list, component_declared_parame
     def instrument_parameters_table():
         def one_line(name, typename, value, unit):
             u = '' if unit is None else unit
-            return f'  "{name}", &(_instrument_var._parameters.{name}), {typename}, "{value}", "{u}",'
+            v = f'{value}' if value.is_str else f'"{value}"'  # protect against double quotes from string literals
+            return f'  "{name}", &(_instrument_var._parameters.{name}), {typename}, {v}, "{u}",'
         lines = [f'int numipar = {len(source.parameters)};', 'struct mcinputtable_struct mcinputtable[] = {']
         lines.extend([one_line(p.name, p.value.mccode_c_type_name, p.value, p.unit) for p in source.parameters])
         lines.extend(['  NULL, NULL, instr_type_double, "", ""'])
@@ -179,8 +180,12 @@ def component_type_declaration(comp, typedefs: list, declared_parameters: list):
         # branch on x.is_array and then either count the number of initializer elements or punt to 16384 elements
         # as McCode-3 does.
         if x.is_array:
-            n_inits = 16384 if x.init is None or not isinstance(x.init, str) else min(len(x.init.split(',')), 16384)
-            lines.append(f' {x.type} {x.name}[{n_inits}]; /* {"Not initialized" if x.init is None else x.init} */')
+            if x.init is None:
+                # hopefully handle all size-specified cases...
+                lines.append(f'  {x.type} {x.orig}; /* Not initialized */')
+            else:
+                n_inits = 16384 if not isinstance(x.init, str) else min(len(x.init.split(',')), 16384)
+                lines.append(f'  {x.type} {x.name}[{n_inits}]; /* {x.init} */')
         else:
             lines.append(f'  {x.type} {x.orig}; /* {"Not initialized" if x.init is None else x.init} */')
 

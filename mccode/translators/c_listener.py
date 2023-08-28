@@ -1,7 +1,4 @@
-import antlr4.tree.Tree
-
-from ..grammar.CParser import CParser
-from ..grammar.CListener import CListener
+from ..grammar import CParser, CListener
 
 
 def literal_string(ctx):
@@ -81,7 +78,7 @@ class DeclaresCListener(CListener):
 def extract_c_declared_variables_and_defined_types(block: str, user_types: list = None):
     from antlr4 import InputStream, CommonTokenStream
     from antlr4 import ParseTreeWalker
-    from ..grammar.CLexer import CLexer
+    from ..grammar import CLexer
     stream = InputStream(block)
     lexer = CLexer(stream)
     tokens = CommonTokenStream(lexer)

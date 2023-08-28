@@ -38,12 +38,12 @@ class Comp:
     def has_parameter(self, name: str):
         return parameter_name_present(self.define, name) or parameter_name_present(self.setting, name)
 
-    def get_parameter(self, name: str):
+    def get_parameter(self, name: str, default=None):
         if parameter_name_present(self.define, name):
             return [par for par in self.define if par.name == name][0]
         if parameter_name_present(self.setting, name):
             return [par for par in self.setting if par.name == name][0]
-        return None
+        return default
 
     def compatible_parameter_value(self, name: str, value):
         return self.get_parameter(name).compatible_value(value)

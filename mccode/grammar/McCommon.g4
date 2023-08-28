@@ -37,24 +37,25 @@ initializerlist: '{' values+=expr (Comma values+=expr)* '}';
 assignment: Identifier Assign expr; // Not used in McCode, but *could* be used to enable, e.g., loops or other simple control
 
 expr
-  : '0'                                        #ExpressionZero
-  | IntegerLiteral                             #ExpressionInteger
-  | FloatingLiteral                            #ExpressionFloat
-  | Identifier '[' expr ']'                    #ExpressionArrayAccess
-  | Identifier '(' expr ')'                    #ExpressionFunctionCall
-  | '(' expr ')'                               #ExpressionGrouping
-  | ('+' | '-') expr                           #ExpressionUnaryPM
-  | <assoc=right> base=expr '^' exponent=expr  #ExpressionExponentiation
-  | left=expr ('*' | '/') right=expr           #ExpressionBinaryMD
-  | left=expr ('+' | '-') right=expr           #ExpressionBinaryPM
-  | left=expr '&&' right=expr                  #ExpressionBinaryAnd
-  | left=expr '||' right=expr                  #ExpressionBinaryOr
-  | left=expr '==' right=expr                  #ExpressionBinaryEqual
-  | left=expr '<=' right=expr                  #ExpressionBinaryLessEqual
-  | left=expr '>=' right=expr                  #ExpressionBinaryGreaterEqual
-  | left=expr '<' right=expr                   #ExpressionBinaryLess
-  | left=expr '>' right=expr                   #ExpressionBinaryGreater
-  | Identifier                                 #ExpressionIdentifier
+  : '0'                                             #ExpressionZero
+  | IntegerLiteral                                  #ExpressionInteger
+  | FloatingLiteral                                 #ExpressionFloat
+  | StringLiteral                                   #ExpressionString
+  | Identifier '[' expr ']'                         #ExpressionArrayAccess
+  | Identifier '(' args+=expr (',' args+=expr)* ')' #ExpressionFunctionCall
+  | '(' expr ')'                                    #ExpressionGrouping
+  | ('+' | '-') expr                                #ExpressionUnaryPM
+  | <assoc=right> base=expr '^' exponent=expr       #ExpressionExponentiation
+  | left=expr ('*' | '/') right=expr                #ExpressionBinaryMD
+  | left=expr ('+' | '-') right=expr                #ExpressionBinaryPM
+  | Identifier                                      #ExpressionIdentifier
+  | left=expr '==' right=expr                       #ExpressionBinaryEqual
+  | left=expr '<=' right=expr                       #ExpressionBinaryLessEqual
+  | left=expr '>=' right=expr                       #ExpressionBinaryGreaterEqual
+  | left=expr '<' right=expr                        #ExpressionBinaryLess
+  | left=expr '>' right=expr                        #ExpressionBinaryGreater
+  | Not expr                                        #ExpressionUnaryLogic
+  | left=expr (AndAnd | OrOr) right=expr            #ExpressionBinaryLogic
   ;
 
 shell: Shell StringLiteral;

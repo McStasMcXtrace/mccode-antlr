@@ -86,7 +86,7 @@ They are expected to be an appropriate value matching the component definition f
 instance_parameters: '(' (params+=instance_parameter (',' params+=instance_parameter)*)? ')';
 instance_parameter
   : Identifier Assign expr          #InstanceParameterExpr
-  | Identifier Assign StringLiteral #InstanceParameterString
+//  | Identifier Assign StringLiteral #InstanceParameterString
   ;
 
 

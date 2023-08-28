@@ -39,6 +39,13 @@ class Instr:
             raise RuntimeError(f"An instrument parameter named {a.name} is already present in the instrument")
         self.parameters += (a,)
 
+    def get_parameter(self, name, default=None):
+        if parameter_name_present(self.parameters, name):
+            for parameter in self.parameters:
+                if name == parameter.name:
+                    return parameter
+        return default
+
     def last_component(self, count: int = 1, removable_ok: bool = True):
         if len(self.components) < count:
             raise RuntimeError(f"Only {len(self.components)} components defined -- can not go back {count}.")
@@ -212,7 +219,7 @@ class Instr:
         # Each 'flag' in self.flags is from a single instrument component DEPENDENCY, and might contain duplicates:
         # If we accept that white space differences matter, we can deduplicate the strings 'easily'
         unique_flags = set(self.flags)
-        log.debug(f'{unique_flags = }')
+        # log.debug(f'{unique_flags = }')
         # The dependency strings are allowed to contain any of
         #       '@NEXUSFLAGS@', @MCCODE_LIB@, CMD(...), ENV(...), GETPATH(...)
         # each of which should be replaced by ... something. Start by replacing the 'static' (old-style) keywords

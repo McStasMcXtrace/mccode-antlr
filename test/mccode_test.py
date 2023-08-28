@@ -163,7 +163,7 @@ def _monitor_name_file_name_match(folder, monitor_name):
     return None
 
 
-def mccode_test_compiler(work_dir, file_path, target, registry, generator):
+def mccode_test_compiler(work_dir, file_path, target, registry, generator, dump):
     from pathlib import Path
     from mccode.reader import Reader
     from mccode.compiler.c import compile_instrument
@@ -174,7 +174,7 @@ def mccode_test_compiler(work_dir, file_path, target, registry, generator):
     config = dict(default_main=True, enable_trace=False, portable=False, include_runtime=True,
                   embed_instrument_file=False, verbose=False)
     try:
-        binary_path = compile_instrument(inst, target, output, generator=generator, config=config)
+        binary_path = compile_instrument(inst, target, output, generator=generator, config=config, dump_source=dump)
     except RuntimeError as err:
         log.critical(f'Failed to produce a binary for {file_path}')
         log.info(err)
@@ -182,16 +182,16 @@ def mccode_test_compiler(work_dir, file_path, target, registry, generator):
     return True, binary_path
 
 
-def mcstas_test_compiler(target, work_dir, file_path):
+def mcstas_test_compiler(target, work_dir, file_path, dump):
     from mccode.reader import MCSTAS_REGISTRY
     from mccode.translators.target import MCSTAS_GENERATOR
-    return mccode_test_compiler(work_dir, file_path, target, MCSTAS_REGISTRY, MCSTAS_GENERATOR)
+    return mccode_test_compiler(work_dir, file_path, target, MCSTAS_REGISTRY, MCSTAS_GENERATOR, dump)
 
 
-def mcxtrace_test_compiler(target, work_dir, file_path):
+def mcxtrace_test_compiler(target, work_dir, file_path, dump):
     from mccode.reader import MCXTRACE_REGISTRY
     from mccode.translators.target import MCXTRACE_GENERATOR
-    return mccode_test_compiler(work_dir, file_path, target, MCXTRACE_REGISTRY, MCXTRACE_GENERATOR)
+    return mccode_test_compiler(work_dir, file_path, target, MCXTRACE_REGISTRY, MCXTRACE_GENERATOR, dump)
 
 
 def mccode_test_runner(target, binary_path, test_parameters: str, n_particles: int):
@@ -232,23 +232,23 @@ def mccode_test(compiler, runner, mpi: int = None, acc: bool = False, nexus: boo
 
 
 def mcstas_test(search_pattern=None, instr_count=None, skip_non_test: bool = False,
-                mpi: int = None, acc: bool = False, nexus: bool = False, n_particles: int = 1000):
+                mpi: int = None, acc: bool = False, nexus: bool = False, n_particles: int = 1000, dump: bool=False):
     from mccode.reader import MCSTAS_REGISTRY as REGISTRY
     return mccode_test(mcstas_test_compiler, mcstas_test_runner, mpi, acc, nexus, registry=REGISTRY,
                        search_pattern=search_pattern, instr_count=instr_count, skip_non_test=skip_non_test,
-                       n_particles=n_particles)
+                       n_particles=n_particles, dump=dump)
 
 
 def mcxtrace_test(search_pattern=None, instr_count=None, skip_non_test: bool = False,
-                mpi: int = None, acc: bool = False, nexus: bool = False, n_particles: int = 1000):
+                mpi: int = None, acc: bool = False, nexus: bool = False, n_particles: int = 1000, dump: bool=False):
     from mccode.reader import MCXTRACE_REGISTRY as REGISTRY
     return mccode_test(mcxtrace_test_compiler, mcxtrace_test_runner, mpi, acc, nexus, registry=REGISTRY,
                        search_pattern=search_pattern, instr_count=instr_count, skip_non_test=skip_non_test,
-                       n_particles=n_particles)
+                       n_particles=n_particles, dump=dump)
 
 
 def _mccode_test(compiler, runner, registry: Registry, search_pattern=None, instr_count=None,
-                skip_non_test: bool = False, n_particles: int = 1000, workdir: Path = None):
+                skip_non_test: bool = False, n_particles: int = 1000, workdir: Path = None, dump: bool=False):
     """Run McCode instrument test(s) using the provided `compiler` and `runner` functions to handle those tasks.
 
     Each takes the expected working directory name (a string) and the path to the instr file as input.
@@ -311,7 +311,7 @@ def _mccode_test(compiler, runner, registry: Registry, search_pattern=None, inst
         print(test)
         if test.sourcefile not in binaries and (test.test_number != 0 or not skip_non_test):
             t1 = datetime.now()
-            binaries[test.sourcefile] = compiler(workdir, test.sourcefile)
+            binaries[test.sourcefile] = compiler(workdir, test.sourcefile, dump=dump)
             test.compile_time = datetime.now() - t1
             test.compiled = True
 
@@ -391,6 +391,7 @@ def main(name, program):
     parser.add_argument('--mpi', type=int, help='Number of mpi processes to use', default=None)
     parser.add_argument('--nexus', action='store_true', help='Whether to use NeXus output')
     parser.add_argument('-n', '--ncount', type=int, help='Number of particles to simulate per test', default=1000)
+    parser.add_argument('-d','--dump', action='store_true', help='Output C source to file', default=False)
 
     # logging.basicConfig(level=logging.DEBUG, format='{asctime} {levelname} {message}', style='{')
     # logging.basicConfig(level=logging.DEBUG)
@@ -400,7 +401,7 @@ def main(name, program):
 
     args = parser.parse_args()
     results = program(search_pattern=args.search, instr_count=args.count, skip_non_test=args.skip, mpi=args.mpi,
-                      nexus=args.nexus, n_particles=args.ncount)
+                      nexus=args.nexus, n_particles=args.ncount, dump=args.dump)
     results['_meta']['mpi'] = args.mpi
     results['_meta']['ncount'] = args.ncount
 

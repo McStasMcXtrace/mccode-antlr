@@ -3,13 +3,19 @@ from ..common import InstrumentParameter, MetaData, Expr
 from .instr import Instr
 from .instance import Instance
 from .jump import Jump
+from zenlog import log
 
+def literal_string(ctx):
+    start_token, stop_token = ctx.start, ctx.stop
+    stream = start_token.getInputStream()
+    return stream.getText(start_token.start, stop_token.stop)
 
 class InstrVisitor(McInstrVisitor):
     def __init__(self, parent, filename):
         self.parent = parent
         self.filename = filename
         self.state = Instr()
+        self.current_comp = None
 
     def visitProg(self, ctx: McInstrParser.ProgContext):
         self.state = Instr()
@@ -85,6 +91,7 @@ class InstrVisitor(McInstrVisitor):
     def visitComponent_instance(self, ctx: McInstrParser.Component_instanceContext):
         name = self.visit(ctx.instance_name())
         comp = self.visit(ctx.component_type())
+        self.current_comp = comp  # For identifying component instance parameter _types_ we need to know the comp object
         at = self.visit(ctx.place())
         if ctx.orientation() is not None:
             rotate = self.visit(ctx.orientation())
@@ -117,6 +124,7 @@ class InstrVisitor(McInstrVisitor):
                 instance.add_metadata(MetaData.from_component_tokens(name, str(ctx.mime), str(ctx.name), metadata))
         # Include this instantiated component instance in the instrument components list
         self.state.add_component(instance)
+        self.current_comp = None
 
     def visitInstanceNameCopyIdentifier(self, ctx: McInstrParser.InstanceNameCopyIdentifierContext):
         return f'{ctx.Identifier()}_{len(self.state.components)+1}'
@@ -137,11 +145,15 @@ class InstrVisitor(McInstrVisitor):
         return [self.visit(p) for p in ctx.params]
 
     def visitInstanceParameterExpr(self, ctx: McInstrParser.InstanceParameterExprContext):
-        return str(ctx.Identifier()), self.visit(ctx.expr())
-
-    def visitInstanceParameterString(self, ctx: McInstrParser.InstanceParameterStringContext):
-        # A string-literal instance parameter is never an identifier
-        return str(ctx.Identifier()), Expr.str(str(ctx.StringLiteral()))
+        from ..common import DataType
+        name = str(ctx.Identifier())
+        value = self.visit(ctx.expr())
+        default = self.current_comp.get_parameter(name)
+        if default is None:
+            raise RuntimeError(f'{name} is not a known DEFINITION or SETTING parameter for {self.current_comp.name}')
+        if DataType.undefined == value.data_type:
+            value.data_type = default.value.data_type
+        return name, value
 
     def visitSplit(self, ctx: McInstrParser.SplitContext):
         return Expr.int(10) if ctx.expr() is None else self.visit(ctx.expr())
@@ -298,11 +310,13 @@ class InstrVisitor(McInstrVisitor):
         return Expr(BinaryOp('__getitem__', array, self.visit(ctx.expr())))
 
     def visitExpressionIdentifier(self, ctx: McInstrParser.ExpressionIdentifierContext):
-        from ..common import Value, ObjectType, parameter_name_present
+        from ..common import Value, DataType, ObjectType, parameter_name_present
         # check if this identifier is an InstrumentParameter name:
         name = str(ctx.Identifier())
-        obj = ObjectType.parameter if parameter_name_present(self.state.parameters, name) else ObjectType.identifier
-        return Expr(Value(name, object_type=obj))
+        inst_par = self.state.get_parameter(name, None)
+        obj = ObjectType.parameter if inst_par is not None else ObjectType.identifier
+        dat = inst_par.value.data_type if inst_par is not None else DataType.undefined
+        return Expr(Value(name, data_type=dat, object_type=obj))
 
     def visitExpressionInteger(self, ctx: McInstrParser.ExpressionIntegerContext):
         return Expr.int(str(ctx.IntegerLiteral()))
@@ -323,7 +337,8 @@ class InstrVisitor(McInstrVisitor):
     def visitExpressionFunctionCall(self, ctx: McInstrParser.ExpressionFunctionCallContext):
         from ..common import BinaryOp, Value, ObjectType
         function = Value(str(ctx.Identifier()), object_type=ObjectType.function)
-        return Expr(BinaryOp('__call__', function, self.visit(ctx.expr())))
+        args = [self.visit(arg).expr[0] for arg in ctx.args]  # each is a Value, UnaryOp, or BinaryOp?
+        return Expr(BinaryOp('__call__', function, args))
 
     def visitExpressionBinaryMD(self, ctx: McInstrParser.ExpressionBinaryMDContext):
         left, right = self.visit(ctx.left), self.visit(ctx.right)
@@ -331,18 +346,26 @@ class InstrVisitor(McInstrVisitor):
 
     def visitInitializerlist(self, ctx: McInstrParser.InitializerlistContext):
         from ..common import Value, ObjectType, ShapeType
-        values = [self.visit(x).expr.value for x in ctx.values()]
+        values = [self.visit(x).expr[0].value for x in ctx.values()]
         return Expr(Value(values, object_type=ObjectType.initializer_list, shape_type=ShapeType.vector))
 
-    def visitExpressionBinaryAnd(self, ctx: McInstrParser.ExpressionBinaryAndContext):
-        from ..common import BinaryOp
-        left, right = [self.visit(x) for x in (ctx.left, ctx.right)]
-        return BinaryOp('__and__', left, right)
+    def visitExpressionUnaryLogic(self, ctx: McInstrParser.ExpressionUnaryLogicContext):
+        from ..common import UnaryOp
+        expr = self.visit(ctx.expr())
+        op = 'unknown'
+        if ctx.Not() is not None:
+            op = '__not__'
+        return UnaryOp(op, expr)
 
-    def visitExpressionBinaryOr(self, ctx: McInstrParser.ExpressionBinaryOrContext):
+    def visitExpressionBinaryLogic(self, ctx: McInstrParser.ExpressionBinaryLogicContext):
         from ..common import BinaryOp
         left, right = [self.visit(x) for x in (ctx.left, ctx.right)]
-        return BinaryOp('__or__', left, right)
+        op = 'unknown'
+        if ctx.AndAnd() is not None:
+            op = '__and__'
+        elif ctx.OrOr() is not None:
+            op = '__or__'
+        return BinaryOp(op, left, right)
 
     def visitExpressionBinaryEqual(self, ctx: McInstrParser.ExpressionBinaryEqualContext):
         from ..common import BinaryOp
@@ -368,3 +391,6 @@ class InstrVisitor(McInstrVisitor):
         from ..common import BinaryOp
         left, right = [self.visit(x) for x in (ctx.left, ctx.right)]
         return BinaryOp('__gt__', left, right)
+
+    def visitExpressionString(self, ctx: McInstrParser.ExpressionStringContext):
+        return Expr.str(str(ctx.StringLiteral()))

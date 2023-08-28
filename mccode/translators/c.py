@@ -11,10 +11,28 @@ from .c_listener import extract_c_declared_variables
 CDeclaration = namedtuple("CDeclaration", "name type init is_pointer is_array orig")
 
 
+def extract_declaration(dec, c_type, init):
+    is_pointer = '*' in dec
+    is_array = '[' in dec and ']' in dec
+    if is_pointer:
+        name = dec.translate(str.maketrans('', '', '*'))
+    elif is_array:
+        # since dec could be 'name[x][y][z]...[a]' don't attempt to parse the size of the array
+        name = dec.split('[', 1)[0]
+    else:
+        name = dec
+    return CDeclaration(name, c_type, init, is_pointer, is_array, dec)
+
+
+def extracted_declares(declares):
+    return [extract_declaration(dec, c_type, init) for dec, (c_type, init) in declares.items()]
+
+
 @dataclass
 class CInclude:
     parent: str
     name: str
+    order: int
     content: str = ''
     root: str = ''
 
@@ -22,9 +40,11 @@ class CInclude:
         return hash(self.parent + self.name + self.content + self.root)
 
     def __str__(self):
-        return f'{self.parent}:{self.name}'
+        return f'{self.root}:{self.parent}({self.order}):{self.name}'
 
     def __lt__(self, other):
+        if self.parent == other.parent:
+            return self.order > other.order
         if self.root or other.root:
             if self.parent == self.root or self.parent == other.root:
                 return True
@@ -37,7 +57,7 @@ class CInclude:
         return self.name < other.name
 
 
-def sort_include_hierarchy(includes: set[CInclude]):
+def sort_include_hierarchy(includes: list[CInclude]):
     log.debug(f'sort includes {" ".join(str(x) for x in includes)}')
     # find the 'root' of the tree, a parent which is _not_ a named include:
     roots = list(set([x.parent for x in includes]).difference(set([x.name for x in includes])))
@@ -60,7 +80,7 @@ def sort_include_hierarchy(includes: set[CInclude]):
 
 
 class CTargetVisitor(TargetVisitor, target_language='c'):
-    def _file_contents(self, filename):
+    def _file_contents(self, filename, preserve_escapes=False):
         # First try the McCode C runtime libraries:
         path = self.include_path(filename)
         # Then any registries used in reading the file(s)
@@ -69,8 +89,10 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
         if not path.is_file():
             raise RuntimeError(f"Can not include the file {filename} because it is not locatable")
         with path.open('r') as file:
-            contents = file.read()
-        return contents
+            lines = [line.strip('\n') for line in file.readlines()]
+        if preserve_escapes:
+            lines = [line.encode('unicode-escape').decode('utf-8') for line in lines]
+        return '\n'.join(lines)
 
     def _handle_raw_c_include(self, parent: str, raw_c: str):
         import re
@@ -81,18 +103,22 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
         # and ensure they're included before all components.
 
         # Get any library names in this block:
-        libraries = set(match.group('libname') for match in re_lib.finditer(raw_c))
+        libraries = list(dict.fromkeys([match.group('libname') for match in re_lib.finditer(raw_c)]))
         # *erase* the library includes from the block:
         raw_c = re.sub(re_lib, '', raw_c)
 
         # We must look through the to-be-included code *now* to see if it *also* includes more libraries.
-        includes = [CInclude(parent=parent, name=lib, content=self._file_contents(f'{lib}.h')) for lib in libraries]
-        new_includes = set()
+        includes = [CInclude(parent=parent, name=lib, order=index, content=self._file_contents(f'{lib}.h'))
+                    for index, lib in enumerate(libraries)]
+        new_includes = []
         for include in includes:
             found_includes, include.content = self._handle_raw_c_include(include.name, include.content)
             if found_includes:
-                new_includes = new_includes.union(found_includes)
-        includes = new_includes.union(set(includes))
+                new_includes.extend(found_includes)
+                new_includes = list(dict.fromkeys(new_includes))
+        if len(new_includes):
+            includes.extend(new_includes)
+            includes = list(dict.fromkeys(includes))
 
         # If there are any non-library includes remaining, we should insert them immediately:
         matches = list(re_inc.finditer(raw_c))
@@ -102,13 +128,15 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
             # Try and find this matched filename
             filename = matches[0].group('filename')
             this_re = re.compile(rf'^\s*%include\s*"{filename}"\s*$', re.MULTILINE)
-            raw_c = re.sub(this_re, self._file_contents(filename), raw_c)
+            raw_c = re.sub(this_re, self._file_contents(filename, True), raw_c)
             # re-match since we modified raw_c
             matches = list(re_inc.finditer(raw_c))
 
         if count:
             found_includes, raw_c = self._handle_raw_c_include(parent, raw_c)
-            includes = includes.union(found_includes)
+            if len(found_includes):
+                includes.extend(found_includes)
+                includes = list(dict.fromkeys(includes))
 
         return includes, raw_c
 
@@ -116,11 +144,11 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
         from .c_listener import extract_c_declared_variables_and_defined_types as parse
         typedefs = set()
         for include in self.includes:
-            log.debug(f'library {include.name}')
+            # log.debug(f'library {include.name}')
             # The files '%include'-d can themselves use the '%include' mechanism :/
             declares, defined_types = parse(include.content, user_types=list(typedefs))
             typedefs = typedefs.union(set(defined_types))
-            log.debug(f'{include.name} done')
+            # log.debug(f'{include.name} done')
         # types can also be defined in component 'SHARE' blocks:
         for block in [share for comp in self.source.component_types() if len(comp.share) for share in comp.share]:
             declares, defined_types = parse(block.source, user_types=list(typedefs))
@@ -144,19 +172,12 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
         Extracted values are stored in namedtuple `CDeclaration` objects for easier interaction.
         """
         def extract_declares(name, raw_c_obj):
-            from .c_listener import extract_c_declared_variables as parse
-            # decs is a dictionary {'variable_name': ('variable_type', ['initializer'|None])}
-            decs = parse(raw_c_obj.source, user_types=self.typedefs)
-            n = sum(init is not None for c, init in decs.values())
-            if n:
-                log.critical(f'Warning USERVARS block from {name} contains {n} assignments (= sign).')
+            c_decs = extracted_declares(extract_c_declared_variables(raw_c_obj.source, user_types=self.typedefs))
+            if any(d.init is not None for d in c_decs):
+                log.critical(f'Warning USERVARS block from {name} contains assignment(s) (= sign).')
                 log.critical('        Move them to an EXTEND section. May fail at compile')
-            # check if the variable name includes a pointer specification or is literal array
-            sc = str.maketrans('', '', '*[] ')  # for '* name' or '***** name' or 'name[]' -> 'name'
-            name_pointer_array = [(x.translate(sc), '*' in x, '[' in x and ']' in x) for x in decs]
-            return [CDeclaration(n, t, i, p, a, o) for (n, p, a), (o, (t, i)) in zip(name_pointer_array, decs.items())]
+            return c_decs
 
-        # declares = set()  # will be (CDeclaration(name, type, init, is_pointer, is_array, orig), )
         declares = []  # runtime-accessing by 'ID' only possible if order is preserved
         for raw_user_vars_c_block in self.source.user:
             # declares = declares.union(extract_declares(self.source.name, raw_user_vars_c_block))
@@ -204,22 +225,24 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
         if not any(reg == LIBC_REGISTRY for reg in self.registries):
             self.source.registries += (LIBC_REGISTRY, )
 
-        includes = set()
-        libraries = set()
+        includes = []
         inst = self.source
         for grp in (inst.user, inst.declare, inst.initialize, inst.save, inst.final):
             for block in grp:
                 incs, block.source = self._handle_raw_c_include(inst.name, block.source)
-                includes = includes.union(incs)
+                includes.extend(incs)
+                includes = list(dict.fromkeys(includes))
         for typ in inst.component_types():
             for grp in (typ.share, typ.user, typ.declare, typ.initialize, typ.trace, typ.save, typ.final, typ.display):
                 for block in grp:
                     incs, block.source = self._handle_raw_c_include(typ.name, block.source)
-                    includes = includes.union(incs)
+                    includes.extend(incs)
+                    includes = list(dict.fromkeys(includes))
         for instance in inst.components:
             for block in instance.extend:
                 incs, block.source = self._handle_raw_c_include(instance.name, block.source)
-                includes = includes.union(incs)
+                includes.extend(incs)
+                includes = list(dict.fromkeys(includes))
         self.includes = sort_include_hierarchy(includes)
 
         # search the library headers for type definitions:
@@ -229,13 +252,10 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
         # in multiple places :/  -- now using CDeclaration named tuples
         sc = str.maketrans('', '', '*[] ')  # for '* name' or '*name', or '****   name' or 'name[]' -> 'name'
         for typ in inst.component_types():
-            declared_parameters = set()
+            dp = set()
             for block in typ.declare:
-                decs = extract_c_declared_variables(block.source, user_types=self.typedefs)
-                npa = [(x.translate(sc), '*' in x, '[' in x and ']' in x) for x in decs]
-                c_decs = [CDeclaration(n, t, i, p,  a, o) for (n, p, a), (o, (t, i)) in zip(npa, decs.items())]
-                declared_parameters = declared_parameters.union(c_decs)
-            self.component_declared_parameters[typ.name] = list(declared_parameters)
+                dp = dp.union(extracted_declares(extract_c_declared_variables(block.source, user_types=self.typedefs)))
+            self.component_declared_parameters[typ.name] = list(dp)
         self._determine_uservars()
 
     def _instrument_and_component_uservars(self):
@@ -248,7 +268,7 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
     def visit_header(self):
         from .c_header import header_pre_runtime, header_post_runtime
         # Get the unique list of USERVAR declarations:
-        log.debug(f'Instrument uservars = {self.instrument_uservars}')
+        # log.debug(f'Instrument uservars = {self.instrument_uservars}')
         # uuv = set().union(self.instrument_uservars)
         # for x in self.component_uservars:
         #     uuv = uuv.union(x)

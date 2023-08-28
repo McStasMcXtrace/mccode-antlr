@@ -46,12 +46,12 @@ def cogen_comp_init_position(index, comp, last, instr):
     x, y, z = comp.rotate_relative[0]
     rel = comp.rotate_relative[1]
     if rel is None:
-        log.debug(f'{comp.name} has absolute orientation with rotation ({x}, {y}, {z})')
+        # log.debug(f'{comp.name} has absolute orientation with rotation ({x}, {y}, {z})')
         lines.append(
             f'    rot_set_rotation({var}._rotation_absolute, ({x})*DEG2RAD, ({y})*DEG2RAD, ({z})*DEG2RAD);'
         )
     else:
-        log.debug(f'{comp.name} has relative orientation to {rel.name} with rotation ({x}, {y}, {z})')
+        # log.debug(f'{comp.name} has relative orientation to {rel.name} with rotation ({x}, {y}, {z})')
         lines.extend([
             f'    rot_set_rotation(tr1, ({x})*DEG2RAD, ({y})*DEG2RAD, ({z})*DEG2RAD);',
             f'    rot_mul(tr1, _{rel.name}_var._rotation_absolute, {var}._rotation_absolute);'
@@ -70,10 +70,10 @@ def cogen_comp_init_position(index, comp, last, instr):
     x, y, z = comp.at_relative[0]
     rel = comp.at_relative[1]
     if rel is None:
-        log.debug(f'{comp.name} has absolute positioning with rotation ({x}, {y}, {z})')
+        # log.debug(f'{comp.name} has absolute positioning with rotation ({x}, {y}, {z})')
         lines.append(f'    {var}._position_absolute = coords_set({x}, {y}, {z});')
     else:
-        log.debug(f'{comp.name} has relative positioning to {rel.name} with rotation ({x}, {y}, {z})')
+        # log.debug(f'{comp.name} has relative positioning to {rel.name} with rotation ({x}, {y}, {z})')
         lines.extend([
             f'    tc1 = coords_set({x}, {y}, {z});',
             f'    rot_transpose(_{rel.name}_var._rotation_absolute, tr1);',
@@ -106,11 +106,9 @@ def cogen_comp_setpos(index, comp, last, instr, component_declared_parameters):
             return ''
         pl = []
         fullname = f'_{comp.name}_var._parameters.{p.name}'
-        # log.info(f'{fullname} = {p}')
         if p.value.is_id or p.value.is_op:
             pl.append(f"  {fullname} = {p.value if p.value is not None else 0};")
         elif p.value.is_str:
-            log.critical(f'{fullname} = {p.value}')
             if p.value.has_value and p.value.value != '0' and p.value.value != 'NULL':
                 pl.extend([
                     f'  if ({p.value} && strlen({p.value}))',
@@ -120,7 +118,6 @@ def cogen_comp_setpos(index, comp, last, instr, component_declared_parameters):
             pl.append(f"  {fullname}[0] = '\\0';")
         elif p.value.is_vector:
             if p.value.vector_known:
-                log.error(f'for {fullname}, why can we not iterate over {p.value}\n{p.value.value}')
                 for i, v in enumerate(p.value.value):
                     pl.append(f'  {fullname}[{i}] = {v};')
             else:
@@ -155,7 +152,7 @@ def cogen_comp_setpos(index, comp, last, instr, component_declared_parameters):
     # <<< Start of second call to `cogen_comp_init_par`: `cogen_comp_init_par(comp, instr, "PRIVATE")`
     for c_dec in component_declared_parameters[comp.type.name]:
         # c_dec is a CDeclare named tuple with (name, type, init, is_pointer, is_array, orig)
-        initialized_value = 'NULL' if ((c_dec.is_pointer or c_dec.is_array) and c_dec.init is None) else c_dec.init
+        initialized_value = 'NULL' if (c_dec.is_pointer and c_dec.init is None) else c_dec.init
         if initialized_value is not None:
             lines.append(f'  _{comp.name}_var._parameters.{c_dec.name} = {initialized_value};')
     # >>> End of second call to `cogen_comp_init_par`
