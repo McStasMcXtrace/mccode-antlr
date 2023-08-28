@@ -81,7 +81,7 @@ class CompVisitor(McCompVisitor):
         name = str(ctx.Identifier(0))
         if ctx.Assign() is not None and ctx.initializerlist() is not None:
             value = self.visit(ctx.initializerlist())
-            value._data = DataType.float
+            value.data_type = DataType.float
         else:
             default = None
             if ctx.Assign() is not None:
@@ -103,7 +103,7 @@ class CompVisitor(McCompVisitor):
         name = str(ctx.Identifier(0))
         if ctx.assign() is not None and ctx.initializerlist() is not None:
             value = self.visit(ctx.initializerlist())
-            value._data = DataType.int
+            value.data_type = DataType.int
         else:
             default = None
             if ctx.assign() is not None:
@@ -115,7 +115,8 @@ class CompVisitor(McCompVisitor):
 
     def visitDependency(self, ctx: Parser.DependencyContext):
         if ctx.StringLiteral() is not None:
-            self.parent.add_c_flags(str(ctx.StringLiteral()))
+            # the flags are the literal string without its quotes:
+            self.parent.add_c_flags(str(ctx.StringLiteral()).strip('"'))
 
     def visitDeclareBlock(self, ctx: Parser.DeclareBlockContext):
         self.state.DECLARE(self.visit(ctx.unparsed_block()))

@@ -1,3 +1,4 @@
+from zenlog import log
 from ..grammar import CParser, CListener
 
 
@@ -79,13 +80,22 @@ def extract_c_declared_variables_and_defined_types(block: str, user_types: list 
     from antlr4 import InputStream, CommonTokenStream
     from antlr4 import ParseTreeWalker
     from ..grammar import CLexer
+    # log.debug('Load block into ANTLR4 stream')
+    # log.debug(f'{block}')
     stream = InputStream(block)
+    # log.debug('Run lexer')
     lexer = CLexer(stream)
+    # log.debug('Tokenize stream')
     tokens = CommonTokenStream(lexer)
+    # log.debug('Parse tokens')
     parser = CParser(tokens)
+    # log.debug('Extract compilation unit tree')
     tree = parser.compilationUnit()
+    # log.debug('Initialize listener')
     listener = DeclaresCListener(user_types)
+    # log.debug('Initialize walker')
     walker = ParseTreeWalker()
+    # log.debug('Walk the tree')
     walker.walk(listener, tree)
     return listener.variables, listener.typedefs
 

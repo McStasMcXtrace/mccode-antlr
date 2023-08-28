@@ -305,19 +305,20 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
 
     def visit_declare(self):
         from .c_decls import declarations_pre_libraries
-        if self.verbose:
-            print(f"Writing instrument '{self.source.name}' and components DECLARE")
+        self.info("Writing instrument and components DECLARE")
 
         if len(self.includes):
             self.out("/* %include libraries from instrument and component definitions */")
         for include in self.includes:
-            print(f'include {include}')
+            self.info(f'include {include}')
             self.out(f'/* Contents of {include.name}.h (requested from {include.parent})*/')
             self.out(include.content)
 
+        self.info('Pre library declarations')
         contents, warnings = declarations_pre_libraries(self.source, self.typedefs, self.component_declared_parameters)
         self.out(contents)
 
+        self.info('Include runtime / list dependencies')
         if self.config.get('include_runtime'):
             for include in self.includes:
                 self.out(f'/* Contents of {include.name}.c (requested from {include.parent})*/')

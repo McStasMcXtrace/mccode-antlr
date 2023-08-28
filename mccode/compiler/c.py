@@ -1,11 +1,11 @@
 """Handles compilation of C translated instruments into usable binaries"""
-from dataclasses import dataclass
-from enum import Enum, Flag, auto
+from enum import Flag, auto
 from typing import Union
 from pathlib import Path
 from mccode.instr import Instr
 from mccode.translators.c import CTargetVisitor
 from zenlog import log
+
 
 class CBinaryTarget:
     class Type(Flag):
@@ -76,6 +76,7 @@ def compile_instrument(instrument: Instr, target: CBinaryTarget, output: Union[s
     from os import R_OK, access
     from subprocess import run, CalledProcessError
     from mccode.config import config
+    log.info(f'Compile {instrument.name}')
     # determine a name and location for the binary file
     if output is None:
         # use the current working directory if nothing provided
@@ -90,17 +91,21 @@ def compile_instrument(instrument: Instr, target: CBinaryTarget, output: Union[s
     if output.exists() and not recompile:
         raise RuntimeError(f"Output {output} exists but recompile is not requested.")
 
+    log.info(f'Sort out flags for compilation')
+
     # the type of binary requested determines (some of) the required flags:
     flags = target.flags + target.extra_flags
     # the flags in an instrument *might* contain ENV, CMD, GETPATH directives which need to be expanded via decode:
     flags.extend([word for flag in instrument.decoded_flags() for word in flag.split()])
+
+    log.info(f'{flags = }')
 
     # Why is this addition necessary?
     if any('OPENACC' in word for word in flags) and any('NeXus' in word for word in flags):
         flags.append('-D__GNUC__')
 
     command = [target.compiler, *flags, '-o', str(output), '-']
-    source = instrument_source(instrument, **kwargs)
+    source = instrument_source(instrument, verbose=True, **kwargs)
     if dump_source:
         source_file = Path().joinpath(output.parts[-1]).with_suffix('.c')
         log.info(f'Source written in {source_file}')

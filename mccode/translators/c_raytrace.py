@@ -76,7 +76,7 @@ def cogen_raytrace(source, ok_to_skip):
         else:
             lines.extend([
                 '      // 2nd or higher GROUP member, "reuse" coordinate-changed _particle_Save from 1st GROUP element.',
-                f'      mccoordschange(_{comp.name}_var._position_relative, _{comp.name}_var.rotation_relative, &_particle_save);',
+                f'      mccoordschange(_{comp.name}_var._position_relative, _{comp.name}_var._rotation_relative, &_particle_save);',
             ])
         if not ok_to_skip[index]:
             lines.extend([

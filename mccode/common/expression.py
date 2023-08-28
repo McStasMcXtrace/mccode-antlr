@@ -117,7 +117,7 @@ class DataType(Enum):
             return "int"
         if self == DataType.str:
             return "char *"
-        raise RuntimeError("No known conversion from non-enumerated data type")
+        raise RuntimeError(f"No known conversion from non-enumerated data type {self}")
 
 
 def _comb(f, s: list):
@@ -520,7 +520,11 @@ class Value:
     def is_vector(self):
         return self.shape_type.is_vector
 
-    def __len__(self):
+    # def __len__(self):
+    #     return len(self.value) if self.is_vector else 1
+
+    @property
+    def vector_len(self):
         return len(self.value) if self.is_vector else 1
 
     def __add__(self, other):
@@ -633,7 +637,7 @@ class Value:
             return "instr_type_vector"
         if self.data_type == DataType.int and self.shape_type == ShapeType.vector:
             return "instr_type_vector"
-        raise RuntimeError("No known conversion from non-enumerated data type")
+        raise RuntimeError(f"No known conversion from non-enumerated data type {self.data_type} + {self.shape_type}")
 
 
 class Expr:
@@ -730,6 +734,11 @@ class Expr:
     #
     # def __len__(self):
     #     return len(self.expr)
+    @property
+    def vector_len(self):
+        if len(self.expr) != 1:
+            raise RuntimeError('No vector_len for array Expr objects')
+        return self.expr[0].vector_len
 
     @property
     def is_constant(self):

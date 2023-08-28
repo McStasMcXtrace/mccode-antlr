@@ -33,6 +33,10 @@ class TestInstrExample:
             new_param = rinstr.sub('', self.parameter_values)
             log.info(f'Removing .instr from {self.parameter_values} now {new_param}')
             self.parameter_values = new_param
+        if self.sourcefile.stem in self.parameter_values:
+            new_param = self.parameter_values
+            self.parameter_values = new_param.replace(self.sourcefile.stem, '')
+            log.info(f'Removing {self.sourcefile.stem} from {new_param} now {self.parameter_values}')
         if '-n' in self.parameter_values:
             rn = re.compile(r'-n[0-9eE\.]*')
             new_param = rn.sub('', self.parameter_values)

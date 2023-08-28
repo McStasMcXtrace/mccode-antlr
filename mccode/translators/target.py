@@ -90,26 +90,45 @@ class TargetVisitor:
             raise RuntimeError('Printing only enabled once translation has begun!')
         print(value, file=self.output)
 
+    def info(self, msg: str):
+        if self.verbose:
+            log.info(f'{self.source.name}: {msg}')
+
     def translate(self, reprocess=True):
         if self.output is not None:
             if not reprocess:
                 return self.output
             self.output.close()
         self.output = StringIO()
+        self.info('visit header')
         self.visit_header()
+        self.info('visit declare')
         self.visit_declare()
+        self.info('set jump targets')
         self.set_jump_absolute_targets()
+        self.info('determine transforms to skip')
         self.detect_skipable_transforms()
+        self.info('visit initialize')
         self.visit_initialize()
+        self.info('enter trace')
         self.enter_trace()
+        self.info('enter uservars')
         self.enter_uservars()
+        self.info('visit raytrace')
         self.visit_raytrace()
+        self.info('visit raytrace funnel')
         self.visit_raytrace_funnel()
+        self.info('leave uservars')
         self.leave_uservars()
+        self.info('leave trace')
         self.leave_trace()
+        self.info('visit save')
         self.visit_save()
+        self.info('visit finally')
         self.visit_finally()
+        self.info('visit display')
         self.visit_display()
+        self.info('visit macros')
         self.visit_macros()
         if self.verbose and self.warnings:
             print(f"Build of instrument {self.source.name} had {self.warnings} warnings")
