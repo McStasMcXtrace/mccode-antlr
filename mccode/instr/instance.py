@@ -48,12 +48,18 @@ class Instance:
             rt, rt_rel = self.rotate_relative[0], None if self.rotate_relative[1] is None else self.rotate_relative[1].orientation
             self.orientation = DependentOrientation.from_dependent_orientations(at_rel, at, rt_rel, rt)
 
-    def set_parameter(self, name: str, value, overwrite=False):
+    def set_parameter(self, name: str, value, overwrite=False, allow_repeated=True):
         if not parameter_name_present(self.type.define, name) and not parameter_name_present(self.type.setting, name):
             raise RuntimeError(f"Unknown parameter {name} for component type {self.type.name}")
         if parameter_name_present(self.parameters, name):
             if overwrite:
                 self.parameters = tuple(x for x in self.parameters if name != x.name)
+            elif allow_repeated:
+                par = [p for p in self.parameters if name == p.name][0]
+                log.info(f'Multiple definitions of {name} in component instance {self.name}')
+                if par.value != value:
+                    log.info(f'  first-encountered value {par.value} retained')
+                    log.info(f'  newly-encountered value {value} dropped')
             else:
                 raise RuntimeError(f"Multiple definitions of {name} in component instance {self.name}")
         p = self.type.get_parameter(name)
