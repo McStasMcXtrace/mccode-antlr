@@ -17,7 +17,6 @@ def declarations_pre_libraries(source, typedefs: list, component_declared_parame
     warnings = 0
 
     def instrument_parameters_struct():
-        log.info('instrument_parameters_struct')
         def _inner():
             if len(source.parameters) == 0:
                 return f"char {source.name}_has_no_parameters;"
@@ -29,7 +28,6 @@ def declarations_pre_libraries(source, typedefs: list, component_declared_parame
     count = len(source.groups) + sum(len(i.jump) + (0 if i.split is None else 1) for i in source.components)
 
     def control_statement_logic():
-        log.info('control_statement_logic')
         #TODO FIXME Why do we care about jump counts here? The struct only contains GROUP and SPLIT counters
         # count number of groups, all jump lengths and splits
         if count == 0:
@@ -45,7 +43,6 @@ def declarations_pre_libraries(source, typedefs: list, component_declared_parame
         return lines
 
     def instrument_structure():
-        log.info('instrument_structure')
         n2 = len(source.components) + 1  # offset enables 1-based indexing at the cost of binary size/memory use
         lines = ["struct _instrument_struct {",
                  f"  char   _name[256]; /* the name of this instrument e.g. '{source.name}' */",
@@ -66,7 +63,6 @@ def declarations_pre_libraries(source, typedefs: list, component_declared_parame
         return '\n'.join(lines)
 
     def instrument_parameters_table():
-        log.info('instrument_parameters_table')
         def one_line(name, typename, value, unit):
             u = '' if unit is None else unit
             v = f'{value}' if value.is_str else f'"{value}"'  # protect against double quotes from string literals
@@ -78,7 +74,6 @@ def declarations_pre_libraries(source, typedefs: list, component_declared_parame
         return '\n'.join(lines)
 
     def metadata_table():
-        log.info('metadata_table')
         def one_line(defined_by, name, mimetype, value):
             from ..common.utilities import escape_str_for_c
             return f'  "{defined_by}", "{name}", "{mimetype}", {escape_str_for_c(value)}, '
@@ -90,7 +85,6 @@ def declarations_pre_libraries(source, typedefs: list, component_declared_parame
         return '\n'.join(lines)
 
     def component_share_declarations():
-        log.info('component_share_declarations')
         components = source.component_types()  # This is a set, so inclusion order is not preserved.
         sharers = [c for c in components if len(c.share)]
         if len(sharers) == 0:
@@ -110,14 +104,12 @@ def declarations_pre_libraries(source, typedefs: list, component_declared_parame
         return '\n'.join(lines)
 
     def component_type_declarations():
-        log.info('component_type_declarations')
         lines = ["/* ********************** component definition declarations. **************** */"]
         lines.extend([component_type_declaration(comp, typedefs, component_declared_parameters[comp.name])
                       for comp in source.component_types()])
         return '\n'.join(lines)
 
     def component_instance_declarations():
-        log.info('component_instance_declarations')
         lines = [component_instance_declaration(instance, index) for index, instance in enumerate(source.components)]
         lines.append(f'int mcNUMCOMP = {len(source.components)};')
         return '\n'.join(lines)
@@ -146,7 +138,6 @@ def component_type_declaration(comp, typedefs: list, declared_parameters: list):
     """Declare the *component type* structures needed for component instances.
     Includes the component parameters structure and positioning code.
     """
-    log.info(f'component_type_declaration for {comp.name}')
     # Note for future reference against McCode-3:
     # The implementation of parameter handling in cogen.c is very convoluted. It reads component-declared parameters
     # from the component definition DECLARE block, then *replaces* the output parameter list entirely by the found
@@ -163,9 +154,7 @@ def component_type_declaration(comp, typedefs: list, declared_parameters: list):
         f"  /* Component type '{comp.name}' setting parameters */"
     ]
     # TODO Veryify that the cogen.c iteration over `comp->def->set_par` does not somehow include DEFINITION PARAMETERS
-    log.info(f'Consider all SETTING parameters for {comp.name}')
     for par in comp.setting:
-        log.info(f'{par}')
         # if par.value.is_a(Value.Type.float_array) or par.value.is_a(Value.Type.int_array):
         if par.value.vector_known:
             # this is only possible if the value is a tuple of numbers, so no str representations of calculations
@@ -183,7 +172,6 @@ def component_type_declaration(comp, typedefs: list, declared_parameters: list):
             lines.append(f'  {par.value.mccode_c_type} {par.name};')
 
     # This is the loop over the *replaced* `comp->def->out_par` e.g., found DECLARE parameters
-    log.info(f'Consider all DECLARE parameters for {comp.name}')
     lines.append(f"/* Component type '{comp.name}' private parameters */")
     for x in declared_parameters:
         # Switch these to use CDeclarations, then we have (.name, .type, .init, .is_pointer, .is_array, .orig)

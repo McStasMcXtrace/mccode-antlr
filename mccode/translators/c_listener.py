@@ -1,11 +1,30 @@
 from zenlog import log
 from ..grammar import CParser, CListener
+from antlr4.error.ErrorListener import ErrorListener
 
 
 def literal_string(ctx):
     start_token, stop_token = ctx.start, ctx.stop
     stream = start_token.getInputStream()
     return stream.getText(start_token.start, stop_token.stop)
+
+
+class CErrorListener(ErrorListener):
+    def __init__(self, source: str, pre=5, post=2):
+        self.source = source
+        self.pre = pre
+        self.post = post
+
+    def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
+        log.error(f'Syntax error in parsing {line},{column}')
+        lines = self.source.split('\n')
+        pre_lines = lines[line-self.pre:line]
+        post_lines = lines[line:line+self.post]
+        for line in pre_lines:
+            log.info(line)
+        log.error('~'*column + '^ ' + msg)
+        for line in post_lines:
+            log.info(line)
 
 
 class DeclaresCListener(CListener):
@@ -89,6 +108,7 @@ def extract_c_declared_variables_and_defined_types(block: str, user_types: list 
     tokens = CommonTokenStream(lexer)
     # log.debug('Parse tokens')
     parser = CParser(tokens)
+    parser.addErrorListener(CErrorListener(block))
     # log.debug('Extract compilation unit tree')
     tree = parser.compilationUnit()
     # log.debug('Initialize listener')
