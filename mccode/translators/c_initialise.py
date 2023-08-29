@@ -106,9 +106,7 @@ def cogen_comp_setpos(index, comp, last, instr, component_declared_parameters):
             return ''
         pl = []
         fullname = f'_{comp.name}_var._parameters.{p.name}'
-        if p.value.is_id or p.value.is_op:
-            pl.append(f"  {fullname} = {p.value if p.value is not None else 0};")
-        elif p.value.is_str:
+        if p.value.is_str:
             if p.value.has_value and p.value.value != '0' and p.value.value != 'NULL':
                 pl.extend([
                     f'  if ({p.value} && strlen({p.value}))',
@@ -116,6 +114,8 @@ def cogen_comp_setpos(index, comp, last, instr, component_declared_parameters):
                     '  else'
                 ])
             pl.append(f"  {fullname}[0] = '\\0';")
+        elif p.value.is_id or p.value.is_op:
+            pl.append(f"  {fullname} = {p.value if p.value is not None else 0};")
         elif p.value.is_vector:
             if p.value.vector_known:
                 for i, v in enumerate(p.value.value):

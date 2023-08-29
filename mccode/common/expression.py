@@ -124,8 +124,142 @@ def _comb(f, s: list):
     return ','.join(f(x) for x in s)
 
 
-class BinaryOp:
+class Op:
+    def __init__(self):
+        self.data_type = DataType.undefined
+        self.style = 'C'  # there should be a better way to do this
+
+    def __hash__(self):
+        return hash(str(self))
+
+    @property
+    def is_op(self):
+        return True
+
+    @property
+    def is_zero(self):
+        return False
+
+    @property
+    def is_id(self):
+        return False
+
+    @property
+    def is_parameter(self):
+        return False
+
+    @property
+    def is_str(self):
+        return self.data_type.is_str
+
+    def is_value(self, other):
+        return self == other
+
+    @property
+    def is_scalar(self):
+        return False
+
+    @property
+    def is_vector(self):
+        return False
+
+    @property
+    def vector_known(self):
+        return False
+
+    def __add__(self, other):
+        if other.is_zero:
+            return self
+        return BinaryOp('+', self, other)
+
+    def __sub__(self, other):
+        if other.is_zero:
+            return self
+        return BinaryOp('-', self, other)
+
+    def __mul__(self, other):
+        if other.is_zero:
+            return other
+        if other.is_value(1):
+            return self
+        if other.is_value(-1):
+            return -self
+        return BinaryOp('*', self, other)
+
+    def __truediv__(self, other):
+        if other.is_zero:
+            raise RuntimeError('Division by zero')
+        if other.is_value(1):
+            return self
+        if other.is_value(-1):
+            return -self
+        return BinaryOp('/', self, other)
+
+    def __neg__(self):
+        return UnaryOp('-', self)
+
+    def __pos__(self):
+        return self
+
+    def __abs__(self):
+        return UnaryOp('abs', self)
+
+
+class TrinaryOp(Op):
+    def __init__(self, op, first, second, third):
+        super().__init__()
+        self.op = op
+        first, second, third = [x.expr if isinstance(x, Expr) else x for x in (first, second, third)]
+        first, second, third = [[x] if not isinstance(x, list) else x for x in (first, second, third)]
+        self.first = first
+        self.second = second
+        self.third = third
+        # In C the data types for `if_true` and `if_false` in
+        #   `(logical test) ? if_true : if_false;`
+        # _must_ be the same. Python is more flexible, but we need to at least have a promotable common type
+        # for compatibility with C.
+        left_data_types = list(dict.fromkeys(x.data_type for x in second))
+        right_data_types = list(dict.fromkeys(x.data_type for x in third))
+        if len(left_data_types) != 1 or len(right_data_types) != 1:
+            raise RuntimeError('Multiple data types in one value not supported')
+        self.data_type = left_data_types[0] + right_data_types[0]
+
+    def _str_repr_(self, first, second, third):
+        if '__trinary__' == self.op:
+            if self.style == 'C':
+                return f'{first} ? {second} : {third}'
+            return f'{second} if {first} else {third}'
+
+    def __str__(self):
+        return self._str_repr_(_comb(str, self.first), _comb(str, self.second), _comb(str, self.third))
+
+    def __repr__(self):
+        return self._str_repr_(_comb(repr, self.first), _comb(repr, self.second), _comb(repr, self.third))
+
+    def __eq__(self, other):
+        if not isinstance(other, TrinaryOp):
+            return False
+        return self.op == other.op and self.first == other.first and self.second == other.second and self.third == other.third
+
+    @property
+    def is_scalar(self):
+        return len(self.first) == 1 and len(self.second) == 1 and len(self.third) == 1\
+            and self.first[0].is_scalar and self.second[0].is_scalar and self.third[0].is_scalar
+
+    @property
+    def is_vector(self):
+        return len(self.first) == 1 and len(self.second) == 1 and len(self.third) == 1 \
+            and self.first[0].is_vector and self.second[0].is_vector and self.third[0].is_vector
+
+    @property
+    def vector_known(self):
+        return len(self.first) == 1 and len(self.second) == 1 and len(self.third) == 1 \
+            and self.first[0].vector_known and self.second[0].vector_known and self.third[0].vector_known
+
+
+class BinaryOp(Op):
     def __init__(self, op, left, right):
+        super().__init__()
         if isinstance(left, Expr):
             left = left.expr
         if isinstance(right, Expr):
@@ -137,16 +271,24 @@ class BinaryOp:
         self.op = op
         self.left = left
         self.right = right
-        left_data_types = list(dict.fromkeys(x.data_type for x in left))
-        right_data_types = list(dict.fromkeys(x.data_type for x in right))
-        if len(left_data_types) != 1 or len(right_data_types) != 1:
-            raise RuntimeError('Multiple data types in one value not supported')
-        self.data_type = left_data_types[0] + right_data_types[0]
+        if op in ('__call__', '__struct_access__', '__pointer_access__', '__getitem__'):
+            data_type = DataType.undefined
+        else:
+            left_data_types = list(dict.fromkeys(x.data_type for x in left))
+            right_data_types = list(dict.fromkeys(x.data_type for x in right))
+            if len(left_data_types) != 1 or len(right_data_types) != 1:
+                raise RuntimeError('Multiple data types in one value not supported')
+            data_type = left_data_types[0] + right_data_types[0]
+        self.data_type = data_type
         self.style = 'C'  # there should be a better way to do this
 
     def _str_repr_(self, lstr, rstr):
         if '__call__' == self.op:
             return f'{lstr}({rstr})'
+        if '__struct_access__' == self.op:
+            return f'{lstr}.{rstr}' if 'C' == self.style else f'getattr({lstr}, {rstr})'
+        if '__pointer_access__' == self.op:
+            return f'{lstr}->{rstr}' if 'C' == self.style else f'getattr({lstr}, {rstr})'
         if '__getitem__' == self.op:
             return f'{lstr}[{rstr}]'
         if '__pow__' == self.op:
@@ -177,93 +319,30 @@ class BinaryOp:
     def __repr__(self):
         return self._str_repr_(_comb(repr, self.left), _comb(repr, self.right))
 
-    def __hash__(self):
-        return hash(str(self))
-
-    def __add__(self, other):
-        if other.is_zero:
-            return self
-        return BinaryOp('+', self, other)
-
-    def __sub__(self, other):
-        if other.is_zero:
-            return self
-        return BinaryOp('-', self, other)
-
-    def __mul__(self, other):
-        if other.is_zero:
-            return other
-        if other.is_value(1):
-            return self
-        if other.is_value(-1):
-            return -self
-        return BinaryOp('*', self, other)
-
-    def __truediv__(self, other):
-        if other.is_zero:
-            raise RuntimeError('Division by zero')
-        if other.is_value(1):
-            return self
-        if other.is_value(-1):
-            return -self
-        return BinaryOp('/', self, other)
-
-    def __neg__(self):
-        return UnaryOp('-', self)
-
-    def __pos__(self):
-        return self
-
-    def __abs__(self):
-        return UnaryOp('abs', self)
-
-
-    @property
-    def is_zero(self):
-        return False
-
-    @property
-    def is_op(self):
-        return True
-
-    @property
-    def is_id(self):
-        return False
-
-    @property
-    def is_parameter(self):
-        return False
-
-    @property
-    def is_str(self):
-        return False
-
     def __eq__(self, other):
         if not isinstance(other, BinaryOp):
             return False
         return self.op == other.op and self.left == other.left and self.right == other.right
 
-    def is_value(self, other):
-        return self == other
-
     @property
     def is_scalar(self):
-        return len(self.left)==1 and len(self.right)==1 and self.left[0].is_scalar and self.right[0].is_scalar
+        return len(self.left) == 1 and len(self.right) == 1 and self.left[0].is_scalar and self.right[0].is_scalar
 
     @property
     def is_vector(self):
-        return len(self.left)==1 and len(self.right)==1 and self.left[0].is_vector or self.right[0].is_vector
+        return len(self.left) == 1 and len(self.right) == 1 and self.left[0].is_vector or self.right[0].is_vector
 
     @property
     def vector_known(self):
-        return len(self.left)==1 and len(self.right)==1 and self.left[0].vector_known and self.right[0].vector_known
+        return len(self.left) == 1 and len(self.right) == 1 and self.left[0].vector_known and self.right[0].vector_known
     #
     # def __len__(self):
     #     return max(len(self.left), len(self.right))
 
 
-class UnaryOp:
+class UnaryOp(Op):
     def __init__(self, op, value):
+        super().__init__()
         if isinstance(value, Expr):
             value = value.expr
         if not isinstance(value, list):
@@ -291,70 +370,16 @@ class UnaryOp:
     def __repr__(self):
         return self._str_repr_(_comb(repr, self.value))
 
-    def __hash__(self):
-        return hash(str(self))
-
-    def __add__(self, other):
-        if other.is_zero:
-            return self
-        return BinaryOp('+', self, other)
-
-    def __sub__(self, other):
-        if other.is_zero:
-            return self
-        return BinaryOp('-', self, other)
-
-    def __mul__(self, other):
-        if other.is_zero:
-            return other
-        if other.is_value(1):
-            return self
-        if other.is_value(-1):
-            return -self
-        return BinaryOp('*', self, other)
-
-    def __truediv__(self, other):
-        if other.is_zero:
-            raise RuntimeError('Division by zero')
-        if other.is_value(1):
-            return self
-        if other.is_value(-1):
-            return -self
-        return BinaryOp('/', self, other)
-
     def __neg__(self):
         if self.op == '-':
             return self.value
         return UnaryOp('-', self)
-
-    def __pos__(self):
-        return self
 
     def __abs__(self):
         if self.op == 'abs':
             # abs(abs(x)) is abs(x)
             return self
         return UnaryOp('abs', self)
-
-    @property
-    def is_zero(self):
-        return False
-
-    @property
-    def is_op(self):
-        return True
-
-    @property
-    def is_id(self):
-        return False
-
-    @property
-    def is_parameter(self):
-        return False
-
-    @property
-    def is_str(self):
-        return False
 
     def __eq__(self, other):
         if not isinstance(other, UnaryOp):
@@ -363,18 +388,15 @@ class UnaryOp:
 
     @property
     def is_scalar(self):
-        return len(self.value) ==1 and self.value[0].is_scalar
+        return len(self.value) == 1 and self.value[0].is_scalar
 
     @property
     def is_vector(self):
-        return len(self.value) ==1 and self.value[0].is_vector
+        return len(self.value) == 1 and self.value[0].is_vector
 
     @property
     def vector_known(self):
-        return len(self.value) ==1 and self.value[0].vector_known
-
-    def is_value(self, value):
-        return self == value
+        return len(self.value) == 1 and self.value[0].vector_known
 
     # def __len__(self):
     #     return len(self.value)
@@ -528,7 +550,7 @@ class Value:
         return len(self.value) if self.is_vector else 1
 
     def __add__(self, other):
-        other = other if isinstance(other, (Value, UnaryOp, BinaryOp)) else Value.best(other)
+        other = other if isinstance(other, (Value, Op)) else Value.best(other)
         if self.is_zero:
             return other
         if other.is_zero:
@@ -537,13 +559,13 @@ class Value:
             return self - other.value
         if self.is_id and (isinstance(other, Value) and not isinstance(other.value, str) and other < 0):
             return self - (-other.value)
-        if other.is_op or self.is_id or other.is_id or isinstance(other, BinaryOp):
+        if other.is_op or self.is_id or other.is_id:
             return BinaryOp('+', self, other)
         pdt = self.data_type + other.data_type
         return BinaryOp('+', self, other) if pdt.is_str else Value(self.value + other.value, pdt)
 
     def __sub__(self, other):
-        other = other if isinstance(other, (Value, UnaryOp, BinaryOp)) else Value.best(other)
+        other = other if isinstance(other, (Value, Op)) else Value.best(other)
         if self.is_zero:
             return -other
         if other.is_zero:
@@ -552,13 +574,13 @@ class Value:
             return self + other.value
         if self.is_id and (isinstance(other, Value) and not isinstance(other.value, str) and other < 0):
             return self + (-other.value)
-        if other.is_op or self.is_id or other.is_id or isinstance(other, BinaryOp):
+        if other.is_op or self.is_id or other.is_id:
             return BinaryOp('-', self, other)
         pdt = self.data_type - other.data_type
         return BinaryOp('-', self, other) if pdt.is_str else Value(self.value - other.value, pdt)
 
     def __mul__(self, other):
-        other = other if isinstance(other, (Value, UnaryOp, BinaryOp)) else Value.best(other)
+        other = other if isinstance(other, (Value, Op)) else Value.best(other)
         pdt = self.data_type * other.data_type
         if self.is_zero or other.is_zero:
             return Value(0, DataType.int if pdt.is_str else pdt)
@@ -571,7 +593,7 @@ class Value:
         return BinaryOp('*', self, other) if pdt.is_str else Value(self.value * other.value, pdt)
 
     def __truediv__(self, other):
-        other = other if isinstance(other, (Value, UnaryOp, BinaryOp)) else Value.best(other)
+        other = other if isinstance(other, (Value, Op)) else Value.best(other)
         pdt = self.data_type / other.data_type
         if self.is_zero:
             return Value(0, DataType.int if pdt.is_str else pdt)
@@ -595,25 +617,25 @@ class Value:
         return UnaryOp('abs', self) if self.is_id or self.data_type.is_str else Value(abs(self.value), self.data_type)
 
     def __eq__(self, other):
-        other = other if isinstance(other, (Value, UnaryOp, BinaryOp)) else Value.best(other)
+        other = other if isinstance(other, (Value, Op)) else Value.best(other)
         if other.is_op:
             return False
         return self.value == other.value
 
     def __lt__(self, other):
-        other = other if isinstance(other, (Value, UnaryOp, BinaryOp)) else Value.best(other)
+        other = other if isinstance(other, (Value, Op)) else Value.best(other)
         if self.is_id or other.is_op or other.is_id:
             return BinaryOp('__lt__', self, other)
         return self.value < other.value
 
     def __gt__(self, other):
-        other = other if isinstance(other, (Value, UnaryOp, BinaryOp)) else Value.best(other)
+        other = other if isinstance(other, (Value, Op)) else Value.best(other)
         if self.is_id or other.is_op or other.is_id:
             return BinaryOp('__gt__', self, other)
         return self.value > other.value
 
     def __pow__(self, power):
-        if not isinstance(power, (Value, UnaryOp, BinaryOp)):
+        if not isinstance(power, (Value, Op)):
             power = Value.best(power)
         if self.is_zero or self.is_value(1):
             return self

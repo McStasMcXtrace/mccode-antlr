@@ -41,6 +41,8 @@ expr
   | IntegerLiteral                                  #ExpressionInteger
   | FloatingLiteral                                 #ExpressionFloat
   | StringLiteral                                   #ExpressionString
+  | Identifier '->' expr                            #ExpressionPointerAccess
+  | Identifier '.' expr                             #ExpressionStructAccess
   | Identifier '[' expr ']'                         #ExpressionArrayAccess
   | Identifier '(' args+=expr (',' args+=expr)* ')' #ExpressionFunctionCall
   | '(' expr ')'                                    #ExpressionGrouping
@@ -56,6 +58,7 @@ expr
   | left=expr '>' right=expr                        #ExpressionBinaryGreater
   | Not expr                                        #ExpressionUnaryLogic
   | left=expr (AndAnd | OrOr) right=expr            #ExpressionBinaryLogic
+  | test=expr '?' true=expr ':' false=expr          #ExpressionTrinaryLogic
   ;
 
 shell: Shell StringLiteral;

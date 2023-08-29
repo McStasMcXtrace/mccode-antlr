@@ -1,8 +1,30 @@
 from typing import Union
 from pathlib import Path
+from zenlog import log
 from dataclasses import dataclass, field
+from antlr4.error.ErrorListener import ErrorListener
 from .registry import Registry, MCSTAS_REGISTRY, registries_match, registry_from_specification
 from ..comp import Comp
+
+
+class ReaderErrorListener(ErrorListener):
+    def __init__(self, filetype: str, name: str, source: str, pre=5, post=2):
+        self.filetype = filetype
+        self.name = name
+        self.source = source
+        self.pre = pre
+        self.post = post
+
+    def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
+        log.error(f'Syntax error in parsing {self.filetype} {self.name} at {line},{column}')
+        lines = self.source.split('\n')
+        pre_lines = lines[line-self.pre:line]
+        post_lines = lines[line:line+self.post]
+        for line in pre_lines:
+            log.info(line)
+        log.error('~'*column + '^ ' + msg)
+        for line in post_lines:
+            log.info(line)
 
 
 @dataclass
@@ -64,9 +86,12 @@ class Reader:
         from ..grammar import McCompLexer, McCompParser
         from ..comp import CompVisitor
         filename = str(self.locate(name, ext='.comp').resolve())
+        with open(filename, 'r') as file:
+            source = file.read()
         lexer = McCompLexer(FileStream(filename, encoding='utf8'))
         tokens = CommonTokenStream(lexer)
         parser = McCompParser(tokens)
+        parser.addErrorListener(ReaderErrorListener('Component', name, source))
         visitor = CompVisitor(self, filename)  # The visitor needs to be able to call *this* method
         res = visitor.visitProg(parser.prog())
         if not isinstance(res, Comp):
@@ -95,9 +120,12 @@ class Reader:
         if not path.exists() and not path.is_file():
             raise RuntimeError(f'Can not locate instr file for {name}.')
         filename = str(path.resolve())
+        with open(filename, 'r') as file:
+            source = file.read()
         lexer = McInstrLexer(FileStream(filename, encoding='utf8'))
         tokens = CommonTokenStream(lexer)
         parser = McInstrParser(tokens)
+        parser.addErrorListener(ReaderErrorListener('Instrument', name, source))
         visitor = InstrVisitor(self, filename)
         res = visitor.visitProg(parser.prog())
         if not isinstance(res, Instr):

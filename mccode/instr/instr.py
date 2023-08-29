@@ -34,10 +34,11 @@ class Instr:
             raise RuntimeError(f"A component instance named {a.name} is already present in the instrument")
         self.components += (a,)
 
-    def add_parameter(self, a: InstrumentParameter):
-        if parameter_name_present(self.parameters, a.name):
+    def add_parameter(self, a: InstrumentParameter, ignore_repeated=False):
+        if not parameter_name_present(self.parameters, a.name):
+            self.parameters += (a,)
+        elif not ignore_repeated:
             raise RuntimeError(f"An instrument parameter named {a.name} is already present in the instrument")
-        self.parameters += (a,)
 
     def get_parameter(self, name, default=None):
         if parameter_name_present(self.parameters, name):
@@ -53,6 +54,8 @@ class Instr:
             return self.components[-count]
         fixed = [comp for comp in self.components if not comp.removable]
         if len(fixed) < count:
+            for comp in self.components:
+                log.info(f'{comp.name}')
             raise RuntimeError(f"Only {len(fixed)} fixed components defined -- can not go back {count}.")
         return fixed[-count]
 

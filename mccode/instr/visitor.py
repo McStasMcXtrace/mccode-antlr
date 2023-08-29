@@ -64,11 +64,12 @@ class InstrVisitor(McInstrVisitor):
         return self.visitChildren(ctx)
 
     def visitInstrument_trace_include(self, ctx: McInstrParser.Instrument_trace_includeContext):
-        instr = self.parent.get_instrument(str(ctx.StringLiteral()))
+        quoted_filename = str(ctx.StringLiteral())
+        instr = self.parent.get_instrument(quoted_filename.strip('"'))
         # TODO work out how/what to copy from the other instrument into this one
         self.state.add_included(instr.name)
         for par in instr.parameters:
-            self.state.add_parameter(par)
+            self.state.add_parameter(par, ignore_repeated=True)
         for meta in instr.metadata:
             self.state.add_metadata(meta)
         if len(instr.declare):
@@ -150,7 +151,7 @@ class InstrVisitor(McInstrVisitor):
         return [self.visit(p) for p in ctx.params]
 
     def visitInstanceParameterExpr(self, ctx: McInstrParser.InstanceParameterExprContext):
-        from ..common import DataType
+        from ..common import DataType, TrinaryOp
         name = str(ctx.Identifier())
         value = self.visit(ctx.expr())
         default = self.current_comp.get_parameter(name)
@@ -205,7 +206,9 @@ class InstrVisitor(McInstrVisitor):
     def visitComponent_ref(self, ctx: McInstrParser.Component_refContext):
         if ctx.Previous() is not None:
             count = 1 if ctx.IntegerLiteral() is None else int(str(ctx.IntegerLiteral()))
-            return self.state.last_component(count, removable_ok=False)
+            # Any included component can be referred to -- REMOVABLE components in an included instrument
+            # were _not_ included into the state. Include REMOVABLE components _are_ in the state.
+            return self.state.last_component(count, removable_ok=True)
         return self.state.get_component(str(ctx.Identifier()))
 
     def visitCoords(self, ctx: McInstrParser.CoordsContext):
@@ -309,6 +312,16 @@ class InstrVisitor(McInstrVisitor):
     def visitExpressionFloat(self, ctx: McInstrParser.ExpressionFloatContext):
         return Expr.float(str(ctx.FloatingLiteral()))
 
+    def visitExpressionPointerAccess(self, ctx: McInstrParser.ExpressionPointerAccessContext):
+        from ..common import BinaryOp, Value, ObjectType
+        pointer = Expr(Value(str(ctx.Identifier()), object_type=ObjectType.identifier))
+        return Expr(BinaryOp('__pointer_access__', pointer, self.visit(ctx.expr())))
+
+    def visitExpressionStructAccess(self, ctx: McInstrParser.ExpressionStructAccessContext):
+        from ..common import BinaryOp, Value, ObjectType
+        struct = Expr(Value(str(ctx.Identifier()), object_type=ObjectType.identifier))
+        return Expr(BinaryOp('__struct_access__', struct, self.visit(ctx.expr())))
+
     def visitExpressionArrayAccess(self, ctx: McInstrParser.ExpressionArrayAccessContext):
         from ..common import BinaryOp, Value, ShapeType, ObjectType
         array = Expr(Value(str(ctx.Identifer()), object_type=ObjectType.identifier, shape_type=ShapeType.vector))
@@ -371,6 +384,11 @@ class InstrVisitor(McInstrVisitor):
         elif ctx.OrOr() is not None:
             op = '__or__'
         return BinaryOp(op, left, right)
+
+    def visitExpressionTrinaryLogic(self, ctx: McInstrParser.ExpressionTrinaryLogicContext):
+        from ..common import TrinaryOp
+        test, true, false = [self.visit(x) for x in (ctx.test, ctx.true, ctx.false)]
+        return TrinaryOp('__trinary__', test, true, false)
 
     def visitExpressionBinaryEqual(self, ctx: McInstrParser.ExpressionBinaryEqualContext):
         from ..common import BinaryOp

@@ -61,7 +61,6 @@ class Instance:
             log.debug(f'{p=}, {name=}, {value=}')
             raise RuntimeError(f"Provided value for parameter {name} is not compatible with {self.type.name}")
         v = value if isinstance(value, Expr) else Expr.best(value)
-
         # is this parameter value *actually* an instrument parameter *name*
         if v.is_id:
             pass

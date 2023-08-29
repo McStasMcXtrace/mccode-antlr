@@ -212,6 +212,16 @@ class CompVisitor(McCompVisitor):
     def visitExpressionFloat(self, ctx: Parser.ExpressionFloatContext):
         return Expr.float(str(ctx.FloatingLiteral()))
 
+    def visitExpressionPointerAccess(self, ctx: Parser.ExpressionPointerAccessContext):
+        from ..common import BinaryOp, Value, ObjectType
+        pointer = Expr(Value(str(ctx.Identifier()), object_type=ObjectType.identifier))
+        return Expr(BinaryOp('__pointer_access__', pointer, self.visit(ctx.expr())))
+
+    def visitExpressionStructAccess(self, ctx: Parser.ExpressionStructAccessContext):
+        from ..common import BinaryOp, Value, ObjectType
+        struct = Expr(Value(str(ctx.Identifier()), object_type=ObjectType.identifier))
+        return Expr(BinaryOp('__struct_access__', struct, self.visit(ctx.expr())))
+
     def visitExpressionArrayAccess(self, ctx: Parser.ExpressionArrayAccessContext):
         from ..common import BinaryOp, Value, ShapeType, ObjectType
         array = Expr(Value(str(ctx.Identifer()), object_type=ObjectType.identifier, shape_type=ShapeType.vector))
@@ -259,6 +269,12 @@ class CompVisitor(McCompVisitor):
         if ctx.Not() is not None:
             op = '__not__'
         return UnaryOp(op, expr)
+
+    def visitExpressionTrinaryLogic(self, ctx: Parser.ExpressionTrinaryLogicContext):
+        from ..common import TrinaryOp
+        test, true, false = [self.visit(x) for x in (ctx.test, ctx.true, ctx.false)]
+        return TrinaryOp('__trinary__', test, true, false)
+
     def visitExpressionBinaryLogic(self, ctx: Parser.ExpressionBinaryLogicContext):
             from ..common import BinaryOp
             left, right = [self.visit(x) for x in (ctx.left, ctx.right)]
