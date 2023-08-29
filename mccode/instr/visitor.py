@@ -324,7 +324,7 @@ class InstrVisitor(McInstrVisitor):
 
     def visitExpressionArrayAccess(self, ctx: McInstrParser.ExpressionArrayAccessContext):
         from ..common import BinaryOp, Value, ShapeType, ObjectType
-        array = Expr(Value(str(ctx.Identifer()), object_type=ObjectType.identifier, shape_type=ShapeType.vector))
+        array = Expr(Value(str(ctx.Identifier()), object_type=ObjectType.identifier, shape_type=ShapeType.vector))
         return Expr(BinaryOp('__getitem__', array, self.visit(ctx.expr())))
 
     def visitExpressionIdentifier(self, ctx: McInstrParser.ExpressionIdentifierContext):
