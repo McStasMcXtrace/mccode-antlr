@@ -54,7 +54,9 @@ class InstrVisitor(McInstrVisitor):
     def visitInstrumentParameterString(self, ctx: McInstrParser.InstrumentParameterStringContext):
         name = str(ctx.Identifier())
         unit = None if ctx.instrument_parameter_unit() is None else self.visit(ctx.instrument_parameter_unit())
-        value = None if ctx.Assign() is None else str(ctx.StringLiteral())
+        value = None
+        if ctx.Assign() is not None:
+            value = 'NULL' if ctx.StringLiteral() is None else str(ctx.StringLiteral())
         return InstrumentParameter(name, unit, Expr.str(value))
 
     def visitInstrument_parameter_unit(self, ctx: McInstrParser.Instrument_parameter_unitContext):

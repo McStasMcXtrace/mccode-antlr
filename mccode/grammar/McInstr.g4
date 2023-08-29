@@ -39,7 +39,7 @@ instrument_parameters: '(' (params+=instrument_parameter (',' params+=instrument
 instrument_parameter
   : Double? Identifier instrument_parameter_unit? (Assign expr)?                         #InstrumentParameterDouble
   | Int Identifier instrument_parameter_unit? (Assign expr)?                             #InstrumentParameterInteger
-  | (String | (Char Star)) Identifier instrument_parameter_unit? (Assign StringLiteral)? #InstrumentParameterString
+  | (String | (Char Star)) Identifier instrument_parameter_unit? (Assign (StringLiteral | Null | '0'))? #InstrumentParameterString
   ;
 
 instrument_parameter_unit: Div StringLiteral;
