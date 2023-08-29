@@ -7,6 +7,8 @@ from ..common import ComponentParameter, MetaData, parameter_name_present, RawC,
 from .orientation import DependentOrientation
 from .jump import Jump
 
+TripletReference = tuple[tuple[Expr,Expr,Expr], Self]
+
 @dataclass
 class Instance:
     """Intermediate representation of a McCode component instance
@@ -29,17 +31,31 @@ class Instance:
     jump: tuple[Jump] = field(default_factory=tuple)
     metadata: tuple[MetaData] = field(default_factory=tuple)
 
+    @classmethod
+    def from_instance(cls, name: str, ref: Self, at: TripletReference, rotate: TripletReference):
+        # from copy import deepcopy
+        # copy each of: parameters, extend, group, jump, when, metadata
+        return cls(name, ref.type, at, rotate,
+                   parameters=tuple([par for par in ref.parameters]),
+                   when=ref.when, group=ref.group,
+                   extend=tuple([ext for ext in ref.extend]),
+                   jump=tuple([jmp for jmp in ref.jump]),
+                   metadata=tuple([md for md in ref.metadata]))
+
     def __post_init__(self):
         if self.orientation is None:
             at, at_rel = self.at_relative[0], None if self.at_relative[1] is None else self.at_relative[1].orientation
             rt, rt_rel = self.rotate_relative[0], None if self.rotate_relative[1] is None else self.rotate_relative[1].orientation
             self.orientation = DependentOrientation.from_dependent_orientations(at_rel, at, rt_rel, rt)
 
-    def set_parameter(self, name: str, value):
+    def set_parameter(self, name: str, value, overwrite=False):
         if not parameter_name_present(self.type.define, name) and not parameter_name_present(self.type.setting, name):
             raise RuntimeError(f"Unknown parameter {name} for component type {self.type.name}")
         if parameter_name_present(self.parameters, name):
-            raise RuntimeError(f"Multiple definitions of {name} in component instance {self.name}")
+            if overwrite:
+                self.parameters = tuple(x for x in self.parameters if name != x.name)
+            else:
+                raise RuntimeError(f"Multiple definitions of {name} in component instance {self.name}")
         p = self.type.get_parameter(name)
         if not p.compatible_value(value):
             log.debug(f'{p=}, {name=}, {value=}')
@@ -47,7 +63,7 @@ class Instance:
         v = value if isinstance(value, Expr) else Expr.best(value)
 
         # is this parameter value *actually* an instrument parameter *name*
-        if v.is_id:  # or v.is_str:
+        if v.is_id:
             pass
         self.parameters += (ComponentParameter(p.name, v), )
 

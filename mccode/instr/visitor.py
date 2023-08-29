@@ -89,9 +89,13 @@ class InstrVisitor(McInstrVisitor):
         # Group membership is determined after all parsing, so nothing to do here
 
     def visitComponent_instance(self, ctx: McInstrParser.Component_instanceContext):
+        from ..comp import Comp
         name = self.visit(ctx.instance_name())
         comp = self.visit(ctx.component_type())
-        self.current_comp = comp  # For identifying component instance parameter _types_ we need to know the comp object
+        if not isinstance(comp, (Comp, Instance)):
+            raise RuntimeError(f'Undefined component type {type(comp)}')
+        is_ref = isinstance(comp, Instance)
+        self.current_comp = comp.type if is_ref else comp
         at = self.visit(ctx.place())
         if ctx.orientation() is not None:
             rotate = self.visit(ctx.orientation())
@@ -99,10 +103,11 @@ class InstrVisitor(McInstrVisitor):
             # In the case of "AT (x, y, z) ABSOLUTE" or "AT (x, y, z) RELATIVE identifier"
             # We must use *the same* relative information for the rotation -- at[1] is None or a valid instance:
             rotate = ((Expr.int(0), Expr.int(0), Expr.int(0)), at[1])
-        instance = Instance(name, comp, at, rotate)
+        # Construct a new instance, possibly copying values from an existing instance:
+        instance = Instance.from_instance(name, comp, at, rotate) if is_ref else Instance(name, comp, at, rotate)
         if ctx.instance_parameters() is not None:
             for param_name, param_value in self.visit(ctx.instance_parameters()):
-                instance.set_parameter(param_name, param_value)
+                instance.set_parameter(param_name, param_value, overwrite=is_ref)
         if ctx.Removable() is not None:
             instance.REMOVABLE()
         if ctx.Cpu() is not None:
