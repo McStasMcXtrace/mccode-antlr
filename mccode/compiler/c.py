@@ -105,7 +105,7 @@ def compile_instrument(instrument: Instr, target: CBinaryTarget, output: Union[s
         flags.append('-D__GNUC__')
 
     command = [target.compiler, *flags, '-o', str(output), '-']
-    source = instrument_source(instrument, verbose=True, **kwargs)
+    source = instrument_source(instrument, **kwargs)
     if dump_source:
         source_file = Path().joinpath(output.parts[-1]).with_suffix('.c')
         log.info(f'Source written in {source_file}')

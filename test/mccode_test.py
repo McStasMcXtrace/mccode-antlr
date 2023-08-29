@@ -53,7 +53,7 @@ class TestInstrExample:
         if len(matches):
             groups = [(m[0].strip(), m[1].strip(), float(m[2].strip())) for m in matches]
             return [cls(filename, i+1, p, d, t) for i, (p, d, t) in enumerate(groups)]
-        return [cls(filename, 1)]
+        return [cls(filename, -1)]
 
     def get_display_name(self):
         return f'{self.sourcefile.stem}_{self.test_number}' if self.test_number > 1 else self.sourcefile.stem
@@ -336,6 +336,7 @@ def _mccode_test(compiler, runner, registry: Registry, search_pattern=None, inst
             continue
 
         t1 = datetime.now()
+        log.info(f'run {binaries[test.sourcefile][1]} -n {n_particles} {test.parameter_values}')
         test.ran, stdout, output_dir = runner(binaries[test.sourcefile][1], test.parameter_values, n_particles)
         test.run_time = datetime.now() - t1
         test.stdout = stdout.decode() if isinstance(stdout, bytes) else stdout
