@@ -16,6 +16,7 @@ class InstrVisitor(McInstrVisitor):
         self.filename = filename
         self.state = Instr()
         self.current_comp = None
+        self.current_instance_name = None
         self.destination = destination
 
     def visitProg(self, ctx: McInstrParser.ProgContext):
@@ -98,6 +99,7 @@ class InstrVisitor(McInstrVisitor):
     def visitComponent_instance(self, ctx: McInstrParser.Component_instanceContext):
         from ..comp import Comp
         name = self.visit(ctx.instance_name())
+        self.current_instance_name = name
         comp = self.visit(ctx.component_type())
         if not isinstance(comp, (Comp, Instance)):
             raise RuntimeError(f'Undefined component type {type(comp)}')
@@ -140,6 +142,7 @@ class InstrVisitor(McInstrVisitor):
             # TODO we don't need to populate the whole Instance object if this branch is not selected
             self.state.add_component(instance)
         self.current_comp = None
+        self.current_instance_name = None
 
     def visitInstanceNameCopyIdentifier(self, ctx: McInstrParser.InstanceNameCopyIdentifierContext):
         return f'{ctx.Identifier()}_{len(self.state.components)+1}'
@@ -154,7 +157,7 @@ class InstrVisitor(McInstrVisitor):
         return self.visit(ctx.component_ref())
 
     def visitComponentTypeIdentifier(self, ctx: McInstrParser.ComponentTypeIdentifierContext):
-        return self.parent.get_component(str(ctx.Identifier()))
+        return self.parent.get_component(str(ctx.Identifier()), current_instance_name=self.current_instance_name)
 
     def visitInstance_parameters(self, ctx: McInstrParser.Instance_parametersContext):
         return [self.visit(p) for p in ctx.params]
@@ -168,6 +171,7 @@ class InstrVisitor(McInstrVisitor):
             raise RuntimeError(f'{name} is not a known DEFINITION or SETTING parameter for {self.current_comp.name}')
         if DataType.undefined == value.data_type:
             value.data_type = default.value.data_type
+            value.shape_type = default.value.shape_type
         return name, value
 
     def visitInstanceParameterNull(self, ctx: McInstrParser.InstanceParameterNullContext):
@@ -455,4 +459,17 @@ class InstrVisitor(McInstrVisitor):
         return Expr(BinaryOp('__gt__', left, right))
 
     def visitExpressionString(self, ctx: McInstrParser.ExpressionStringContext):
-        return Expr.str(str(ctx.StringLiteral()))
+        strings = ''.join(str(sl).strip('"') for sl in ctx.StringLiteral())
+        return Expr.str(f'"{strings}"')
+
+    def visitExpressionPrevious(self, ctx: McInstrParser.ExpressionPreviousContext):
+        # The very-special no-good expression use of PREVIOUS where it is replaced by the last component's name
+        if len(self.state.components):
+            return Expr.str(self.state.components[-1].name)
+        elif self.destination is not None and len(self.destination.components):
+            return Expr.str(self.destination.components[-1].name)
+        raise RuntimeError('PREVIOUS keyword used in expression before any components defined')
+
+    def visitExpressionMyself(self, ctx: McInstrParser.ExpressionMyselfContext):
+        # The even-worse expression use of MYSELF to refer to the current being-constructed component's name
+        return Expr.str(self.current_instance.name)

@@ -72,7 +72,7 @@ def instrument_source(instrument: Instr, generator: dict, config: dict, verbose:
 
 
 def compile_instrument(instrument: Instr, target: CBinaryTarget, output: Union[str, Path] = None,
-                       recompile: bool = False, dump_source: bool = True, **kwargs):
+                       recompile: bool = False, replace: bool = True, dump_source: bool = True, **kwargs):
     from os import R_OK, access
     from subprocess import run, CalledProcessError
     from mccode.config import config
@@ -90,6 +90,8 @@ def compile_instrument(instrument: Instr, target: CBinaryTarget, output: Union[s
 
     if output.exists() and not recompile:
         raise RuntimeError(f"Output {output} exists but recompile is not requested.")
+    if output.exists() and not replace:
+        return output
 
     log.info(f'Sort out flags for compilation')
 
@@ -157,6 +159,10 @@ def run_compiled_instrument(binary: Path, target: CBinaryTarget, options: str, c
             # *on* the worker, which requires hijacking the executable that MPI runs
             command.append('acc_gpu_bind')
             raise NotImplementedError('CUDA GPU binding not yet implemented')
+
+    binary = binary.resolve()
+    if not binary.exists():
+        raise RuntimeError(f'Can not execute {binary} since it does not exist.')
 
     # In normal operation, the binary is provided with options
     command.extend([str(binary), *options.split()])

@@ -29,6 +29,9 @@
 /** C 2011 grammar built from the C11 Spec */
 grammar C;
 
+functionCall
+  : Identifier '(' expression ')'
+  ;
 
 primaryExpression
     :   Identifier
@@ -502,6 +505,7 @@ translationUnit
 externalDeclaration
     :   functionDefinition
     |   declaration
+    |   functionCall
     |   ';' // stray ;
     ;
 

@@ -435,6 +435,21 @@ class Value:
     def shape_type(self):
         return self._shape
 
+    @shape_type.setter
+    def shape_type(self, st):
+        if not isinstance(st, ShapeType):
+            raise RuntimeError('Non ShapeType value set for shape_type')
+        if st.is_vector:
+            if self.is_str:
+                raise RuntimeError('No support for vectors of strings, e.g. char**')
+            if not self.is_id or not hasattr(self.value, '__len__'):
+                raise RuntimeError('Can not make a scalar value have vector type unless it is an identifier')
+            self._shape = st
+        else:
+            if not (self.is_str or self.is_id) and hasattr(self.value, '__len__'):
+                raise RuntimeError('Can not make vector value have scalar type')
+            self._shape = st
+
     @value.setter
     def value(self, value):
         log.debug(f'Updating Value from {self._value} to {value}')
@@ -529,7 +544,12 @@ class Value:
 
     @property
     def is_zero(self):
-        return not self.is_id and self.value == 0
+        if self.is_id:
+            return False
+        if self.is_str:
+            # This is not great, but captures a case where, e.g., -1 is interpreted as an empty string minus 1
+            return len(self.value.strip('"')) == 0
+        return self.value == 0
 
     def is_value(self, v):
         return not self.is_id and v.is_value(self.value) if hasattr(v, 'is_value') else self.value == v
@@ -851,6 +871,8 @@ class Expr:
     def mccode_c_type(self):
         if len(self.expr) != 1:
             raise RuntimeError('No McCode C type for array Expr objects')
+        if not isinstance(self.expr[0], Value):
+            log.critical(f'Why is {self.expr[0]} not a Value?')
         return self.expr[0].mccode_c_type
 
     @property
@@ -870,6 +892,18 @@ class Expr:
         if len(self.expr) != 1:
             raise RuntimeError('No data type for array Expr objects')
         self.expr[0].data_type = dt
+
+    @property
+    def shape_type(self):
+        if len(self.expr) != 1:
+            raise RuntimeError('No data type for array Expr objects')
+        return self.expr[0].shape_type
+
+    @shape_type.setter
+    def shape_type(self, st):
+        if len(self.expr) != 1:
+            raise RuntimeError('No data type for array Expr objects')
+        self.expr[0].shape_type = st
 
 
 def unary_expr(func, name, v):

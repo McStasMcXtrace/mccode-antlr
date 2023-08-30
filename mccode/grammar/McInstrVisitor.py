@@ -99,6 +99,16 @@ class McInstrVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by McInstrParser#InstanceParameterNull.
+    def visitInstanceParameterNull(self, ctx:McInstrParser.InstanceParameterNullContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by McInstrParser#InstanceParameterVector.
+    def visitInstanceParameterVector(self, ctx:McInstrParser.InstanceParameterVectorContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by McInstrParser#split.
     def visitSplit(self, ctx:McInstrParser.SplitContext):
         return self.visitChildren(ctx)
@@ -289,13 +299,33 @@ class McInstrVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by McInstrParser#ExpressionMyself.
+    def visitExpressionMyself(self, ctx:McInstrParser.ExpressionMyselfContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by McInstrParser#ExpressionUnaryPM.
     def visitExpressionUnaryPM(self, ctx:McInstrParser.ExpressionUnaryPMContext):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by McInstrParser#ExpressionPrevious.
+    def visitExpressionPrevious(self, ctx:McInstrParser.ExpressionPreviousContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by McInstrParser#ExpressionTrinaryLogic.
+    def visitExpressionTrinaryLogic(self, ctx:McInstrParser.ExpressionTrinaryLogicContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by McInstrParser#ExpressionFloat.
     def visitExpressionFloat(self, ctx:McInstrParser.ExpressionFloatContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by McInstrParser#ExpressionPointerAccess.
+    def visitExpressionPointerAccess(self, ctx:McInstrParser.ExpressionPointerAccessContext):
         return self.visitChildren(ctx)
 
 
@@ -316,6 +346,11 @@ class McInstrVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by McInstrParser#ExpressionUnaryLogic.
     def visitExpressionUnaryLogic(self, ctx:McInstrParser.ExpressionUnaryLogicContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by McInstrParser#ExpressionStructAccess.
+    def visitExpressionStructAccess(self, ctx:McInstrParser.ExpressionStructAccessContext):
         return self.visitChildren(ctx)
 
 

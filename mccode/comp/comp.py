@@ -66,7 +66,12 @@ class Comp:
         self.setting += (a, )
 
     def add_output(self, a: ComponentParameter):
-        self.parameter_name_used('OUTPUT', a.name)
+        # TODO in McCode-3 OUTPUT PARAMETERS are parsed but unused in the code-generator.
+        #      And they can apparently anyway specify the same name as SETTING (and possibly DEFINE) PARAMETERS
+        #      So only ensure that the same name isn't specified twice in OUTPUT, and consider dropping entirely.
+        #self.parameter_name_used('OUTPUT', a.name)
+        if parameter_name_present(self.output, a.name):
+            raise RuntimeError(f"OUTPUT parameter {a.name} is already an output parameter!")
         self.output += (a, )
 
     def no_acc(self):

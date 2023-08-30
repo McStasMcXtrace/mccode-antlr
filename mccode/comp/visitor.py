@@ -4,10 +4,11 @@ from ..common import ComponentParameter, Expr, MetaData
 from zenlog import log
 
 class CompVisitor(McCompVisitor):
-    def __init__(self, parent, filename):
+    def __init__(self, parent, filename, instance_name=None):
         self.parent = parent  # the instrument (handler?) that wanted to read this component
         self.filename = filename
         self.state = Comp()
+        self.instance_name = instance_name
 
     def visitProg(self, ctx: Parser.ProgContext):
         self.state = Comp()
@@ -22,7 +23,7 @@ class CompVisitor(McCompVisitor):
 
     def visitComponentDefineCopy(self, ctx: Parser.ComponentDefineCopyContext):
         from copy import deepcopy
-        new_name, copy_from = [str(x) for x in ctx.Identifer()]
+        new_name, copy_from = [str(x) for x in ctx.Identifier()]
         if self.parent is None:
             raise RuntimeError("Can not copy a component definition without a parent instrument")
         copy_from_comp = self.parent.get_component(copy_from)
@@ -224,7 +225,7 @@ class CompVisitor(McCompVisitor):
 
     def visitExpressionArrayAccess(self, ctx: Parser.ExpressionArrayAccessContext):
         from ..common import BinaryOp, Value, ShapeType, ObjectType
-        array = Expr(Value(str(ctx.Identifer()), object_type=ObjectType.identifier, shape_type=ShapeType.vector))
+        array = Expr(Value(str(ctx.Identifier()), object_type=ObjectType.identifier, shape_type=ShapeType.vector))
         return Expr(BinaryOp('__getitem__', array, self.visit(ctx.expr())))
 
     def visitExpressionIdentifier(self, ctx: Parser.ExpressionIdentifierContext):
@@ -311,4 +312,13 @@ class CompVisitor(McCompVisitor):
         return Expr(BinaryOp('__gt__', left, right))
 
     def visitExpressionString(self, ctx: Parser.ExpressionStringContext):
-        return Expr.str(str(ctx.StringLiteral()))
+        strings = ''.join(str(sl).strip('"') for sl in ctx.StringLiteral())
+        return Expr.str(f'"{strings}"')
+
+    def visitExpressionPrevious(self, ctx: Parser.ExpressionPreviousContext):
+        # The very-special no-good expression use of PREVIOUS where it is replaced by the last component's name
+        raise RuntimeError('PREVIOUS is not a valid expression in Comp definitions')
+
+    def visitExpressionMyself(self, ctx: Parser.ExpressionMyselfContext):
+        # The even-worse expression use of MYSELF to refer to the current being-constructed component's name
+        return Expr.str(self.instance.name)

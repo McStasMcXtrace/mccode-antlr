@@ -9,6 +9,11 @@ else:
 
 class CVisitor(ParseTreeVisitor):
 
+    # Visit a parse tree produced by CParser#functionCall.
+    def visitFunctionCall(self, ctx:CParser.FunctionCallContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by CParser#primaryExpression.
     def visitPrimaryExpression(self, ctx:CParser.PrimaryExpressionContext):
         return self.visitChildren(ctx)

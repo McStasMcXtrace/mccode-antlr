@@ -58,10 +58,12 @@ class CInclude:
 
 
 def sort_include_hierarchy(includes: list[CInclude]):
+    if len(includes) == 0:
+        return []
     log.debug(f'sort includes {" ".join(str(x) for x in includes)}')
     # find the 'root' of the tree, a parent which is _not_ a named include:
     roots = list(set([x.parent for x in includes]).difference(set([x.name for x in includes])))
-    full_output = []
+    options = {}
     for root in roots:
         for include in includes:
             include.root = root
@@ -73,10 +75,22 @@ def sort_include_hierarchy(includes: list[CInclude]):
                 output.append(include)
                 used.append(include.name)
         # Reduce output to [C:B, A:C], or [Z:Y, A:X, B:W, Z:B, G:A, G:Z], which would include the libraries correctly
-        log.debug(f"sorted to {'  '.join(str(x) for x in output)}")
-        # Maybe there's a case where the specified root matters?
-        full_output = output
-    return full_output
+        # Double check, that the include order does not _directly_ contradict one of the include directives:
+        order = [x.name for x in output]
+        contradicts = False
+        for include in includes:
+            if include.parent in order and include.name in order:
+                parent_at = [index for index, name in enumerate(order) if name == include.parent][0]
+                name_at = [index for index, name in enumerate(order) if name == include.name][0]
+                if name_at > parent_at:
+                    contradicts = True
+        if not contradicts:
+            log.debug(f"sorted to {'  '.join(order)}")
+            options[root] = output
+    if len(options) == 0:
+        raise RuntimeError(f'No valid sorting of {includes=}')
+    # Maybe there's a case where the specified root matters?
+    return list(options.values())[0]
 
 
 class CTargetVisitor(TargetVisitor, target_language='c'):
@@ -125,10 +139,17 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
         count = 0
         while len(matches):
             count += 1
-            # Try and find this matched filename
-            filename = matches[0].group('filename')
-            this_re = re.compile(rf'^\s*%include\s*"{filename}"\s*$', re.MULTILINE)
-            raw_c = re.sub(this_re, self._file_contents(filename, True), raw_c)
+            # matches[0] is a re.Match object with (start, stop) = matches[0].span(0) including the full matched string
+            # We can use this directly to replace the match without using re.sub, which can cause problems if there are
+            # escape characters in the replacement (It seems)
+            start, stop = matches[0].span(0)
+            raw_c = raw_c[:start] + self._file_contents(matches[0].group('filename')) + raw_c[stop:]
+
+            #filename = matches[0].group('filename')
+            #this_re = re.compile(rf'^\s*%include\s*"{filename}"\s*$', re.MULTILINE)
+            #log.info(f'Replacing {this_re} with file contents from {filename}')
+            #raw_c = re.sub(this_re, self._file_contents(filename, True), raw_c)
+
             # re-match since we modified raw_c
             matches = list(re_inc.finditer(raw_c))
 

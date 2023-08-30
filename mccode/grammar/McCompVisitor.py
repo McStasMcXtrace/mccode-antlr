@@ -239,13 +239,33 @@ class McCompVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by McCompParser#ExpressionMyself.
+    def visitExpressionMyself(self, ctx:McCompParser.ExpressionMyselfContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by McCompParser#ExpressionUnaryPM.
     def visitExpressionUnaryPM(self, ctx:McCompParser.ExpressionUnaryPMContext):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by McCompParser#ExpressionPrevious.
+    def visitExpressionPrevious(self, ctx:McCompParser.ExpressionPreviousContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by McCompParser#ExpressionTrinaryLogic.
+    def visitExpressionTrinaryLogic(self, ctx:McCompParser.ExpressionTrinaryLogicContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by McCompParser#ExpressionFloat.
     def visitExpressionFloat(self, ctx:McCompParser.ExpressionFloatContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by McCompParser#ExpressionPointerAccess.
+    def visitExpressionPointerAccess(self, ctx:McCompParser.ExpressionPointerAccessContext):
         return self.visitChildren(ctx)
 
 
@@ -266,6 +286,11 @@ class McCompVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by McCompParser#ExpressionUnaryLogic.
     def visitExpressionUnaryLogic(self, ctx:McCompParser.ExpressionUnaryLogicContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by McCompParser#ExpressionStructAccess.
+    def visitExpressionStructAccess(self, ctx:McCompParser.ExpressionStructAccessContext):
         return self.visitChildren(ctx)
 
 

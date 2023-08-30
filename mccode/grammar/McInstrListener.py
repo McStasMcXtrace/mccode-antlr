@@ -170,6 +170,24 @@ class McInstrListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by McInstrParser#InstanceParameterNull.
+    def enterInstanceParameterNull(self, ctx:McInstrParser.InstanceParameterNullContext):
+        pass
+
+    # Exit a parse tree produced by McInstrParser#InstanceParameterNull.
+    def exitInstanceParameterNull(self, ctx:McInstrParser.InstanceParameterNullContext):
+        pass
+
+
+    # Enter a parse tree produced by McInstrParser#InstanceParameterVector.
+    def enterInstanceParameterVector(self, ctx:McInstrParser.InstanceParameterVectorContext):
+        pass
+
+    # Exit a parse tree produced by McInstrParser#InstanceParameterVector.
+    def exitInstanceParameterVector(self, ctx:McInstrParser.InstanceParameterVectorContext):
+        pass
+
+
     # Enter a parse tree produced by McInstrParser#split.
     def enterSplit(self, ctx:McInstrParser.SplitContext):
         pass
@@ -512,6 +530,15 @@ class McInstrListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by McInstrParser#ExpressionMyself.
+    def enterExpressionMyself(self, ctx:McInstrParser.ExpressionMyselfContext):
+        pass
+
+    # Exit a parse tree produced by McInstrParser#ExpressionMyself.
+    def exitExpressionMyself(self, ctx:McInstrParser.ExpressionMyselfContext):
+        pass
+
+
     # Enter a parse tree produced by McInstrParser#ExpressionUnaryPM.
     def enterExpressionUnaryPM(self, ctx:McInstrParser.ExpressionUnaryPMContext):
         pass
@@ -521,12 +548,39 @@ class McInstrListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by McInstrParser#ExpressionPrevious.
+    def enterExpressionPrevious(self, ctx:McInstrParser.ExpressionPreviousContext):
+        pass
+
+    # Exit a parse tree produced by McInstrParser#ExpressionPrevious.
+    def exitExpressionPrevious(self, ctx:McInstrParser.ExpressionPreviousContext):
+        pass
+
+
+    # Enter a parse tree produced by McInstrParser#ExpressionTrinaryLogic.
+    def enterExpressionTrinaryLogic(self, ctx:McInstrParser.ExpressionTrinaryLogicContext):
+        pass
+
+    # Exit a parse tree produced by McInstrParser#ExpressionTrinaryLogic.
+    def exitExpressionTrinaryLogic(self, ctx:McInstrParser.ExpressionTrinaryLogicContext):
+        pass
+
+
     # Enter a parse tree produced by McInstrParser#ExpressionFloat.
     def enterExpressionFloat(self, ctx:McInstrParser.ExpressionFloatContext):
         pass
 
     # Exit a parse tree produced by McInstrParser#ExpressionFloat.
     def exitExpressionFloat(self, ctx:McInstrParser.ExpressionFloatContext):
+        pass
+
+
+    # Enter a parse tree produced by McInstrParser#ExpressionPointerAccess.
+    def enterExpressionPointerAccess(self, ctx:McInstrParser.ExpressionPointerAccessContext):
+        pass
+
+    # Exit a parse tree produced by McInstrParser#ExpressionPointerAccess.
+    def exitExpressionPointerAccess(self, ctx:McInstrParser.ExpressionPointerAccessContext):
         pass
 
 
@@ -563,6 +617,15 @@ class McInstrListener(ParseTreeListener):
 
     # Exit a parse tree produced by McInstrParser#ExpressionUnaryLogic.
     def exitExpressionUnaryLogic(self, ctx:McInstrParser.ExpressionUnaryLogicContext):
+        pass
+
+
+    # Enter a parse tree produced by McInstrParser#ExpressionStructAccess.
+    def enterExpressionStructAccess(self, ctx:McInstrParser.ExpressionStructAccessContext):
+        pass
+
+    # Exit a parse tree produced by McInstrParser#ExpressionStructAccess.
+    def exitExpressionStructAccess(self, ctx:McInstrParser.ExpressionStructAccessContext):
         pass
 
 

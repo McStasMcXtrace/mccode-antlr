@@ -422,6 +422,15 @@ class McCompListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by McCompParser#ExpressionMyself.
+    def enterExpressionMyself(self, ctx:McCompParser.ExpressionMyselfContext):
+        pass
+
+    # Exit a parse tree produced by McCompParser#ExpressionMyself.
+    def exitExpressionMyself(self, ctx:McCompParser.ExpressionMyselfContext):
+        pass
+
+
     # Enter a parse tree produced by McCompParser#ExpressionUnaryPM.
     def enterExpressionUnaryPM(self, ctx:McCompParser.ExpressionUnaryPMContext):
         pass
@@ -431,12 +440,39 @@ class McCompListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by McCompParser#ExpressionPrevious.
+    def enterExpressionPrevious(self, ctx:McCompParser.ExpressionPreviousContext):
+        pass
+
+    # Exit a parse tree produced by McCompParser#ExpressionPrevious.
+    def exitExpressionPrevious(self, ctx:McCompParser.ExpressionPreviousContext):
+        pass
+
+
+    # Enter a parse tree produced by McCompParser#ExpressionTrinaryLogic.
+    def enterExpressionTrinaryLogic(self, ctx:McCompParser.ExpressionTrinaryLogicContext):
+        pass
+
+    # Exit a parse tree produced by McCompParser#ExpressionTrinaryLogic.
+    def exitExpressionTrinaryLogic(self, ctx:McCompParser.ExpressionTrinaryLogicContext):
+        pass
+
+
     # Enter a parse tree produced by McCompParser#ExpressionFloat.
     def enterExpressionFloat(self, ctx:McCompParser.ExpressionFloatContext):
         pass
 
     # Exit a parse tree produced by McCompParser#ExpressionFloat.
     def exitExpressionFloat(self, ctx:McCompParser.ExpressionFloatContext):
+        pass
+
+
+    # Enter a parse tree produced by McCompParser#ExpressionPointerAccess.
+    def enterExpressionPointerAccess(self, ctx:McCompParser.ExpressionPointerAccessContext):
+        pass
+
+    # Exit a parse tree produced by McCompParser#ExpressionPointerAccess.
+    def exitExpressionPointerAccess(self, ctx:McCompParser.ExpressionPointerAccessContext):
         pass
 
 
@@ -473,6 +509,15 @@ class McCompListener(ParseTreeListener):
 
     # Exit a parse tree produced by McCompParser#ExpressionUnaryLogic.
     def exitExpressionUnaryLogic(self, ctx:McCompParser.ExpressionUnaryLogicContext):
+        pass
+
+
+    # Enter a parse tree produced by McCompParser#ExpressionStructAccess.
+    def enterExpressionStructAccess(self, ctx:McCompParser.ExpressionStructAccessContext):
+        pass
+
+    # Exit a parse tree produced by McCompParser#ExpressionStructAccess.
+    def exitExpressionStructAccess(self, ctx:McCompParser.ExpressionStructAccessContext):
         pass
 
 

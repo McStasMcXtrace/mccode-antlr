@@ -8,6 +8,15 @@ else:
 # This class defines a complete listener for a parse tree produced by CParser.
 class CListener(ParseTreeListener):
 
+    # Enter a parse tree produced by CParser#functionCall.
+    def enterFunctionCall(self, ctx:CParser.FunctionCallContext):
+        pass
+
+    # Exit a parse tree produced by CParser#functionCall.
+    def exitFunctionCall(self, ctx:CParser.FunctionCallContext):
+        pass
+
+
     # Enter a parse tree produced by CParser#primaryExpression.
     def enterPrimaryExpression(self, ctx:CParser.PrimaryExpressionContext):
         pass

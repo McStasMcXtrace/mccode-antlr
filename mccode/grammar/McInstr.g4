@@ -93,7 +93,7 @@ instance_parameter
 
 
 
-split: Split expr?;
+split: Split (|expr);
 when: When expr;
 place: At coords reference;
 orientation: Rotated coords reference;
