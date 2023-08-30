@@ -35,12 +35,21 @@ class McCompListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by McCompParser#component_trace.
-    def enterComponent_trace(self, ctx:McCompParser.Component_traceContext):
+    # Enter a parse tree produced by McCompParser#TraceBlock.
+    def enterTraceBlock(self, ctx:McCompParser.TraceBlockContext):
         pass
 
-    # Exit a parse tree produced by McCompParser#component_trace.
-    def exitComponent_trace(self, ctx:McCompParser.Component_traceContext):
+    # Exit a parse tree produced by McCompParser#TraceBlock.
+    def exitTraceBlock(self, ctx:McCompParser.TraceBlockContext):
+        pass
+
+
+    # Enter a parse tree produced by McCompParser#TraceBlockCopy.
+    def enterTraceBlockCopy(self, ctx:McCompParser.TraceBlockCopyContext):
+        pass
+
+    # Exit a parse tree produced by McCompParser#TraceBlockCopy.
+    def exitTraceBlockCopy(self, ctx:McCompParser.TraceBlockCopyContext):
         pass
 
 

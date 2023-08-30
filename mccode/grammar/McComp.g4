@@ -48,7 +48,10 @@ component_definition
       component_trace? save? finally_? display? End                               #ComponentDefineCopy
     ;
 
-component_trace: Trace unparsed_block;
+component_trace
+    : Trace unparsed_block                          #TraceBlock
+    | Trace Copy Identifier (Extend unparsed_block)? #TraceBlockCopy
+    ;
 
 component_parameter_set: component_define_parameters? component_set_parameters? component_out_parameters?;
 component_define_parameters: Definition Parameters component_parameters;
@@ -70,7 +73,7 @@ component_parameter
 // Similar to `declare`, `uservars`, `initialize`, `save`, `finally_`, but only used in Comp(onent) definitions
 share
   : Share unparsed_block                           #ShareBlock
-  | Share Copy Identifier (Extend unparsed_block)  #ShareBlockCopy
+  | Share Copy Identifier (Extend unparsed_block)?  #ShareBlockCopy
   ;
 display
   : McDisplay unparsed_block                           #DisplayBlock

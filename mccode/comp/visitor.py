@@ -36,8 +36,15 @@ class CompVisitor(McCompVisitor):
             self.state.no_acc()
         self.visitChildren(ctx)  # Use the visitor methods to overwrite details of the state
 
-    def visitComponent_trace(self, ctx: Parser.Component_traceContext):
+    def visitTraceBlock(self, ctx: Parser.TraceBlockContext):
         self.state.TRACE(self.visit(ctx.unparsed_block()))
+        
+    def visitTraceBlockCopy(self, ctx: Parser.TraceBlockCopyContext):
+        blocks = self.parent.get_component(str(ctx.Identifier())).trace
+        if ctx.Extend() is not None:
+            blocks = [x for x in blocks]
+            blocks.append(self.visit(ctx.unparsed_block()))
+        self.state.TRACE(*blocks)
 
     def visitComponent_define_parameters(self, ctx: Parser.Component_define_parametersContext):
         for parameter in self.visit(ctx.component_parameters()):

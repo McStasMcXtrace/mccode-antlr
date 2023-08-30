@@ -24,8 +24,13 @@ class McCompVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by McCompParser#component_trace.
-    def visitComponent_trace(self, ctx:McCompParser.Component_traceContext):
+    # Visit a parse tree produced by McCompParser#TraceBlock.
+    def visitTraceBlock(self, ctx:McCompParser.TraceBlockContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by McCompParser#TraceBlockCopy.
+    def visitTraceBlockCopy(self, ctx:McCompParser.TraceBlockCopyContext):
         return self.visitChildren(ctx)
 
 
