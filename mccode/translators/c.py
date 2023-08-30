@@ -252,10 +252,11 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
         # in multiple places :/  -- now using CDeclaration named tuples
         sc = str.maketrans('', '', '*[] ')  # for '* name' or '*name', or '****   name' or 'name[]' -> 'name'
         for typ in inst.component_types():
-            dp = set()
+            dp = []
             for block in typ.declare:
-                dp = dp.union(extracted_declares(extract_c_declared_variables(block.source, user_types=self.typedefs)))
-            self.component_declared_parameters[typ.name] = list(dp)
+                dp.extend(extracted_declares(extract_c_declared_variables(block.source, user_types=self.typedefs)))
+                dp = list(dict.fromkeys(dp))
+            self.component_declared_parameters[typ.name] = dp
         self._determine_uservars()
 
     def _instrument_and_component_uservars(self):
@@ -303,6 +304,26 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
 
         self.out(header_post_runtime(self.source, self.runtime, self.config, self.include_path()))
 
+    def include_header(self, header: CInclude):
+        self.info(f'include {header} header')
+        self.out(f'/* Contents of {header.name}.h (requested from {header.parent}) */')
+        self.out(header.content)
+
+    def include_source(self, source: CInclude):
+        self.info(f'include {source} source')
+        # c files can %include *more* files! If the specified files have already been included, there's nothing
+        # to do. Otherwise, panic.
+        lib_names = [lib.name for lib in self.includes]
+        c_name = f'{source.name}.c'
+        c_libraries, c_content = self._handle_raw_c_include(c_name, self._file_contents(c_name))
+        for c_lib in [c_lib for c_lib in c_libraries if c_lib.name not in lib_names]:
+            log.info(f'{c_name} requested {c_lib.name} but is has not been included yet!')
+            self.include_header(c_lib)
+            self.include_source(c_lib)
+            #self.includes.append(c_lib)
+        self.out(f'/* Contents of {source.name}.c (requested from {source.parent}) */')
+        self.out(c_content)
+
     def visit_declare(self):
         from .c_decls import declarations_pre_libraries
         self.info("Writing instrument and components DECLARE")
@@ -310,9 +331,7 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
         if len(self.includes):
             self.out("/* %include libraries from instrument and component definitions */")
         for include in self.includes:
-            self.info(f'include {include}')
-            self.out(f'/* Contents of {include.name}.h (requested from {include.parent})*/')
-            self.out(include.content)
+            self.include_header(include)
 
         self.info('Pre library declarations')
         contents, warnings = declarations_pre_libraries(self.source, self.typedefs, self.component_declared_parameters)
@@ -321,8 +340,7 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
         self.info('Include runtime / list dependencies')
         if self.config.get('include_runtime'):
             for include in self.includes:
-                self.out(f'/* Contents of {include.name}.c (requested from {include.parent})*/')
-                self.out(self._file_contents(f'{include.name}.c'))
+                self.include_source(include)
         else:
             for include in self.includes:
                 print(f'Dependency: {include.name}.o')

@@ -103,7 +103,7 @@ class Reader:
             self.add_component(name)
         return self.components[name]
 
-    def get_instrument(self, name: Union[str, Path]):
+    def get_instrument(self, name: Union[str, Path], destination=None):
         """Load and parse an instr Instrument definition file
 
         In McCode3 fashion, the instrument file *should* be in the current working directory.
@@ -126,7 +126,7 @@ class Reader:
         tokens = CommonTokenStream(lexer)
         parser = McInstrParser(tokens)
         parser.addErrorListener(ReaderErrorListener('Instrument', name, source))
-        visitor = InstrVisitor(self, filename)
+        visitor = InstrVisitor(self, filename, destination=destination)
         res = visitor.visitProg(parser.prog())
         if not isinstance(res, Instr):
             raise RuntimeError(f'Parsing instrument file {filename} did not produce an Instr object')

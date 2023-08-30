@@ -268,47 +268,47 @@ class CompVisitor(McCompVisitor):
         op = 'unknown'
         if ctx.Not() is not None:
             op = '__not__'
-        return UnaryOp(op, expr)
+        return Expr(UnaryOp(op, expr))
 
     def visitExpressionTrinaryLogic(self, ctx: Parser.ExpressionTrinaryLogicContext):
         from ..common import TrinaryOp
         test, true, false = [self.visit(x) for x in (ctx.test, ctx.true, ctx.false)]
-        return TrinaryOp('__trinary__', test, true, false)
+        return Expr(TrinaryOp('__trinary__', test, true, false))
 
     def visitExpressionBinaryLogic(self, ctx: Parser.ExpressionBinaryLogicContext):
-            from ..common import BinaryOp
-            left, right = [self.visit(x) for x in (ctx.left, ctx.right)]
-            op = 'unknown'
-            if ctx.AndAnd() is not None:
-                op = '__and__'
-            elif ctx.OrOr() is not None:
-                op = '__or__'
-            return BinaryOp(op, left, right)
+        from ..common import BinaryOp
+        left, right = [self.visit(x) for x in (ctx.left, ctx.right)]
+        op = 'unknown'
+        if ctx.AndAnd() is not None:
+            op = '__and__'
+        elif ctx.OrOr() is not None:
+            op = '__or__'
+        return Expr(BinaryOp(op, left, right))
 
     def visitExpressionBinaryEqual(self, ctx: Parser.ExpressionBinaryEqualContext):
         from ..common import BinaryOp
         left, right = [self.visit(x) for x in (ctx.left, ctx.right)]
-        return BinaryOp('__eq__', left, right)
+        return Expr(BinaryOp('__eq__', left, right))
 
     def visitExpressionBinaryLessEqual(self, ctx: Parser.ExpressionBinaryLessEqualContext):
         from ..common import BinaryOp
         left, right = [self.visit(x) for x in (ctx.left, ctx.right)]
-        return BinaryOp('__le__', left, right)
+        return Expr(BinaryOp('__le__', left, right))
 
     def visitExpressionBinaryGreaterEqual(self, ctx: Parser.ExpressionBinaryGreaterEqualContext):
         from ..common import BinaryOp
         left, right = [self.visit(x) for x in (ctx.left, ctx.right)]
-        return BinaryOp('__ge__', left, right)
+        return Expr(BinaryOp('__ge__', left, right))
 
     def visitExpressionBinaryLess(self, ctx: Parser.ExpressionBinaryLessContext):
         from ..common import BinaryOp
         left, right = [self.visit(x) for x in (ctx.left, ctx.right)]
-        return BinaryOp('__lt__', left, right)
+        return Expr(BinaryOp('__lt__', left, right))
 
     def visitExpressionBinaryGreater(self, ctx: Parser.ExpressionBinaryGreaterContext):
         from ..common import BinaryOp
         left, right = [self.visit(x) for x in (ctx.left, ctx.right)]
-        return BinaryOp('__gt__', left, right)
+        return Expr(BinaryOp('__gt__', left, right))
 
     def visitExpressionString(self, ctx: Parser.ExpressionStringContext):
         return Expr.str(str(ctx.StringLiteral()))

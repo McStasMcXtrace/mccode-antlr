@@ -28,7 +28,8 @@ class CErrorListener(ErrorListener):
 
 
 class DeclaresCListener(CListener):
-    def __init__(self, typedefs: list = None):
+    def __init__(self, typedefs: list = None, verbose=False):
+        self.verbose = verbose
         self.typedefs = [] if typedefs is None else typedefs
         self.variables = dict()  # self.variables['name'] = type, value set by listeners
         self.last_type = None
@@ -38,9 +39,16 @@ class DeclaresCListener(CListener):
         self.is_typedef = False
         self.not_type_name = None
         self.was_type = False
+        self.stored = False
+        
+    def debug(self, message):
+        if self.verbose:
+            log.debug(message)
 
     def enterDeclaration(self, ctx: CParser.DeclarationContext):
+        self.debug('Enter declaration')
         self.is_declaration = True
+        self.stored = False
 
     # Exit a parse tree produced by CParser#declaration.
     def exitDeclaration(self, ctx: CParser.DeclarationContext):
@@ -55,24 +63,31 @@ class DeclaresCListener(CListener):
                 return
             self.typedefs.append(typename.replace('*', '').strip())
             self.is_typedef = False
-        elif self.not_type_name is not None and self.last_type.endswith(self.not_type_name):
+        elif not self.stored and self.not_type_name is not None and self.last_type.endswith(self.not_type_name):
             # this can only happen for declaration lines? where no initialization is performed.
             new_type = self.last_type[:-len(self.not_type_name)].strip()
-            self.variables[self.not_type_name] = (new_type, self.last_value)
+            self.debug(f'Storing declaration for {self.not_type_name} = ({new_type}, {self.last_value})')
+            if len(new_type):
+                self.variables[self.not_type_name] = (new_type, self.last_value)
+                self.stored = True
         self.not_type_name = None
         self.last_type = None
         self.last_name = None
         self.last_value = None
         self.is_declaration = False
+        self.debug('Exit declaration')
 
     def enterDeclarationSpecifiers(self, ctx: CParser.DeclarationSpecifiersContext):
         self.last_type = literal_string(ctx)
+        self.debug(f'Enter Declaration Specifier {self.last_type=}')
 
     def enterStorageClassSpecifier(self, ctx: CParser.StorageClassSpecifierContext):
         self.is_typedef = 'typedef' in literal_string(ctx)
+        self.debug(f'Enter storage class specifier {self.is_typedef=}')
 
     def enterTypeSpecifier(self, ctx: CParser.TypeSpecifierContext):
         self.was_type = True
+        self.debug(f'Enter type specifier')
 
     def enterTypedefName(self, ctx: CParser.TypedefNameContext):
         # Check here if this is a known typedef'd name or not :/
@@ -81,47 +96,52 @@ class DeclaresCListener(CListener):
             # We erroneously ended up here thinking this is part of a type name.
             # It's not, but we need to save the string value _Somewhere_
             self.not_type_name = literal_string(ctx)
+        self.debug(f'Enter typedef name {self.was_type=} {self.not_type_name=}')
 
     def exitInitDeclarator(self, ctx: CParser.InitDeclaratorContext):
         if not self.is_typedef:
+            self.debug(f'Storing declaration for {self.last_name} = ({self.last_type}, {self.last_value})')
             self.variables[self.last_name] = (self.last_type, self.last_value)
+            self.stored = True
             self.last_name = None
         self.last_value = None
 
     def enterDeclarator(self, ctx: CParser.DeclaratorContext):
         self.last_name = literal_string(ctx)
+        self.debug(f'Enter declarator {self.last_name=}')
 
     def exitInitializer(self, ctx: CParser.InitializerContext):
         self.last_value = literal_string(ctx)
+        self.debug(f'Exit initializer {self.last_value=}')
 
 
-def extract_c_declared_variables_and_defined_types(block: str, user_types: list = None):
+def extract_c_declared_variables_and_defined_types(block: str, user_types: list = None, verbose=False):
     from antlr4 import InputStream, CommonTokenStream
     from antlr4 import ParseTreeWalker
     from ..grammar import CLexer
-    # log.debug('Load block into ANTLR4 stream')
-    # log.debug(f'{block}')
+    # self.debug('Load block into ANTLR4 stream')
+    # self.debug(f'{block}')
     stream = InputStream(block)
-    # log.debug('Run lexer')
+    # self.debug('Run lexer')
     lexer = CLexer(stream)
-    # log.debug('Tokenize stream')
+    # self.debug('Tokenize stream')
     tokens = CommonTokenStream(lexer)
-    # log.debug('Parse tokens')
+    # self.debug('Parse tokens')
     parser = CParser(tokens)
     parser.addErrorListener(CErrorListener(block))
-    # log.debug('Extract compilation unit tree')
+    # self.debug('Extract compilation unit tree')
     tree = parser.compilationUnit()
-    # log.debug('Initialize listener')
-    listener = DeclaresCListener(user_types)
-    # log.debug('Initialize walker')
+    # self.debug('Initialize listener')
+    listener = DeclaresCListener(user_types, verbose=verbose)
+    # self.debug('Initialize walker')
     walker = ParseTreeWalker()
-    # log.debug('Walk the tree')
+    # self.debug('Walk the tree')
     walker.walk(listener, tree)
     return listener.variables, listener.typedefs
 
 
-def extract_c_declared_variables(block: str, user_types: list = None):
-    variables, types = extract_c_declared_variables_and_defined_types(block, user_types)
+def extract_c_declared_variables(block: str, user_types: list = None, verbose=False):
+    variables, types = extract_c_declared_variables_and_defined_types(block, user_types, verbose=verbose)
     return variables
 
 

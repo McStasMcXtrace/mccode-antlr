@@ -145,8 +145,6 @@ def component_type_declaration(comp, typedefs: list, declared_parameters: list):
     # The call tree for functions that access `comp->def->out_par` is such that the pointer is not used before it
     # is replaced, so at least there is no ambiguity between DECLARE-found parameters and OUTPUT PARAMETERS in cogen.
 
-    from ..common import Expr
-    from .c_listener import extract_c_declared_variables
     warnings = 0
     lines = [
         f"/* Parameter definition for component type '{comp.name}' */",

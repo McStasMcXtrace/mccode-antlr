@@ -11,11 +11,12 @@ def literal_string(ctx):
     return stream.getText(start_token.start, stop_token.stop)
 
 class InstrVisitor(McInstrVisitor):
-    def __init__(self, parent, filename):
+    def __init__(self, parent, filename, destination=None):
         self.parent = parent
         self.filename = filename
         self.state = Instr()
         self.current_comp = None
+        self.destination = destination
 
     def visitProg(self, ctx: McInstrParser.ProgContext):
         self.state = Instr()
@@ -67,7 +68,10 @@ class InstrVisitor(McInstrVisitor):
 
     def visitInstrument_trace_include(self, ctx: McInstrParser.Instrument_trace_includeContext):
         quoted_filename = str(ctx.StringLiteral())
-        instr = self.parent.get_instrument(quoted_filename.strip('"'))
+        if self.destination is not None:
+            log.critical(f'including {quoted_filename} from {self.filename}, which is itself included from {self.destination.name}')
+            log.critical('Expect component referencing errors, as the implementation does not cover this use case.')
+        instr = self.parent.get_instrument(quoted_filename.strip('"'), destination=self.state)
         # TODO work out how/what to copy from the other instrument into this one
         self.state.add_included(instr.name)
         for par in instr.parameters:
@@ -131,7 +135,10 @@ class InstrVisitor(McInstrVisitor):
                 mime, name, metadata = self.visit(metadata_context)
                 instance.add_metadata(MetaData.from_component_tokens(name, str(ctx.mime), str(ctx.name), metadata))
         # Include this instantiated component instance in the instrument components list
-        self.state.add_component(instance)
+        if self.destination is None or not instance.removable:
+            # if this _is_ an included instrument, any REMOVABLE component instances should not be added
+            # TODO we don't need to populate the whole Instance object if this branch is not selected
+            self.state.add_component(instance)
         self.current_comp = None
 
     def visitInstanceNameCopyIdentifier(self, ctx: McInstrParser.InstanceNameCopyIdentifierContext):
@@ -153,7 +160,7 @@ class InstrVisitor(McInstrVisitor):
         return [self.visit(p) for p in ctx.params]
 
     def visitInstanceParameterExpr(self, ctx: McInstrParser.InstanceParameterExprContext):
-        from ..common import DataType, TrinaryOp
+        from ..common import DataType
         name = str(ctx.Identifier())
         value = self.visit(ctx.expr())
         default = self.current_comp.get_parameter(name)
@@ -161,6 +168,24 @@ class InstrVisitor(McInstrVisitor):
             raise RuntimeError(f'{name} is not a known DEFINITION or SETTING parameter for {self.current_comp.name}')
         if DataType.undefined == value.data_type:
             value.data_type = default.value.data_type
+        return name, value
+
+    def visitInstanceParameterNull(self, ctx: McInstrParser.InstanceParameterNullContext):
+        from ..common import DataType
+        name = str(ctx.Identifier())
+        value = Expr.str('NULL')
+        default = self.current_comp.get_parameter(name)
+        if default is None:
+            raise RuntimeError(f'{name} is not a known DEFINITION or SETTING parameter for {self.current_comp.name}')
+        if DataType.undefined == value.data_type:
+            value.data_type = default.value.data_type
+        return name, value
+
+    def visitInstanceParameterVector(self, ctx: McInstrParser.InstanceParameterVectorContext):
+        from ..common import DataType
+        name = str(ctx.Identifier())
+        value = self.visit(ctx.initializerlist())
+        value.data_type = DataType.float
         return name, value
 
     def visitSplit(self, ctx: McInstrParser.SplitContext):
@@ -210,8 +235,20 @@ class InstrVisitor(McInstrVisitor):
             count = 1 if ctx.IntegerLiteral() is None else int(str(ctx.IntegerLiteral()))
             # Any included component can be referred to -- REMOVABLE components in an included instrument
             # were _not_ included into the state. Include REMOVABLE components _are_ in the state.
-            return self.state.last_component(count, removable_ok=True)
-        return self.state.get_component(str(ctx.Identifier()))
+            instances = len(self.state.components)
+            if count <= instances:
+                return self.state.last_component(count, removable_ok=True)
+            elif self.destination is not None:
+                return self.destination.last_component(count - instances, removable_ok=True)
+            else:
+                log.error(f'Too large PREVIOUS count {count} for instrument with {instances} component instances')
+        name = str(ctx.Identifier())
+        if any(inst.name == name for inst in self.state.components):
+            return self.state.get_component(name)
+        elif self.destination is not None:
+            return self.destination.get_component(name)
+        else:
+            log.error(f'Unknown component reference for instance named {name}')
 
     def visitCoords(self, ctx: McInstrParser.CoordsContext):
         # A coordinate is _always_ a float, even when represented by an expression or identifier
@@ -366,7 +403,7 @@ class InstrVisitor(McInstrVisitor):
 
     def visitInitializerlist(self, ctx: McInstrParser.InitializerlistContext):
         from ..common import Value, ObjectType, ShapeType
-        values = [self.visit(x).expr[0].value for x in ctx.values()]
+        values = [self.visit(x).expr[0].value for x in ctx.values]
         return Expr(Value(values, object_type=ObjectType.initializer_list, shape_type=ShapeType.vector))
 
     def visitExpressionUnaryLogic(self, ctx: McInstrParser.ExpressionUnaryLogicContext):
@@ -375,7 +412,7 @@ class InstrVisitor(McInstrVisitor):
         op = 'unknown'
         if ctx.Not() is not None:
             op = '__not__'
-        return UnaryOp(op, expr)
+        return Expr(UnaryOp(op, expr))
 
     def visitExpressionBinaryLogic(self, ctx: McInstrParser.ExpressionBinaryLogicContext):
         from ..common import BinaryOp
@@ -385,37 +422,37 @@ class InstrVisitor(McInstrVisitor):
             op = '__and__'
         elif ctx.OrOr() is not None:
             op = '__or__'
-        return BinaryOp(op, left, right)
+        return Expr(BinaryOp(op, left, right))
 
     def visitExpressionTrinaryLogic(self, ctx: McInstrParser.ExpressionTrinaryLogicContext):
         from ..common import TrinaryOp
         test, true, false = [self.visit(x) for x in (ctx.test, ctx.true, ctx.false)]
-        return TrinaryOp('__trinary__', test, true, false)
+        return Expr(TrinaryOp('__trinary__', test, true, false))
 
     def visitExpressionBinaryEqual(self, ctx: McInstrParser.ExpressionBinaryEqualContext):
         from ..common import BinaryOp
         left, right = [self.visit(x) for x in (ctx.left, ctx.right)]
-        return BinaryOp('__eq__', left, right)
+        return Expr(BinaryOp('__eq__', left, right))
 
     def visitExpressionBinaryLessEqual(self, ctx: McInstrParser.ExpressionBinaryLessEqualContext):
         from ..common import BinaryOp
         left, right = [self.visit(x) for x in (ctx.left, ctx.right)]
-        return BinaryOp('__le__', left, right)
+        return Expr(BinaryOp('__le__', left, right))
 
     def visitExpressionBinaryGreaterEqual(self, ctx: McInstrParser.ExpressionBinaryGreaterEqualContext):
         from ..common import BinaryOp
         left, right = [self.visit(x) for x in (ctx.left, ctx.right)]
-        return BinaryOp('__ge__', left, right)
+        return Expr(BinaryOp('__ge__', left, right))
 
     def visitExpressionBinaryLess(self, ctx: McInstrParser.ExpressionBinaryLessContext):
         from ..common import BinaryOp
         left, right = [self.visit(x) for x in (ctx.left, ctx.right)]
-        return BinaryOp('__lt__', left, right)
+        return Expr(BinaryOp('__lt__', left, right))
 
     def visitExpressionBinaryGreater(self, ctx: McInstrParser.ExpressionBinaryGreaterContext):
         from ..common import BinaryOp
         left, right = [self.visit(x) for x in (ctx.left, ctx.right)]
-        return BinaryOp('__gt__', left, right)
+        return Expr(BinaryOp('__gt__', left, right))
 
     def visitExpressionString(self, ctx: McInstrParser.ExpressionStringContext):
         return Expr.str(str(ctx.StringLiteral()))
