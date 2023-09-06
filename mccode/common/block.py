@@ -7,6 +7,9 @@ class RawC:
     line: int
     source: str
 
+    def __str__(self):
+        return self.source
+
     @property
     def is_empty(self):
         # this could also check for and exclude comments

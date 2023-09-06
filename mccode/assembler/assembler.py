@@ -55,6 +55,17 @@ class Assembler:
                 value = InstrumentParameter(name, unit, value if isinstance(value, Expr) else Expr.best(value))
             self.instrument.add_parameter(value)
 
+    def declare(self, string, source=None, line=-1):
+        return _rawc_call(self.instrument.DECLARE, string, source, line)
+
+    def user_vars(self, string, source=None, line=-1):
+        return _rawc_call(self.instrument.USERVARS, string, source, line)
+
+
+def _rawc_call(method, string: str, source: str = None, line: int = -1):
+    from mccode.common import RawC
+    return method(RawC(str(source), line, string))
+
 
 INTENDED_USAGE = """
 bifrost = Assembler('bifrost', registries=[MCSTAS_REGISTRY, local_bifrost_components])

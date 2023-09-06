@@ -31,6 +31,24 @@ class Instance:
     jump: tuple[Jump] = field(default_factory=tuple)
     metadata: tuple[MetaData] = field(default_factory=tuple)
 
+    def to_file(self, output):
+        if self.cpu:
+            print('CPU', file=output)
+        print(f'COMPONENT {self.name} = {self.type.name}({",".join(str(p) for p in self.parameters)})', file=output)
+        if self.when is not None:
+            print(f'WHEN {str(self.when)}', file=output)
+        print(f'AT {_triplet_ref_str(self.at_relative)} ROTATED {_triplet_ref_str(self.rotate_relative)}', file=output)
+        if self.group is not None:
+            print(f'GROUP {self.group}', file=output)
+        if self.extend:
+            extends = '\n'.join(str(ext) for ext in self.extend)
+            print(f'EXTEND %{{{extends}%}}', file=output)
+        for jump in self.jump:
+            jump.to_file(output)
+        for metadata in self.metadata:
+            metadata.to_file(output)
+
+
     @classmethod
     def from_instance(cls, name: str, ref: Self, at: TripletReference, rotate: TripletReference):
         # from copy import deepcopy
@@ -117,3 +135,8 @@ class Instance:
         md = {m.name: m for m in self.type.collect_metadata()}
         md.update({m.name: m for m in self.metadata})
         return tuple(md.values())
+
+
+def _triplet_ref_str(tr: TripletReference):
+    pos, ref = tr
+    return f'({",".join(str(p) for p in pos)}) {"ABSOLUTE" if tr is None else f"RELATIVE {ref.name}"}'

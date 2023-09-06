@@ -1,4 +1,5 @@
 """Data structures required for representing the contents of a McCode instr file"""
+from io import StringIO
 from dataclasses import dataclass, field
 from typing import Union
 from ..common import InstrumentParameter, MetaData, parameter_name_present, RawC, blocks_to_raw_c
@@ -7,6 +8,7 @@ from .instance import Instance
 from .group import Group
 from zenlog import log
 
+
 @dataclass
 class Instr:
     """Intermediate representation of a McCode instrument
@@ -14,10 +16,10 @@ class Instr:
     Read from a .instr file -- possibly including more .comp and .instr file sources
     For output to a runtime source file
     """
-    name: str = None             # Instrument name, e.g. {name}.instr (typically)
-    source: str = None           # Instrument *file* name
+    name: str = None  # Instrument name, e.g. {name}.instr (typically)
+    source: str = None  # Instrument *file* name
     parameters: tuple[InstrumentParameter] = field(default_factory=tuple)  # runtime-set instrument parameters
-    metadata: tuple[MetaData] = field(default_factory=tuple)               # metadata for use by simulation consumers
+    metadata: tuple[MetaData] = field(default_factory=tuple)  # metadata for use by simulation consumers
     components: tuple[Instance] = field(default_factory=tuple)  #
     included: tuple[str] = field(default_factory=tuple)  # names of included instr definition(s)
     user: tuple[RawC] = field(default_factory=tuple)  # struct members for _particle
@@ -28,6 +30,40 @@ class Instr:
     groups: dict[str, Group] = field(default_factory=dict)
     flags: tuple[str] = field(default_factory=tuple)  # (C) flags needed for compilation of the (translated) instrument
     registries: tuple[Registry] = field(default_factory=tuple)  # the registries used by the reader to populate this
+
+    def to_file(self, output=None):
+        if output is None:
+            output = StringIO()
+        comment_lines = [f'Instrument: {self.name}', f'Source: {self.source}']
+        comment_lines.extend([f' Contains {instr} via "%include {instr}"' for instr in self.included])
+        comment_lines.append('Component definitions located via registries:')
+        comment_lines.extend([str(registry) for registry in self.registries])
+        comment_lines = '\n * '.join(comment_lines)
+        print(f'/* {comment_lines} */', file=output)
+        print(f"DEFINE INSTRUMENT {self.name}({','.join(str(p) for p in self.parameters)})", file=output)
+        for metadata in self.metadata:
+            metadata.to_file(output)
+        if self.flags:
+            print(f'DEPENDENCY "{" ".join(f for f in self.flags)}"', file=output)
+        if self.declare:
+            print(f'DECLARE %{{{_join_rawc_tuple(self.declare)}%}} /* end of DECLARE */', file=output)
+        if self.user:
+            print(f'USERVARS %{{{_join_rawc_tuple(self.user)}%}} /* end of USERVARS */', file=output)
+        if self.initialize:
+            print(f'INITIALIZE %{{{_join_rawc_tuple(self.initialize)}%}} /* end of INITIALIZE */', file=output)
+        print('TRACE', file=output)
+        for instance in self.components:
+            instance.to_file(output)
+        if self.save:
+            print(f'SAVE %{{{_join_rawc_tuple(self.save)}%}} /* end of SAVE */', file=output)
+        if self.final:
+            print(f'FINALLY %{{{_join_rawc_tuple(self.final)}%}} /* end of FINALLY */', file=output)
+        print('END', file=output)
+
+    def __str__(self):
+        output = StringIO()
+        self.to_file(output)
+        return output.getvalue()
 
     def add_component(self, a: Instance):
         if any(x.name == a.name for x in self.components):
@@ -68,7 +104,10 @@ class Instr:
         raise RuntimeError(f"No component instance named {name} defined.")
 
     def add_included(self, name: str):
-        self.included += (name, )
+        self.included += (name,)
+
+    def DEPENDENCY(self, *strings):
+        self.flags += strings
 
     def USERVARS(self, *blocks):
         self.user += blocks_to_raw_c(*blocks)
@@ -88,7 +127,7 @@ class Instr:
     def add_metadata(self, m: MetaData):
         if any([x.name == m.name for x in self.metadata]):
             self.metadata = tuple([x for x in self.metadata if x.name != m.name])
-        self.metadata += (m, )
+        self.metadata += (m,)
 
     def determine_groups(self):
         for id, inst in enumerate(self.components):
@@ -168,6 +207,7 @@ class Instr:
 
     def _replace_env_getpath_cmd(self, flags: str):
         """Replace CMD, ENV, and GETPATH directives from a flag string"""
+
         # Mimics McCode-3/tools/Python/mccodelib/cflags.py:evaluate_dependency_str
         #
         def getpath(chars):
@@ -231,4 +271,5 @@ class Instr:
         return [self._replace_env_getpath_cmd(flag) for flag in replaced_flags]
 
 
-
+def _join_rawc_tuple(rawc_tuple: tuple[RawC]):
+    return '\n'.join(str(rc) for rc in rawc_tuple)

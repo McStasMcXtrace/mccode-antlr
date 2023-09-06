@@ -264,7 +264,8 @@ class InstrVisitor(McInstrVisitor):
         return self.visit(ctx.component_ref()) if ctx.Absolute() is None else None
 
     def visitDependency(self, ctx: McInstrParser.DependencyContext):
-        return str(ctx.StringLiteral())
+        # store the flag without its surrounding quotes
+        self.state.DEPENDENCY(str(ctx.StringLiteral())[1:-1])
 
     def visitDeclareBlock(self, ctx: McInstrParser.DeclareBlockContext):
         self.state.DECLARE(self.visit(ctx.unparsed_block()))
@@ -310,7 +311,7 @@ class InstrVisitor(McInstrVisitor):
 
     def visitMetadata(self, ctx: McInstrParser.MetadataContext):
         filename, line_number, metadata = self.visit(ctx.unparsed_block())
-        return str(ctx.mime), str(ctx.name), metadata
+        return str(self.visit(ctx.mime)), str(self.visit(ctx.name)), metadata
 
     def visitUnparsed_block(self, ctx: McInstrParser.Unparsed_blockContext):
         # We want to extract the source-file line number (and filename) for use in the C-preprocessor

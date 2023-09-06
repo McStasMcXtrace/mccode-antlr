@@ -27,6 +27,9 @@ class ComponentParameter:
     name: str
     value: Expr
 
+    def __str__(self):
+        return f"{self.name}={self.value}"
+
     def compatible_value(self, value):
         return self.value.compatible(value, id_ok=True)
 

@@ -31,9 +31,12 @@ class MetaData:
     mimetype: str
     value: str
 
+    def to_file(self, output):
+        print(f'METADATA "{self.mimetype}" {self.name} %{{{self.value}%}}', file=output)
+
     @staticmethod
     def partial_from_tokens(source: DataSource, mimetype: str, name: str, value: str):
-        if ' ' in name:
+        if ' ' in name and (name[0] != '"' or name[-1] != '"'):
             # need to differentiate names with spaces from multiple names,
             # C runtime needs escaped quote characters for printing:
             name = '"' + name + '"'
