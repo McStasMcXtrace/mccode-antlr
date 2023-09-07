@@ -40,8 +40,15 @@ class Assembler:
             instance.set_parameters(**parameters)
         return instance
 
-    def parameter(self, string):
-        self.instrument.add_parameter(InstrumentParameter.parse(string))
+    def parameter(self, string, ignore_repeated=False):
+        """Add a parameter to the underlying Instr.
+
+        Note
+        ----
+        The ignore_repeated keyword argument can be set to True in order to merely ensure that a parameter exists.
+        Otherwise, repeatedly specifying the same parameter will raise a RuntimeError.
+        """
+        self.instrument.add_parameter(InstrumentParameter.parse(string), ignore_repeated=ignore_repeated)
 
     def parameters(self, **pairs):
         for name, value in pairs.items():
@@ -58,8 +65,24 @@ class Assembler:
     def declare(self, string, source=None, line=-1):
         return _rawc_call(self.instrument.DECLARE, string, source, line)
 
+    def declare_array(self, dtype: str, name: str, initializer: list, source=None, line=-1):
+        return self.declare(f'{dtype} {name}[] = {",".join(initializer)};', source=source, line=line)
+
     def user_vars(self, string, source=None, line=-1):
         return _rawc_call(self.instrument.USERVARS, string, source, line)
+
+    def ensure_user_var(self, string, source=None, line=-1):
+        # tying the Assembler to work with C might not be great
+        from mccode.translators.c_listener import extract_c_declared_variables as parse
+        name, dtype, init = parse(string)
+        for user_vars in self.instrument.user:
+            dec_type_init_list = parse(user_vars.source)
+            if any(d == dtype and n == name for n, d, _ in dec_type_init_list):
+                return
+            if any(n == name for n, _, _ in dec_type_init_list):
+                print(f'A USERVARS variable with name {name} but type different than {dtype} has already been defined.')
+                return
+        return self.user_vars(string, source=source, line=line)
 
     def initialize(self, string, source=None, line=-1):
         return _rawc_call(self.instrument.INITIALIZE, string, source, line)
