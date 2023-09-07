@@ -29,7 +29,7 @@ class Assembler:
                 raise RuntimeError(f'No logic pathway for instance reference {ref}')
         if not hasattr(v, '__len__') or len(v) != 3:
             raise RuntimeError('Position/orientation must have three elements')
-        v = tuple(x if isinstance(Expr, x) else Expr.best(x) for x in v)
+        v = tuple(x if isinstance(x, Expr) else Expr.best(x) for x in v)
         return (v[0], v[1], v[2]), ref
 
     def component(self, name: str, type_name: str, at=None, rotate=None, parameters=None):
