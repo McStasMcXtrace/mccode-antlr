@@ -61,6 +61,19 @@ class Assembler:
     def user_vars(self, string, source=None, line=-1):
         return _rawc_call(self.instrument.USERVARS, string, source, line)
 
+    def initialize(self, string, source=None, line=-1):
+        return _rawc_call(self.instrument.INITIALIZE, string, source, line)
+
+    def save(self, string, source=None, line=-1):
+        return _rawc_call(self.instrument.SAVE, string, source, line)
+
+    def final(self, string, source=None, line=-1):
+        return _rawc_call(self.instrument.FINALLY, string, source, line)
+
+    def metadata(self, name: str, mimetype: str, value: str, source=None):
+        from mccode.common.metadata import MetaData
+        self.instrument.add_metadata(MetaData.from_instrument_tokens(source, mimetype, name, value))
+
 
 def _rawc_call(method, string: str, source: str = None, line: int = -1):
     from mccode.common import RawC
