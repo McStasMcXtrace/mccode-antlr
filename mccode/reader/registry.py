@@ -72,6 +72,9 @@ class RemoteRegistry(Registry):
         else:
             raise RuntimeError(f"The provided filename {filename} is not a path or file packaged with this module")
 
+    def __str__(self):
+        return f'RemoteRegistry<{self.name}@{self.pooch.base_url}>'
+
     def known(self, name: str, ext: str = None):
         compare = _name_plus_suffix(name, ext)
         # the files *in* the registry are already posix paths, so that makes life easier
@@ -139,6 +142,9 @@ class LocalRegistry(Registry):
     def __init__(self, name: str, root: str):
         self.name = name
         self.root = Path(root)
+
+    def __str__(self):
+        return f'LocalRegistry<{self.name}@{self.root}>'
 
     def _filetype_iterator(self, filetype: str):
         return self.root.glob(f'**/*.{filetype}')

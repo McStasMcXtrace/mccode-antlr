@@ -32,10 +32,17 @@ class Instance:
     jump: tuple[Jump] = field(default_factory=tuple)
     metadata: tuple[MetaData] = field(default_factory=tuple)
 
-    def to_file(self, output):
+    def to_file(self, output, wrapper=None):
+        print(file=output)
         if self.cpu:
             print('CPU', file=output)
-        print(f'COMPONENT {self.name} = {self.type.name}({",".join(str(p) for p in self.parameters)})', file=output)
+        instance_parameters = ', '.join(str(p) for p in self.parameters)
+        first_line = f'COMPONENT {self.name} = {self.type.name}({instance_parameters})'
+        if wrapper is not None and len(first_line) > wrapper.width:
+            instance_parameters = '\n'.join(wrapper.wrap(instance_parameters, '  '))
+            first_line = f'COMPONENT {self.name} = {self.type.name}(\n{instance_parameters}\n)'
+        print(first_line, file=output)
+
         if self.when is not None:
             print(f'WHEN {str(self.when)}', file=output)
         print(f'AT {_triplet_ref_str(self.at_relative)} ROTATED {_triplet_ref_str(self.rotate_relative)}', file=output)
@@ -107,11 +114,18 @@ class Instance:
         self.cpu = True
 
     def SPLIT(self, count):
+        if isinstance(count, str):
+            count = Expr.parse(count)
+        if not isinstance(count, Expr):
+            raise ValueError(f'Expected provided SPLIT expression to be an Expr not a {type(count)}')
         self.split = count
 
     def WHEN(self, expr):
+        if isinstance(expr, str):
+            expr = Expr.parse(expr)
+        if not isinstance(expr, Expr):
+            raise ValueError(f'Expected provided WHEN expression to be an Expr not a {type(expr)}')
         if expr.is_constant:
-            # if not expr.is_a(Value.Type.str):
             raise RuntimeError(f'Evaluated WHEN statement {expr} would be constant at runtime!')
         self.when = expr
 
@@ -139,4 +153,4 @@ class Instance:
 
 def _triplet_ref_str(tr: TripletReference):
     pos, ref = tr
-    return f'({",".join(str(p) for p in pos)}) {"ABSOLUTE" if tr is None else f"RELATIVE {ref.name}"}'
+    return f'({",".join(str(p) for p in pos)}) {"ABSOLUTE" if ref is None else f"RELATIVE {ref.name}"}'

@@ -695,6 +695,15 @@ class Expr:
     def __hash__(self):
         return hash(str(self))
 
+    @staticmethod
+    def parse(s: str):
+        from antlr4 import CommonTokenStream, InputStream
+        from ..grammar import McInstrParser, McInstrLexer
+        from ..instr import InstrVisitor
+        parser = McInstrParser(CommonTokenStream(McInstrLexer(InputStream(s))))
+        visitor = InstrVisitor(None, None)
+        return visitor.getExpr(parser.expr())
+
     @classmethod
     def float(cls, value):
         if isinstance(value, cls):

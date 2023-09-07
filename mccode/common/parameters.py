@@ -9,6 +9,19 @@ class InstrumentParameter:
     unit: str
     value: Expr
 
+    def __str__(self):
+        from .expression import DataType
+        mctype = ''
+        if self.value.is_str:
+            mctype = 'string '
+        elif self.value.is_vector and self.value.data_type == DataType.float:
+            mctype = 'vector '
+        elif self.value.data_type == DataType.int:
+            mctype = 'int '
+        name = self.name if self.unit is None else f'{self.name}/{self.unit}'
+        default = f' = {self.value}' if self.value.has_value else ''
+        return f'{mctype}{name}{default}'
+
     @staticmethod
     def parse(s: str):
         from antlr4 import CommonTokenStream, InputStream

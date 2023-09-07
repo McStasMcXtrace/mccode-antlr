@@ -31,38 +31,49 @@ class Instr:
     flags: tuple[str] = field(default_factory=tuple)  # (C) flags needed for compilation of the (translated) instrument
     registries: tuple[Registry] = field(default_factory=tuple)  # the registries used by the reader to populate this
 
-    def to_file(self, output=None):
+    def to_file(self, output=None, wrapper=None):
         if output is None:
             output = StringIO()
+        if wrapper is None:
+            from mccode.common import TextWrapper
+            wrapper = TextWrapper(width=120)
         comment_lines = [f'Instrument: {self.name}', f'Source: {self.source}']
         comment_lines.extend([f' Contains {instr} via "%include {instr}"' for instr in self.included])
         comment_lines.append('Component definitions located via registries:')
         comment_lines.extend([str(registry) for registry in self.registries])
         comment_lines = '\n * '.join(comment_lines)
         print(f'/* {comment_lines} */', file=output)
-        print(f"DEFINE INSTRUMENT {self.name}({','.join(str(p) for p in self.parameters)})", file=output)
+        instr_parameters = ', '.join(str(p) for p in self.parameters)
+        first_line = f"DEFINE INSTRUMENT {self.name}({instr_parameters})"
+        if wrapper is not None and len(first_line) > wrapper.width:
+            instr_parameters = '\n'.join(wrapper.wrap(instr_parameters, '  '))
+            first_line = f"DEFINE INSTRUMENT {self.name}(\n{instr_parameters}\n)"
+        print(first_line, file=output)
+
         for metadata in self.metadata:
             metadata.to_file(output)
         if self.flags:
             print(f'DEPENDENCY "{" ".join(f for f in self.flags)}"', file=output)
         if self.declare:
-            print(f'DECLARE %{{{_join_rawc_tuple(self.declare)}%}} /* end of DECLARE */', file=output)
+            print(f'DECLARE %{{{_join_rawc_tuple(self.declare, wrapper)}%}} /* end of DECLARE */', file=output)
         if self.user:
-            print(f'USERVARS %{{{_join_rawc_tuple(self.user)}%}} /* end of USERVARS */', file=output)
+            print(f'USERVARS %{{{_join_rawc_tuple(self.user, wrapper)}%}} /* end of USERVARS */', file=output)
         if self.initialize:
-            print(f'INITIALIZE %{{{_join_rawc_tuple(self.initialize)}%}} /* end of INITIALIZE */', file=output)
+            print(f'INITIALIZE %{{{_join_rawc_tuple(self.initialize, wrapper)}%}} /* end of INITIALIZE */', file=output)
         print('TRACE', file=output)
         for instance in self.components:
-            instance.to_file(output)
+            instance.to_file(output, wrapper)
         if self.save:
-            print(f'SAVE %{{{_join_rawc_tuple(self.save)}%}} /* end of SAVE */', file=output)
+            print(f'SAVE %{{{_join_rawc_tuple(self.save, wrapper)}%}} /* end of SAVE */', file=output)
         if self.final:
-            print(f'FINALLY %{{{_join_rawc_tuple(self.final)}%}} /* end of FINALLY */', file=output)
+            print(f'FINALLY %{{{_join_rawc_tuple(self.final, wrapper)}%}} /* end of FINALLY */', file=output)
         print('END', file=output)
 
     def __str__(self):
+        from mccode.common import TextWrapper
+        wrapper = TextWrapper(width=80)
         output = StringIO()
-        self.to_file(output)
+        self.to_file(output, wrapper=wrapper)
         return output.getvalue()
 
     def add_component(self, a: Instance):
@@ -271,5 +282,8 @@ class Instr:
         return [self._replace_env_getpath_cmd(flag) for flag in replaced_flags]
 
 
-def _join_rawc_tuple(rawc_tuple: tuple[RawC]):
-    return '\n'.join(str(rc) for rc in rawc_tuple)
+def _join_rawc_tuple(rawc_tuple: tuple[RawC], wrapper=None):
+    lines = [line for rc in rawc_tuple for line in str(rc).split('\n')]
+    if wrapper is not None:
+        lines = ['\n'.join(wrapper.wrap(line)) for line in lines]
+    return '\n'.join(lines)

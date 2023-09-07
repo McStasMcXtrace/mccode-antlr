@@ -10,6 +10,11 @@ class Assembler:
     def __init__(self, name: str, registries: list[Registry] = None):
         self.instrument = Instr(name, source='interactive')
         self.reader = Reader(registries=registries) if registries is not None else Reader()
+        self.instrument.registries = self.reader.registries
+
+    @property
+    def name(self):
+        return self.instrument.name
 
     def _handle_at_rotate(self, a=None) -> tuple[tuple[Expr, Expr, Expr], Union[Instance,  None]]:
         if a is None:
@@ -65,8 +70,8 @@ class Assembler:
     def declare(self, string, source=None, line=-1):
         return _rawc_call(self.instrument.DECLARE, string, source, line)
 
-    def declare_array(self, dtype: str, name: str, initializer: list, source=None, line=-1):
-        return self.declare(f'{dtype} {name}[] = {",".join(initializer)};', source=source, line=line)
+    def declare_array(self, dtype: str, name: str, init: list, source=None, line=-1):
+        return self.declare(f'{dtype} {name}[] = {{{",".join(str(x) for x in init)}}};', source=source, line=line)
 
     def user_vars(self, string, source=None, line=-1):
         return _rawc_call(self.instrument.USERVARS, string, source, line)
@@ -74,12 +79,18 @@ class Assembler:
     def ensure_user_var(self, string, source=None, line=-1):
         # tying the Assembler to work with C might not be great
         from mccode.translators.c_listener import extract_c_declared_variables as parse
-        name, dtype, init = parse(string)
+        input = parse(string)
+        if len(input) == 0:
+            raise ValueError(f'The provided input {string} does not specify a C parameter declaration.')
+        if len(input) != 1:
+            print(f'The provided input {string} specifies {len(input)} C parameter declarations, using only the first')
+        name = list(input.keys())[0]
+        dtype, _ = input[name]
         for user_vars in self.instrument.user:
-            dec_type_init_list = parse(user_vars.source)
-            if any(d == dtype and n == name for n, d, _ in dec_type_init_list):
+            dec_type_init_dict = parse(user_vars.source)
+            if any(d == dtype and n == name for n, (d, _) in dec_type_init_dict.items()):
                 return
-            if any(n == name for n, _, _ in dec_type_init_list):
+            if any(n == name for n in dec_type_init_dict):
                 print(f'A USERVARS variable with name {name} but type different than {dtype} has already been defined.')
                 return
         return self.user_vars(string, source=source, line=line)

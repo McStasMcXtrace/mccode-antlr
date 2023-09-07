@@ -342,6 +342,9 @@ class InstrVisitor(McInstrVisitor):
         line_number = None if ctx.start is None else ctx.start.line
         raise RuntimeError(f"{self.filename}: {line_number} -- assignment statements are not (yet) supported")
 
+    def getExpr(self, ctx: McInstrParser.ExprContext):
+        return self.visit(ctx)
+
     # TODO (maybe) Add control and statements into McCode, requiring some form of global stack.
     def visitExpressionUnaryPM(self, ctx: McInstrParser.ExpressionUnaryPMContext):
         right = self.visit(ctx.expr())
