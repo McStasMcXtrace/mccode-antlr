@@ -1,13 +1,14 @@
 from zenlog import log
 from dataclasses import dataclass, field
-from typing import Self
+from typing import TypeVar
 from ..comp import Comp
 from ..common import Expr
 from ..common import ComponentParameter, MetaData, parameter_name_present, RawC, blocks_to_raw_c
 from .orientation import DependentOrientation
 from .jump import Jump
 
-TripletReference = tuple[tuple[Expr,Expr,Expr], Self]
+InstanceReference = TypeVar('InstanceReference', bound='Instance')
+TripletReference = tuple[tuple[Expr, Expr, Expr], InstanceReference]
 
 @dataclass
 class Instance:
@@ -18,8 +19,8 @@ class Instance:
     """
     name: str
     type: Comp
-    at_relative: tuple[tuple[Expr, Expr, Expr], Self]
-    rotate_relative: tuple[tuple[Expr, Expr, Expr], Self]
+    at_relative: TripletReference
+    rotate_relative: TripletReference
     orientation: DependentOrientation = None
     parameters: tuple[ComponentParameter] = field(default_factory=tuple)
     removable: bool = False
@@ -48,9 +49,8 @@ class Instance:
         for metadata in self.metadata:
             metadata.to_file(output)
 
-
     @classmethod
-    def from_instance(cls, name: str, ref: Self, at: TripletReference, rotate: TripletReference):
+    def from_instance(cls, name: str, ref: InstanceReference, at: TripletReference, rotate: TripletReference):
         # from copy import deepcopy
         # copy each of: parameters, extend, group, jump, when, metadata
         return cls(name, ref.type, at, rotate,

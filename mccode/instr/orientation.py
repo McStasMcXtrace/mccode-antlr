@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from ..common import Expr, unary_expr, binary_expr
 from enum import Enum
 from zenlog import log
-from typing import Self
+from typing import TypeVar
 
 Vector = tuple[Expr, Expr, Expr]
 Angles = tuple[Expr, Expr, Expr]
@@ -247,6 +247,9 @@ def _resolve_chain(chain: tuple[Orientation], origin: Orientation = None):
     return resolved
 
 
+DependentOrientationType = TypeVar('DependentOrientationType', bound='DependentOrientation')
+
+
 @dataclass
 class DependentOrientation:
     orientation: Orientation
@@ -266,13 +269,23 @@ class DependentOrientation:
         return _add_to_chain(self.dep_rotation, zero, self.orientation.angles, degrees=self.degrees, copy=copy)
 
     @classmethod
-    def from_dependent_orientation(cls, dep_on: Self, at: Vector, angles: Angles, degrees=True, copy=True):
+    def from_dependent_orientation(cls,
+                                   dep_on: DependentOrientationType,
+                                   at: Vector,
+                                   angles: Angles,
+                                   degrees=True, copy=True):
         return cls(Orientation.from_at_rotated(at, angles, degrees=degrees),
                    () if dep_on is None else dep_on._resolved_position_chain(copy=copy),
                    () if dep_on is None else dep_on._resolved_rotation_chain(copy=copy))
 
     @classmethod
-    def from_dependent_orientations(cls, dep_at: Self, at: Vector, dep_angles: Self, angles: Angles, degrees=True, copy=True):
+    def from_dependent_orientations(cls,
+                                    dep_at: DependentOrientationType,
+                                    at: Vector,
+                                    dep_angles:
+                                    DependentOrientationType,
+                                    angles: Angles,
+                                    degrees=True, copy=True):
         dep_pos = () if dep_at is None else dep_at._resolved_position_chain(copy=copy)
         dep_ang = () if dep_angles is None else dep_angles._resolved_rotation_chain(copy=copy)
         return cls(Orientation.from_at_rotated(at, angles, degrees=degrees), dep_pos, dep_ang)

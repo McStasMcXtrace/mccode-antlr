@@ -1,12 +1,14 @@
 from dataclasses import dataclass, field
 from datetime import timedelta
 from pathlib import Path
-from typing import Self
+from typing import TypeVar
 from zenlog import log
 
 from numpy import nan
 
 from mccode.reader import Registry
+
+TestInstrExampleType = TypeVar('TestInstrExampleType', bound='TestInstrExample')
 
 
 @dataclass
@@ -44,7 +46,7 @@ class TestInstrExample:
             self.parameter_values = new_param
 
     @classmethod
-    def list_from_file(cls, filename: Path) -> list[Self]:
+    def list_from_file(cls, filename: Path) -> list[TestInstrExampleType]:
         import re
         rspec = re.compile(f'%Example:([^\n]*)Detector:([^\n]*)_I=([0-9.+-e]+)')
         with open(filename, 'r') as file:
