@@ -124,12 +124,25 @@ def axes_euler_angles(m: Rotation, degrees) -> Angles:
     return rx, ry, rz
 
 
+OrientationType = TypeVar('OrientationType', bound='Orientation')
+
+
 @dataclass
 class Orientation:
 
     degrees: bool
     _axes: Seitz = field(default_factory=lambda: _value_float_tuple(12))
     _coordinates: Seitz = field(default_factory=lambda: _value_float_tuple(12))
+
+    @property
+    def all_values(self):
+        for x in self._axes:
+            if not x.has_value:
+                return False
+        for x in self._coordinates:
+            if not x.has_value:
+                return False
+        return True
 
     @staticmethod
     def from_at_rotated(at: Vector, rotated: Angles, degrees=True):
@@ -173,7 +186,7 @@ class Orientation:
              Expr.float(0), Expr.float(0), Expr.float(0), Expr.float(1))
         return m
 
-    def __mul__(self, other):
+    def __mul__(self, other: OrientationType) -> OrientationType:
         if not isinstance(other, Orientation):
             raise RuntimeError('Orientation multiplication only defined between class objects')
         if self.degrees != other.degrees:
@@ -186,17 +199,86 @@ class Orientation:
         return Orientation(self.degrees, seitz_inverse(self.seitz('axes')), seitz_inverse(self.seitz('coords')))
 
 
+OrientationChainType = TypeVar('OrientationChainType', bound='OrientationChain')
 DependentOrientationType = TypeVar('DependentOrientationType', bound='DependentOrientation')
 
 
 @dataclass
+class OrientationChain:
+    _chain: tuple[Orientation] = field(default_factory=tuple)
+
+    @property
+    def degrees(self) -> bool:
+        deg = set(x.degrees for x in self._chain)
+        if len(deg) < 2:
+            deg = list(deg)[0] if len(deg) else True
+        else:
+            raise RuntimeError("Inconsistent degree use in OrientationChain")
+        return deg
+
+    def _copy(self, deep: bool = True) -> tuple[Orientation]:
+        if deep:
+            from copy import deepcopy
+            return tuple([deepcopy(x) for x in self._chain])
+        return tuple(x for x in self._chain)
+
+    def resolve(self, origin: Orientation = None) -> Orientation:
+        deg = self.degrees
+        if origin is None:
+            zero = Expr.float(0), Expr.float(0), Expr.float(0)
+            origin = Orientation.from_at_rotated(zero, zero, degrees=deg)
+
+        resolved = origin
+        for orientation in self._chain:
+            resolved *= orientation
+        return resolved
+
+    @classmethod
+    def from_dependent_chain(cls, dep: OrientationChainType, final: Orientation, copy=True):
+        chain = () if dep is None else dep._copy(deep=copy)
+        chain += (final,)
+        return cls(chain)
+
+    @classmethod
+    def from_dependent_at_rotate(cls, dep: OrientationChainType, position: Vector, angles: Angles, degrees=True, copy=True):
+        return cls.from_dependent_chain(dep, Orientation.from_at_rotated(position, angles, degrees=degrees), copy=copy)
+
+    def inverse(self):
+        return OrientationChain(tuple(x.inverse() for x in reversed(self._chain)))
+
+    def reduce(self):
+        """Combine successive chained orientations which are fully determined -- i.e., have no unknown values"""
+        reduced = []
+        group = self._chain[0]
+        for ort in self._chain[1:]:
+            if group.all_values:
+                # successive chained orientations multiply from the left
+                group = ort * group
+            else:
+                reduced.append(group)
+                group = ort
+
+        reduced.append(group)
+
+        return OrientationChain(tuple(reduced))
+
+    def __add__(self, other):
+        chain = self._copy()
+        if isinstance(other, OrientationChain):
+            chain += other._chain
+        elif isinstance(other, Orientation):
+            chain += (other,)
+        return OrientationChain(chain)
+
+
+@dataclass
 class DependentOrientation:
-    _position: tuple[Orientation] = field(default_factory=tuple)
-    _rotation: tuple[Orientation] = field(default_factory=tuple)
+    _position: OrientationChain = field(default_factory=OrientationChain)
+    _rotation: OrientationChain = field(default_factory=OrientationChain)
 
     @property
     def degrees(self):
-        return self._rotation[-1].degrees
+        return self._rotation.degrees
 
     @classmethod
     def from_dependent_orientations(cls,
@@ -206,11 +288,9 @@ class DependentOrientation:
                                     angles: Angles,
                                     degrees=True, copy=True):
         zero = Expr.float(0), Expr.float(0), Expr.float(0)
-        dep_pos = () if dep_at is None else _copy_chain(dep_at._position, copy=copy)
-        dep_rot = () if dep_angles is None else _copy_chain(dep_angles._rotation, copy=copy)
-        dep_pos = _add_to_chain(dep_pos, at, zero, degrees=degrees, copy=copy)
-        dep_rot = _add_to_chain(dep_rot, zero, angles, degrees=degrees, copy=copy)
-        return cls(dep_pos, dep_rot)
+        pos = OrientationChain.from_dependent_at_rotate(dep_at, at, zero, degrees=degrees, copy=copy)
+        rot = OrientationChain.from_dependent_at_rotate(dep_rot, zero, angles, degrees=degrees, copy=copy)
+        return cls(pos, rot)
 
     @classmethod
     def from_dependent_orientation(cls,
@@ -221,57 +301,28 @@ class DependentOrientation:
         return cls.from_dependent_orientations(dep_on, at, dep_on, angles, degrees=degrees, copy=copy)
 
     def position(self, which=None):
-        return _resolve_chain(self._position).position(which=which)
+        return self._position.resolve().position(which=which)
 
     def angles(self, which=None):
-        return _resolve_chain(self._rotation).angles(which=which)
+        return self._rotation.resolve().angles(which=which)
 
     def rotation(self, which=None):
-        glob = _resolve_chain(self._rotation).seitz(which=which)
+        glob = self._rotation.resolve().seitz(which=which)
         return glob[0], glob[1], glob[2], glob[4], glob[5], glob[6], glob[8], glob[9], glob[10]
 
     def inverse(self):
-        return DependentOrientation(
-            tuple(x.inverse() for x in reversed(self._position)), tuple(x.inverse() for x in reversed(self._rotation))
-        )
+        return DependentOrientation(self._position.inverse(), self._rotation.inverse())
+
+    def reduce(self):
+        return DependentOrientation(self._position.reduce(), self._rotation.reduce())
 
     def __add__(self, other):
-        pos = tuple(x for x in self._position)
-        rot = tuple(x for x in self._rotation)
         if isinstance(other, DependentOrientation):
-            pos += other._position
-            rot += other._rotation
+            return DependentOrientation(self._position + other._position, self._rotation + other._rotation)
         elif isinstance(other, Orientation):
-            pos += (other,)
-            rot += (other,)
-        return DependentOrientation(pos, rot)
-
-
-def _add_to_chain(chain: tuple[Orientation], position: Vector, angles: Angles, degrees=True, copy=True):
-    return _copy_chain(chain, copy=copy) + (Orientation.from_at_rotated(position, angles, degrees=degrees),)
-
-
-def _copy_chain(chain: tuple[Orientation], copy=True):
-    if copy:
-        from copy import deepcopy
-        chain = tuple([deepcopy(x) for x in chain])
-    return chain
-
-def _resolve_chain(chain: tuple[Orientation], origin: Orientation = None) -> Orientation:
-    degree_set = set(x.degrees for x in chain)
-    if len(degree_set) < 2:
-        degrees = list(degree_set)[0] if len(degree_set) else True
-    else:
-        raise RuntimeError("Inconsistent degree use in orientation chain")
-
-    if origin is None:
-        zero = Expr.float(0), Expr.float(0), Expr.float(0)
-        origin = Orientation.from_at_rotated(zero, zero, degrees=degrees)
-
-    resolved = origin
-    for orientation in chain:
-        resolved *= orientation
-    return resolved
+            return DependentOrientation(self._position + other, self._rotation + other)
+        else:
+            raise ValueError(f"__add__ undefined for DependentOrientation and {type(other)}")
 
 
 def from_at_rotated(at: Vector, rotated: Angles):
