@@ -288,8 +288,8 @@ class DependentOrientation:
                                     angles: Angles,
                                     degrees=True, copy=True):
         zero = Expr.float(0), Expr.float(0), Expr.float(0)
-        pos = OrientationChain.from_dependent_at_rotate(dep_at, at, zero, degrees=degrees, copy=copy)
-        rot = OrientationChain.from_dependent_at_rotate(dep_rot, zero, angles, degrees=degrees, copy=copy)
+        pos = OrientationChain.from_dependent_at_rotate(dep_at._position, at, zero, degrees=degrees, copy=copy)
+        rot = OrientationChain.from_dependent_at_rotate(dep_angles._rotation, zero, angles, degrees=degrees, copy=copy)
         return cls(pos, rot)
 
     @classmethod
