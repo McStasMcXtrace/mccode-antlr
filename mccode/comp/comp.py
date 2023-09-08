@@ -12,6 +12,7 @@ class Comp:
     For output to a runtime source file
     """
     name: str = None           # Component *type* name, e.g. {name}.comp
+    category: str = None       # Component type catagory -- nearly free-form
     define: tuple[ComponentParameter] = field(default_factory=tuple)   # C #define'ed parameters
     setting: tuple[ComponentParameter] = field(default_factory=tuple)  # Formal 'setting' parameters
     output: tuple[ComponentParameter] = field(default_factory=tuple)   # 'output' parameters

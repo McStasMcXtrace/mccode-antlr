@@ -36,6 +36,10 @@ class CompVisitor(McCompVisitor):
             self.state.no_acc()
         self.visitChildren(ctx)  # Use the visitor methods to overwrite details of the state
 
+    def visitCategory(self, ctx: Parser.CategoryContext):
+        # Return the provided identifier or string literal, minus quotes
+        self.state.category = str(ctx.StringLiteral())[1:-1] if ctx.Identifier() is None else str(ctx.Identifer())
+
     def visitTraceBlock(self, ctx: Parser.TraceBlockContext):
         self.state.TRACE(self.visit(ctx.unparsed_block()))
         

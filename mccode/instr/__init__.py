@@ -1,6 +1,6 @@
 from .instr import Instr
 from .instance import Instance
-from .orientation import Orientation
+from .orientation import Orientation, DependentOrientation
 from .jump import Jump
 from .group import Group
 from .visitor import InstrVisitor

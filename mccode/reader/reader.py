@@ -63,6 +63,15 @@ class Reader:
         msg = "registry " + names[0] if len(names) == 1 else 'registries: ' + ','.join(names)
         raise RuntimeError(f'{name} not found in {msg}')
 
+    def fullname(self, name: str, which: str = None, ext: str=None):
+        registries = self.registries if which is None else [x for x in self.registries if x.name in which]
+        for reg in registries:
+            if reg.known(name, ext):
+                return reg.fullname(name, ext)
+        names = [reg.name for reg in registries]
+        msg = "registry " + names[0] if len(names) == 1 else 'registries: ' + ','.join(names)
+        raise RuntimeError(f'{name} not found in {msg}')
+
     def known(self, name: str, which: str = None):
         registries = self.registries if which is None else [x for x in self.registries if x.name in which]
         return any([reg.known(name) for reg in registries])
@@ -96,6 +105,12 @@ class Reader:
         res = visitor.visitProg(parser.prog())
         if not isinstance(res, Comp):
             raise RuntimeError(f'Parsing component file {filename} did not produce a component object!')
+        if res.category is None:
+            # guess the component category from the registered filename (not fully resolved path)
+            fullname = self.fullname(name, ext='.comp')
+            fullname = fullname if isinstance(fullname, Path) else Path(fullname)
+            # if fullname is an absolute path, it comes from a local repository -- so we don't know what to do
+            res.category = 'UNKNOWN' if fullname.is_absolute() else fullname.parts[0]
         self.components[name] = res
 
     def get_component(self, name: str, current_instance_name=None):

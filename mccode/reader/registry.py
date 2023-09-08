@@ -57,6 +57,7 @@ def _name_plus_suffix(name: str, suffix: str = None):
 class RemoteRegistry(Registry):
     def __init__(self, name: str, url: str, filename=None):
         self.name = name
+        self.filename = filename
         self.pooch = pooch.create(
             path=pooch.os_cache(f'mccode-{name}'),
             base_url=url,
@@ -73,7 +74,7 @@ class RemoteRegistry(Registry):
             raise RuntimeError(f"The provided filename {filename} is not a path or file packaged with this module")
 
     def __str__(self):
-        return f'RemoteRegistry<{self.name}@{self.pooch.base_url}>'
+        return f'RemoteRegistry<name={self.name}, url={self.pooch.base_url}, filename={self.filename}>'
 
     def known(self, name: str, ext: str = None):
         compare = _name_plus_suffix(name, ext)
@@ -144,7 +145,7 @@ class LocalRegistry(Registry):
         self.root = Path(root)
 
     def __str__(self):
-        return f'LocalRegistry<{self.name}@{self.root}>'
+        return f'LocalRegistry<name={self.name}, root={self.root}>'
 
     def _filetype_iterator(self, filetype: str):
         return self.root.glob(f'**/*.{filetype}')

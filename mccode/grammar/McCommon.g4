@@ -30,7 +30,7 @@ finally_
 
 metadata: MetaData mime=(Identifier | StringLiteral) name=(Identifier | StringLiteral) unparsed_block;
 
-
+category: Category (Identifier | StringLiteral);
 
 initializerlist: '{' values+=expr (Comma values+=expr)* '}';
 
@@ -77,6 +77,7 @@ unparsed_block: UnparsedBlock;
 /* FIXME The McCode grammar _is not_(!!) case sensitive since `flex` is called with the `-i` option */
 Absolute: 'ABSOLUTE' | 'Absolute' | 'absolute';
 At : 'AT' | 'At' | 'at';
+Category: 'CATEGORY' | 'Category' | 'category';
 Component : 'COMPONENT' | 'Component' | 'component';
 UserVars: 'USERVARS' | 'UserVars' | 'uservars';
 Define: 'DEFINE' | 'Define' | 'define';

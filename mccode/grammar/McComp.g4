@@ -41,9 +41,11 @@ END
 */
 component_definition
     : Define Component Identifier component_parameter_set
+      category?
       metadata* shell? dependency? NoAcc? share? uservars? declare? initialize?
       component_trace? save? finally_? display? End                               #ComponentDefineNew
     | Define Component Identifier Copy Identifier component_parameter_set
+      category?
       metadata* shell? dependency? NoAcc? share? uservars? declare? initialize?
       component_trace? save? finally_? display? End                               #ComponentDefineCopy
     ;
