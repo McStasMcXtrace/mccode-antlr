@@ -498,8 +498,9 @@ class DependentOrientation:
         # if 'at' was defined RELATIVE to another component, the vector is *in that component's coordinate system*
         # include the full rotation chain to correctly position this component
         resolved_at_dep = None if dep_at is None else dep_at.combine()
+        resolved_rot_dep = None if dep_angles is None else dep_angles._rotation
         pos = OrientationParts.from_dependent_chain(resolved_at_dep, at, zero, degrees=degrees, copy=copy)
-        rot = OrientationParts.from_dependent_chain(dep_angles._rotation, zero, angles, degrees=degrees, copy=copy)
+        rot = OrientationParts.from_dependent_chain(resolved_rot_dep, zero, angles, degrees=degrees, copy=copy)
         return cls(pos, rot, degrees)
 
     @classmethod
