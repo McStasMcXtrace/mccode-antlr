@@ -1,6 +1,5 @@
 from dataclasses import dataclass, field
 from ..common import Expr, unary_expr, binary_expr
-from enum import Enum
 from zenlog import log
 from typing import TypeVar
 
@@ -28,6 +27,23 @@ def sin_degree(theta_degree):
 def atan2_degree(y, x):
     from math import pi, atan2
     return atan2(y, x) / pi * 180
+
+
+def acos_degree(v):
+    from math import pi, acos
+    return acos(v) / pi * 180
+
+
+def acos_value(v: Expr, degrees=True):
+    from math import acos
+    pi = Expr.float(180) if degrees else Expr.float('PI')
+    if v.is_value(1):
+        return Expr.float(0)
+    if v.is_value(0):
+        return pi / Expr.float(2)
+    if v.is_value(-1):
+        return pi
+    return unary_expr(acos_degree if degrees else acos, 'acos', v)
 
 
 def cos_value(v: Expr, degrees=True):
@@ -132,6 +148,35 @@ class OrientationPart:
     _axes: Seitz = field(default_factory=lambda: _value_float_tuple(12))
     _coordinates: Seitz = field(default_factory=lambda: _value_float_tuple(12))
 
+    @property
+    def is_translation(self):
+        return any(not p.is_zero for p in (self._axes[3], self._axes[7], self._axes[11]))
+
+    @property
+    def is_rotation(self):
+        return (self._axes[0] + self._axes[5] + self._axes[10]) != Expr.float(3)
+
+    @property
+    def rotation_axis_angle(self) -> tuple[Vector, Expr, str]:
+        from numpy.linalg import eig
+        from numpy import array, argmin, sqrt, real, imag, conj, sum
+        if not self.is_rotation or not self.is_constant:
+            raise RuntimeError('Not possible to determine the rotation axis and angle of a variable general transform')
+        matrix = [[self._axes[0].value.value, self._axes[1].value.value, self._axes[2].value.value],
+                  [self._axes[4].value.value, self._axes[5].value.value, self._axes[6].value.value],
+                  [self._axes[8].value.value, self._axes[9].value.value, self._axes[10].value.value]]
+        dd, vv = eig(array(matrix))
+        # The eigenvalues, dd, are (1+0j, a+bj, a-bj) of which we want 1+0j.
+        axis = vv[:, argmin(sqrt(real(conj(dd-1) * (dd-1))))]
+        if sum(imag(axis)) != 0:
+            log.warn(f'Imaginary rotation axis {real(axis)} + j {imag(axis)}')
+        axis = real(axis)
+        cos_angle = (matrix[0][0] + matrix[1][1] + matrix[2][2] - 1) / 2
+        if abs(cos_angle) > 1:
+            log.warn(f'Invalid cos(angle) {cos_angle} for {self}')
+        angle = acos_degree(cos_angle)
+        return (Expr.float(axis[0]), Expr.float(axis[1]), Expr.float(axis[2])), Expr.float(angle), 'degrees'
+
     def __str__(self):
         x = [f'{x}' for x in self._axes]
         widths = [max(len(x[i+4*j]) for j in range(3)) for i in range(4)]
@@ -181,12 +226,28 @@ class OrientationPart:
 
 
 @dataclass
-class Translation(OrientationPart):
+class TranslationPart(OrientationPart):
     """A specialization to the translation-only part of a projective affine transformation"""
     v: Vector
 
     def __str__(self):
         return f'({self.v[0]}, {self.v[1]}, {self.v[2]}) [0, 0, 0]'
+
+    @property
+    def is_constant(self):
+        return all(x.has_value for x in self.v)
+
+    @property
+    def is_translation(self):
+        return True
+
+    @property
+    def is_rotation(self):
+        return False
+
+    @property
+    def rotation_axis_angle(self) -> tuple[Vector, Expr, str]:
+        raise RuntimeError('Not possible to determine the rotation axis and angle of a translation')
 
     def __post_init__(self):
         z, o = Expr.float(0), Expr.float(1)
@@ -194,7 +255,7 @@ class Translation(OrientationPart):
         self._coords = self._axes
 
     def inverse(self):
-        return Translation(v=(-self.v[0], -self.v[1], -self.v[2]))
+        return TranslationPart(v=(-self.v[0], -self.v[1], -self.v[2]))
 
     def position(self, which=None) -> Vector:
         return self.v
@@ -209,6 +270,27 @@ class RotationPart(OrientationPart):
     """A specialization to the rotation-only part of a projective affine transformation"""
     v: Expr
     degrees: bool = True
+
+
+    @property
+    def is_constant(self):
+        return self.v.has_value
+
+    @property
+    def is_translation(self):
+        return False
+
+    @property
+    def is_rotation(self):
+        return True
+
+    @property
+    def rotation_axis(self) -> Vector:
+        return Expr.float(0), Expr.float(0),  Expr.float(0)
+
+    @property
+    def rotation_axis_angle(self) -> tuple[Vector, Expr, str]:
+        return self.rotation_axis, self.v, 'degrees' if self.degrees else 'radian'
 
     def _cos_sin_one_zero(self):
         r = self.v if self.degrees else degree_to_radian(self.v)
@@ -236,6 +318,10 @@ class RotationX(RotationPart):
     def __str__(self):
         return f'(0, 0, 0) [{self.v}, 0, 0]'
 
+    @property
+    def rotation_axis(self) -> Vector:
+        return Expr.float(1), Expr.float(0), Expr.float(0)
+
 
 class RotationY(RotationPart):
     """A specialization to the rotation-around-Y part of a projective affine transformation"""
@@ -253,6 +339,10 @@ class RotationY(RotationPart):
 
     def __str__(self):
         return f'(0, 0, 0) [0, {self.v}, 0]'
+
+    @property
+    def rotation_axis(self) -> Vector:
+        return Expr.float(0), Expr.float(1), Expr.float(0)
 
 
 class RotationZ(RotationPart):
@@ -272,6 +362,10 @@ class RotationZ(RotationPart):
     def __str__(self):
         return f'(0, 0, 0) [0, 0, {self.v}]'
 
+    @property
+    def rotation_axis(self) -> Vector:
+        return Expr.float(0), Expr.float(0), Expr.float(1)
+
 
 OrientationPartsType = TypeVar('OrientationPartsType', bound='OrientationParts')
 
@@ -289,6 +383,9 @@ class OrientationParts:
             from copy import deepcopy
             return tuple([deepcopy(x) for x in self._stack])
         return tuple(x for x in self._stack)
+
+    def copy(self, deep: bool = True) -> OrientationPartsType:
+        return OrientationParts(self._copy(deep))
 
     def __add__(self, other) -> OrientationPartsType:
         out = self._copy()
@@ -311,7 +408,9 @@ class OrientationParts:
         is to chain successive ordered transformations with some parts set to zero.
         """
         # The order of individual OrientationPart objects in this tuple is paramount
-        s = (Translation(v=at), )
+        s = tuple()
+        if not all(x.is_zero for x in at):
+            s += (TranslationPart(v=at),)
         if not rotated[0].is_zero:
             s += (RotationX(v=rotated[0], degrees=degrees), )
         if not rotated[1].is_zero:
@@ -379,6 +478,7 @@ DependentOrientationType = TypeVar('DependentOrientationType', bound='DependentO
 
 @dataclass
 class DependentOrientation:
+    """Un-evaluated lists of dependent operations that position and orient an object in a coordinate system"""
     _position: OrientationParts = field(default_factory=OrientationParts)
     _rotation: OrientationParts = field(default_factory=OrientationParts)
     _degrees: bool = True
@@ -395,7 +495,9 @@ class DependentOrientation:
                                     angles: Angles,
                                     degrees=True, copy=True):
         zero = Expr.float(0), Expr.float(0), Expr.float(0)
-        pos = OrientationParts.from_dependent_chain(dep_at._position, at, zero, degrees=degrees, copy=copy)
+        # if 'at' was defined RELATIVE to another component, the vector is *in that component's coordinate system*
+        # include the full rotation chain to correctly position this component
+        pos = OrientationParts.from_dependent_chain(dep_at.combine(), at, zero, degrees=degrees, copy=copy)
         rot = OrientationParts.from_dependent_chain(dep_angles._rotation, zero, angles, degrees=degrees, copy=copy)
         return cls(pos, rot, degrees)
 
@@ -423,6 +525,13 @@ class DependentOrientation:
     def reduce(self):
         return DependentOrientation(self._position.reduce(), self._rotation.reduce())
 
+    def combine(self) -> OrientationParts:
+        # The full positioning & orienting stack goes through all positioning operations
+        # and only then goes through the orienting operations
+        comb = self._position.copy().stack()
+        comb += self._rotation.stack()
+        return OrientationParts(comb)
+
     def __add__(self, other):
         if isinstance(other, DependentOrientation):
             return DependentOrientation(self._position + other._position, self._rotation + other._rotation)
@@ -430,7 +539,6 @@ class DependentOrientation:
             return DependentOrientation(self._position + other, self._rotation + other)
         else:
             raise ValueError(f"__add__ undefined for DependentOrientation and {type(other)}")
-
 
 
 def matrix_det_2(m: tuple[Expr, Expr, Expr, Expr]):

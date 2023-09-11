@@ -56,6 +56,12 @@ class Instance:
         for metadata in self.metadata:
             metadata.to_file(output)
 
+    def __str__(self):
+        from io import StringIO
+        output = StringIO()
+        self.to_file(output)
+        return output.getvalue()
+
     @classmethod
     def from_instance(cls, name: str, ref: InstanceReference, at: TripletReference, rotate: TripletReference):
         # from copy import deepcopy
@@ -102,6 +108,10 @@ class Instance:
             if par.name == name:
                 return par
         return self.type.get_parameter(name)
+
+    def defines_parameter(self, name: str):
+        """Check whether this instance has defined the named parameter"""
+        return parameter_name_present(self.parameters, name)
 
     def set_parameters(self, **kwargs):
         for name, value in kwargs.items():
