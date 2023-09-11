@@ -457,6 +457,9 @@ class OrientationParts:
             C123 X(x) C34 Y(y) C5 Z(z) C6N
         where, e.g., C123 = C1 C2 C3
         """
+        if not len(self._stack):
+            return OrientationParts()
+
         reduced = [self._stack[0]]
         for top in self._stack[1:]:
             if reduced[-1].is_constant and top.is_constant:
@@ -467,6 +470,9 @@ class OrientationParts:
 
     def resolve(self):
         """Fully combine all parts of the chain, may raise an error if such a proceedure is disallowed"""
+        if not len(self._stack):
+            return OrientationPart()
+
         resolved = self._stack[0]
         for work in self._stack[1:]:
             resolved = work * resolved
