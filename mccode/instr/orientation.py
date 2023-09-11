@@ -124,54 +124,13 @@ def axes_euler_angles(m: Rotation, degrees) -> Angles:
     return rx, ry, rz
 
 
-OrientationType = TypeVar('OrientationType', bound='Orientation')
+OrientationPartType = TypeVar('OrientationPartType', bound='OrientationPart')
 
 
-@dataclass
-class Orientation:
-
-    degrees: bool
+class OrientationPart:
+    """The Seitz matrix part of any arbitrary projective affine transformation"""
     _axes: Seitz = field(default_factory=lambda: _value_float_tuple(12))
     _coordinates: Seitz = field(default_factory=lambda: _value_float_tuple(12))
-
-    @property
-    def all_values(self):
-        for x in self._axes:
-            if not x.has_value:
-                return False
-        for x in self._coordinates:
-            if not x.has_value:
-                return False
-        return True
-
-    @staticmethod
-    def from_at_rotated(at: Vector, rotated: Angles, degrees=True):
-        a, c = _rotation_angles_to_axes_coordinates(rotated, degrees=degrees)
-        axes = a[0], a[1], a[2], at[0], a[3], a[4], a[5], at[1], a[6], a[7], a[8], at[2]
-        coordinates = c[0], c[1], c[2], at[0], c[3], c[4], c[5], at[1], c[6], c[7], c[8], at[2]
-        return Orientation(degrees, axes, coordinates)
-
-    @staticmethod
-    def from_affine(degrees: bool, axes: Affine, coordinates: Affine):
-        def a2s(a: Affine) -> Seitz:
-            return a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11]
-
-        return Orientation(degrees, a2s(axes), a2s(coordinates))
-
-    def seitz(self, which=None) -> Seitz:
-        return self._axes if 'axes' in which else self._coordinates
-
-    def position(self, which=None) -> Vector:
-        t = self.seitz(which)
-        return t[3], t[7], t[11]
-
-    def angles(self, which=None) -> Angles:
-        t = self.seitz('axes')
-        return axes_euler_angles((t[0], t[1], t[2], t[4], t[5], t[6], t[8], t[9], t[10]), self.degrees)
-
-    # @angles.setter
-    # def angles(self, rotated: Angles, degrees=True):
-    #     self._axes, self._coordinates = _rotation_angles_to_axes_coordinates(rotated, degrees=degrees)
 
     def __str__(self):
         x = [f'{x}' for x in self._axes]
@@ -180,105 +139,253 @@ class Orientation:
         lines = '\n'.join(' '.join(f'{x[i+4*j]:{f:s}}' for i, f in zip(range(4), line_fmt)) for j in range(3))
         return lines
 
-    def affine(self, which) -> Affine:
-        t = self._axes if 'axes' in which else self._coordinates
-        m = (t[0], t[1], t[2], t[3], t[4], t[5], t[6], t[7], t[8], t[9], t[10], t[11],
-             Expr.float(0), Expr.float(0), Expr.float(0), Expr.float(1))
-        return m
+    @property
+    def axes(self) -> Seitz:
+        return self._axes
 
-    def __mul__(self, other: OrientationType) -> OrientationType:
-        if not isinstance(other, Orientation):
-            raise RuntimeError('Orientation multiplication only defined between class objects')
-        if self.degrees != other.degrees:
-            raise RuntimeError('Inconsistent degree use between orientations')
-        axes = seitz_multiply(self.seitz('axes'), other.seitz('axes'))
-        coords = seitz_multiply(self.seitz('coords'), other.seitz('coords'))
-        return Orientation(self.degrees, axes, coords)
+    @property
+    def coordinates(self) -> Seitz:
+        return self._coordinates
+
+    def seitz(self, which=None) -> Seitz:
+        return self.axes if 'axes' in which else self.coordinates
+
+    def position(self, which=None) -> Vector:
+        t = self.seitz(which)
+        return t[3], t[7], t[11]
+
+    def angles(self, which=None, degrees=True) -> Angles:
+        t = self.seitz('axes')
+        return axes_euler_angles((t[0], t[1], t[2], t[4], t[5], t[6], t[8], t[9], t[10]), degrees)
+
+    @property
+    def all_values(self) -> bool:
+        return all(x.has_value for x in self._axes) and all(x.has_value for x in self._coordinates)
+
+    @property
+    def is_constant(self) -> bool:
+        return all(x.is_constant for x in self._axes) and all(x.is_constant for x in self._coordinates)
+
+    def inverse(self: OrientationPartType) -> OrientationPartType:
+        return self
+
+    def __mul__(self: OrientationPartType, other: OrientationPartType) -> OrientationPartType:
+        if not isinstance(other, OrientationPart):
+            raise RuntimeError('Multiplication only defined for two orientation parts')
+        if not self.is_constant or not other.is_constant:
+            raise ValueError('Multiplication only defined for two *constant* orientation parts')
+        out = OrientationPart()
+        out._axes = seitz_multiply(self.axes, other.axes)
+        out._coordinates = seitz_multiply(self.coordinates, other.coordinates)
+        return out
+
+
+@dataclass
+class Translation(OrientationPart):
+    """A specialization to the translation-only part of a projective affine transformation"""
+    v: Vector
+
+    def __str__(self):
+        return f'({self.v[0]}, {self.v[1]}, {self.v[2]}) [0, 0, 0]'
+
+    def __post_init__(self):
+        z, o = Expr.float(0), Expr.float(1)
+        self._axes = o, z, z, self.v[0], z, o, z, self.v[1], z, z, o, self.v[2]
+        self._coords = self._axes
 
     def inverse(self):
-        return Orientation(self.degrees, seitz_inverse(self.seitz('axes')), seitz_inverse(self.seitz('coords')))
+        return Translation(v=(-self.v[0], -self.v[1], -self.v[2]))
+
+    def position(self, which=None) -> Vector:
+        return self.v
+
+    def angles(self, which=None, degrees=True) -> Angles:
+        z = Expr.float(0)
+        return z, z, z
 
 
-OrientationChainType = TypeVar('OrientationChainType', bound='OrientationChain')
+@dataclass
+class RotationPart(OrientationPart):
+    """A specialization to the rotation-only part of a projective affine transformation"""
+    v: Expr
+    degrees: bool = True
+
+    def _cos_sin_one_zero(self):
+        r = self.v if self.degrees else degree_to_radian(self.v)
+        return cos_value(r), sin_value(r), Expr.float(1), Expr.float(0)
+
+    def position(self, which=None) -> Vector:
+        z = Expr.float(0)
+        return z, z, z
+
+
+class RotationX(RotationPart):
+    """A specialization to the rotation-around-X part of a projective affine transformation"""
+    def __post_init__(self):
+        c, s, o, z = self._cos_sin_one_zero()
+        self._axes = o, z, z, z, z, c, -s, z, z, s, c, z
+        self._coordinates = o, z, z, z, z, c, s, z, z, -s, c, z
+
+    def inverse(self):
+        return RotationX(v=-self.v, degrees=self.degrees)
+
+    def angles(self, which=None, degrees=True) -> Angles:
+        z = Expr.float(0)
+        return self.v, z, z
+
+    def __str__(self):
+        return f'(0, 0, 0) [{self.v}, 0, 0]'
+
+
+class RotationY(RotationPart):
+    """A specialization to the rotation-around-Y part of a projective affine transformation"""
+    def __post_init__(self):
+        c, s, o, z = self._cos_sin_one_zero()
+        self._axes = c, z, s, z, z, o, z, z, -s, z, c, z
+        self._coordinates = c, z, -s, z, z, o, z, z, s, z, c, z
+
+    def inverse(self):
+        return RotationY(v=-self.v, degrees=self.degrees)
+
+    def angles(self, which=None, degrees=True) -> Angles:
+        z = Expr.float(0)
+        return z, self.v, z
+
+    def __str__(self):
+        return f'(0, 0, 0) [0, {self.v}, 0]'
+
+
+class RotationZ(RotationPart):
+    """A specialization to the rotation-around-Z part of a projective affine transformation"""
+    def __post_init__(self):
+        c, s, o, z = self._cos_sin_one_zero()
+        self._axes = c, -s, z, z, s, c, z, z, z, z, o, z
+        self._coordinates = c, s, z, z, -s, c, z, z, z, z, o, z
+
+    def inverse(self):
+        return RotationZ(v=-self.v, degrees=self.degrees)
+
+    def angles(self, which=None, degrees=True) -> Angles:
+        z = Expr.float(0)
+        return z, z, self.v
+
+    def __str__(self):
+        return f'(0, 0, 0) [0, 0, {self.v}]'
+
+
+OrientationPartsType = TypeVar('OrientationPartsType', bound='OrientationParts')
+
+
+@dataclass
+class OrientationParts:
+    """A list of unresolved or partially resolved successive projective affine transformation(s)"""
+    _stack: tuple[OrientationPart] = field(default_factory=tuple)
+
+    def stack(self):
+        return self._stack
+
+    def _copy(self, deep: bool = True) -> tuple[OrientationPart]:
+        if deep:
+            from copy import deepcopy
+            return tuple([deepcopy(x) for x in self._stack])
+        return tuple(x for x in self._stack)
+
+    def __add__(self, other) -> OrientationPartsType:
+        out = self._copy()
+        if isinstance(other, OrientationParts):
+            out += other.stack()
+        elif isinstance(other, OrientationPart):
+            out += (other,)
+        else:
+            raise ValueError(f'__add__ undefined for OrientationParts and {type(other)}')
+        return OrientationParts(out)
+
+    @classmethod
+    def from_at_rotated(cls, at: Vector, rotated: Angles, degrees=True):
+        """Emulate the McCode ordered-4-part-transformation:
+            1. Translate to the specified position
+            2. Rotate around the current X axis
+            3. Rotate around the resulting Y axis
+            4. Rotate around the resulting Z axis
+        Such a method can make some orientations difficult to express, and the McCode solution
+        is to chain successive ordered transformations with some parts set to zero.
+        """
+        # The order of individual OrientationPart objects in this tuple is paramount
+        s = (Translation(v=at), )
+        if not rotated[0].is_zero:
+            s += (RotationX(v=rotated[0], degrees=degrees), )
+        if not rotated[1].is_zero:
+            s += (RotationY(v=rotated[1], degrees=degrees), )
+        if not rotated[2].is_zero:
+            s += (RotationZ(v=rotated[2], degrees=degrees), )
+        return cls(s)
+
+    @classmethod
+    def from_dependent_chain(cls, dep: OrientationPartsType, at: Vector, rotated: Angles, degrees=True, copy=True):
+        """
+        If it is beneficial to rotate around Z before rotating around the resulting X,
+        one can have successive components which are rotated (0,0,rz) (rx,0,0).
+        By using the from_dependent_chain method these two projective transformations can be combined
+        in the correct order
+
+        :param dep: The projective transformation list which proceeds the newly added one(s)
+        :param at: The translational part of the new projective transformation
+        :param rotated: The angles of the three successive rotational parts
+        :param degrees: Whether the angles are in degrees or radian
+        :param copy: Whether the proceeding list should be copied
+        :return: A OrientationParts object representing the chained operations
+        """
+        stack = () if dep is None else dep._copy(deep=copy)
+        stack += cls.from_at_rotated(at, rotated, degrees).stack()
+        return cls(stack)
+
+    def inverse(self):
+        """Return the inverse transformation of the full chain
+        For operations Z Y X T R, the inverse is (Z Y X T R)^-1 which has the property
+            (Z Y X T R)^-1 Z Y X T R = 1
+        from inspection this can only be true if the inverse applies the inverse of each
+        projective-transformation-part in reverse order
+            R^-1 T^-1 X^-1 Y^-1 Z^-1 Z Y X T R = 1
+        """
+        return OrientationParts(tuple(x.inverse() for x in reversed(self._stack)))
+
+    def reduce(self):
+        """Combine all successive constant projective-transformation parts in the chain
+        If there are parts X(x), Y(y), Z(z) that functions of an unknown (runtime defined)
+        parameter and any number of constant-valued parts Ci interspersed like
+            C1 C2 C3 X(x) C3 C4 Y(y) C5 Z(z) C6 ... CN
+        return the reduced list
+            C123 X(x) C34 Y(y) C5 Z(z) C6N
+        where, e.g., C123 = C1 C2 C3
+        """
+        reduced = [self._stack[0]]
+        for top in self._stack[1:]:
+            if reduced[-1].is_constant and top.is_constant:
+                reduced[-1] = top * reduced[-1]
+            else:
+                reduced.append(top)
+        return OrientationParts(tuple(reduced))
+
+    def resolve(self):
+        """Fully combine all parts of the chain, may raise an error if such a proceedure is disallowed"""
+        resolved = self._stack[0]
+        for work in self._stack[1:]:
+            resolved = work * resolved
+        return resolved
+
+
 DependentOrientationType = TypeVar('DependentOrientationType', bound='DependentOrientation')
 
 
 @dataclass
-class OrientationChain:
-    _chain: tuple[Orientation] = field(default_factory=tuple)
-
-    @property
-    def degrees(self) -> bool:
-        deg = set(x.degrees for x in self._chain)
-        if len(deg) < 2:
-            deg = list(deg)[0] if len(deg) else True
-        else:
-            raise RuntimeError("Inconsistent degree use in OrientationChain")
-        return deg
-
-    def _copy(self, deep: bool = True) -> tuple[Orientation]:
-        if deep:
-            from copy import deepcopy
-            return tuple([deepcopy(x) for x in self._chain])
-        return tuple(x for x in self._chain)
-
-    def resolve(self, origin: Orientation = None) -> Orientation:
-        deg = self.degrees
-        if origin is None:
-            zero = Expr.float(0), Expr.float(0), Expr.float(0)
-            origin = Orientation.from_at_rotated(zero, zero, degrees=deg)
-
-        resolved = origin
-        for orientation in self._chain:
-            resolved *= orientation
-        return resolved
-
-    @classmethod
-    def from_dependent_chain(cls, dep: OrientationChainType, final: Orientation, copy=True):
-        chain = () if dep is None else dep._copy(deep=copy)
-        chain += (final,)
-        return cls(chain)
-
-    @classmethod
-    def from_dependent_at_rotate(cls, dep: OrientationChainType, position: Vector, angles: Angles, degrees=True, copy=True):
-        return cls.from_dependent_chain(dep, Orientation.from_at_rotated(position, angles, degrees=degrees), copy=copy)
-
-    def inverse(self):
-        return OrientationChain(tuple(x.inverse() for x in reversed(self._chain)))
-
-    def reduce(self):
-        """Combine successive chained orientations which are fully determined -- i.e., have no unknown values"""
-        reduced = []
-        group = self._chain[0]
-        for ort in self._chain[1:]:
-            if group.all_values:
-                # successive chained orientations multiply from the left
-                group = ort * group
-            else:
-                reduced.append(group)
-                group = ort
-
-        reduced.append(group)
-
-        return OrientationChain(tuple(reduced))
-
-    def __add__(self, other):
-        chain = self._copy()
-        if isinstance(other, OrientationChain):
-            chain += other._chain
-        elif isinstance(other, Orientation):
-            chain += (other,)
-        return OrientationChain(chain)
-
-
-@dataclass
 class DependentOrientation:
-    _position: OrientationChain = field(default_factory=OrientationChain)
-    _rotation: OrientationChain = field(default_factory=OrientationChain)
+    _position: OrientationParts = field(default_factory=OrientationParts)
+    _rotation: OrientationParts = field(default_factory=OrientationParts)
+    _degrees: bool = True
 
     @property
     def degrees(self):
-        return self._rotation.degrees
+        return self._degrees
 
     @classmethod
     def from_dependent_orientations(cls,
@@ -288,9 +395,9 @@ class DependentOrientation:
                                     angles: Angles,
                                     degrees=True, copy=True):
         zero = Expr.float(0), Expr.float(0), Expr.float(0)
-        pos = OrientationChain.from_dependent_at_rotate(dep_at._position, at, zero, degrees=degrees, copy=copy)
-        rot = OrientationChain.from_dependent_at_rotate(dep_angles._rotation, zero, angles, degrees=degrees, copy=copy)
-        return cls(pos, rot)
+        pos = OrientationParts.from_dependent_chain(dep_at._position, at, zero, degrees=degrees, copy=copy)
+        rot = OrientationParts.from_dependent_chain(dep_angles._rotation, zero, angles, degrees=degrees, copy=copy)
+        return cls(pos, rot, degrees)
 
     @classmethod
     def from_dependent_orientation(cls,
@@ -319,14 +426,11 @@ class DependentOrientation:
     def __add__(self, other):
         if isinstance(other, DependentOrientation):
             return DependentOrientation(self._position + other._position, self._rotation + other._rotation)
-        elif isinstance(other, Orientation):
+        elif isinstance(other, (OrientationPart, OrientationParts)):
             return DependentOrientation(self._position + other, self._rotation + other)
         else:
             raise ValueError(f"__add__ undefined for DependentOrientation and {type(other)}")
 
-
-def from_at_rotated(at: Vector, rotated: Angles):
-    return Orientation.from_at_rotated(at, rotated)
 
 
 def matrix_det_2(m: tuple[Expr, Expr, Expr, Expr]):
