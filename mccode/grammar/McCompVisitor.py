@@ -1,4 +1,4 @@
-# Generated from /home/g/Code/mccode-antlr/mccode/grammar/McComp.g4 by ANTLR 4.13.0
+# Generated from /home/g/Code/mccode-antlr/mccode/grammar/McComp.g4 by ANTLR 4.13.1
 from antlr4 import *
 if "." in __name__:
     from .McCompParser import McCompParser
@@ -181,6 +181,11 @@ class McCompVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by McCompParser#metadata.
     def visitMetadata(self, ctx:McCompParser.MetadataContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by McCompParser#category.
+    def visitCategory(self, ctx:McCompParser.CategoryContext):
         return self.visitChildren(ctx)
 
 

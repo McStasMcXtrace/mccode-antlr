@@ -375,6 +375,9 @@ class OrientationParts:
     """A list of unresolved or partially resolved successive projective affine transformation(s)"""
     _stack: tuple[OrientationPart] = field(default_factory=tuple)
 
+    def __str__(self):
+        return f'OrientationParts<{len(self._stack)}>'
+
     def stack(self):
         return self._stack
 
@@ -488,6 +491,9 @@ class DependentOrientation:
     _position: OrientationParts = field(default_factory=OrientationParts)
     _rotation: OrientationParts = field(default_factory=OrientationParts)
     _degrees: bool = True
+
+    def __str__(self):
+        return f'DependentOrientation<{self._position}, {self._rotation}>'
 
     @property
     def degrees(self):
@@ -611,7 +617,7 @@ def matrix_matrix_multiply_4(a: Affine, b: Affine):
 def matrix_vector_multiply_3(m: Rotation, v: Vector):
     """Multiplication of a (flat, row-ordered) 3x3 matrix with a column 3-vector"""
     x0 = m[0] * v[0] + m[1] * v[1] + m[2] * v[2]
-    x1 = m[3] * v[0] + m[4] * v[1] + m[4] * v[2]
+    x1 = m[3] * v[0] + m[4] * v[1] + m[5] * v[2]
     x2 = m[6] * v[0] + m[7] * v[1] + m[8] * v[2]
     return x0, x1, x2
 

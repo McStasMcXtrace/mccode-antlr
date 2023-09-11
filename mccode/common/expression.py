@@ -324,6 +324,9 @@ class BinaryOp(Op):
             return False
         return self.op == other.op and self.left == other.left and self.right == other.right
 
+    def __round__(self, n=None):
+        return self if self.data_type.is_int else UnaryOp('round', self)
+
     @property
     def is_scalar(self):
         return len(self.left) == 1 and len(self.right) == 1 and self.left[0].is_scalar and self.right[0].is_scalar
@@ -385,6 +388,9 @@ class UnaryOp(Op):
         if not isinstance(other, UnaryOp):
             return False
         return self.op == other.op and self.value == other.value
+
+    def __round__(self, n=None):
+        return self if self.data_type.is_int else UnaryOp('round', self)
 
     @property
     def is_scalar(self):
@@ -636,6 +642,10 @@ class Value:
     def __abs__(self):
         return UnaryOp('abs', self) if self.is_id or self.data_type.is_str else Value(abs(self.value), self.data_type)
 
+    def __round__(self, n=None):
+        return UnaryOp('round', self) if self.is_id or self.data_type.is_str \
+            else Value(round(self.value, n), self.data_type)
+
     def __eq__(self, other):
         other = other if isinstance(other, (Value, Op)) else Value.best(other)
         if other.is_op:
@@ -846,6 +856,9 @@ class Expr:
     def __abs__(self):
         return Expr([abs(x) for x in self.expr])
 
+    def __round__(self, n=None):
+        return Expr([round(x, n) for x in self.expr])
+
     def __eq__(self, other):
         if isinstance(other, Expr):
             if len(other.expr) != len(self.expr):
@@ -919,9 +932,12 @@ def unary_expr(func, name, v):
     ops = {'cos': 'acos', 'sin': 'asin', 'tan': 'atan'}
     if isinstance(v, Expr):
         v = v.expr
+    if len(v) == 1:
+        v = v[0]
     if isinstance(v, UnaryOp) and ((name in ops and v.op == ops[name]) or (v.op in ops and name == ops[v.op])):
         return Expr(v.value)
     if isinstance(v, Value) and not v.is_id:
+        print(f'{func = } {name = } {v = }')
         if v.is_str or isinstance(v.value, str):
             raise RuntimeError(f'How is a _string_ valued parameter, {v} not an identifier?')
         return Expr(Value.best(func(v.value)))
@@ -934,6 +950,10 @@ def binary_expr(func, name, left, right):
         left = left.expr
     if isinstance(right, Expr):
         right = right.expr
+    if len(left) == 1:
+        left = left[0]
+    if len(right) == 1:
+        right = right[0]
     if isinstance(left, UnaryOp) and isinstance(right, UnaryOp) and name in ops:
         left_func, right_func = ops[name]
         if left.op == left_func and right.op == right_func and left.value == right.value:

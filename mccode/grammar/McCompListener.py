@@ -1,4 +1,4 @@
-# Generated from /home/g/Code/mccode-antlr/mccode/grammar/McComp.g4 by ANTLR 4.13.0
+# Generated from /home/g/Code/mccode-antlr/mccode/grammar/McComp.g4 by ANTLR 4.13.1
 from antlr4 import *
 if "." in __name__:
     from .McCompParser import McCompParser
@@ -320,6 +320,15 @@ class McCompListener(ParseTreeListener):
 
     # Exit a parse tree produced by McCompParser#metadata.
     def exitMetadata(self, ctx:McCompParser.MetadataContext):
+        pass
+
+
+    # Enter a parse tree produced by McCompParser#category.
+    def enterCategory(self, ctx:McCompParser.CategoryContext):
+        pass
+
+    # Exit a parse tree produced by McCompParser#category.
+    def exitCategory(self, ctx:McCompParser.CategoryContext):
         pass
 
 

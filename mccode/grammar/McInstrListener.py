@@ -1,4 +1,4 @@
-# Generated from /home/g/Code/mccode-antlr/mccode/grammar/McInstr.g4 by ANTLR 4.13.0
+# Generated from /home/g/Code/mccode-antlr/mccode/grammar/McInstr.g4 by ANTLR 4.13.1
 from antlr4 import *
 if "." in __name__:
     from .McInstrParser import McInstrParser
@@ -419,6 +419,15 @@ class McInstrListener(ParseTreeListener):
 
     # Exit a parse tree produced by McInstrParser#metadata.
     def exitMetadata(self, ctx:McInstrParser.MetadataContext):
+        pass
+
+
+    # Enter a parse tree produced by McInstrParser#category.
+    def enterCategory(self, ctx:McInstrParser.CategoryContext):
+        pass
+
+    # Exit a parse tree produced by McInstrParser#category.
+    def exitCategory(self, ctx:McInstrParser.CategoryContext):
         pass
 
 
