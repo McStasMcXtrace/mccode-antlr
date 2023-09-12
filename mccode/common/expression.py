@@ -664,6 +664,19 @@ class Value:
             return BinaryOp('__gt__', self, other)
         return self.value > other.value
 
+    def __le__(self, other):
+        other = other if isinstance(other, (Value, Op)) else Value.best(other)
+        if self.is_id or other.is_op or other.is_id:
+            return BinaryOp('__le__', self, other)
+        return self.value <= other.value
+
+    def __ge__(self, other):
+        other = other if isinstance(other, (Value, Op)) else Value.best(other)
+        if self.is_id or other.is_op or other.is_id:
+            return BinaryOp('__ge__', self, other)
+        return self.value >= other.value
+
+
     def __pow__(self, power):
         if not isinstance(power, (Value, Op)):
             power = Value.best(power)
@@ -889,6 +902,26 @@ class Expr:
             return True
         return len(self.expr) == 1 and self.expr[0] > other
 
+    def __le__(self, other):
+        if isinstance(other, Expr):
+            if len(other.expr) != len(self.expr):
+                raise RuntimeError('Can not compare unequal-sized-array Expr objects')
+            for o_expr, s_expr in zip(other.expr, self.expr):
+                if o_expr < s_expr:
+                    return False
+            return True
+        return len(self.expr) == 1 and self.expr[0] <= other
+
+    def __ge__(self, other):
+        if isinstance(other, Expr):
+            if len(other.expr) != len(self.expr):
+                raise RuntimeError('Can not compare unequal-sized-array Expr objects')
+            for o_expr, s_expr in zip(other.expr, self.expr):
+                if o_expr > s_expr:
+                    return False
+            return True
+        return len(self.expr) == 1 and self.expr[0] >= other
+
     @property
     def mccode_c_type(self):
         if len(self.expr) != 1:
@@ -937,7 +970,6 @@ def unary_expr(func, name, v):
     if isinstance(v, UnaryOp) and ((name in ops and v.op == ops[name]) or (v.op in ops and name == ops[v.op])):
         return Expr(v.value)
     if isinstance(v, Value) and not v.is_id:
-        print(f'{func = } {name = } {v = }')
         if v.is_str or isinstance(v.value, str):
             raise RuntimeError(f'How is a _string_ valued parameter, {v} not an identifier?')
         return Expr(Value.best(func(v.value)))

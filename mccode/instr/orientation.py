@@ -1,17 +1,205 @@
 from dataclasses import dataclass, field
 from ..common import Expr, unary_expr, binary_expr
 from zenlog import log
-from typing import TypeVar
+from typing import TypeVar, NamedTuple, Union
 
-Vector = tuple[Expr, Expr, Expr]
-Angles = tuple[Expr, Expr, Expr]
-Rotation = tuple[Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr]
-Seitz = tuple[Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr]
-Affine = tuple[Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr, Expr]
+VectorType = TypeVar('VectorType', bound='Vector')
+MatrixType = TypeVar('MatrixType', bound='Matrix')
+RotationType = TypeVar('RotationType', bound='Rotation')
+SeitzType = TypeVar('SeitzType', bound='Seitz')
 
 
-def _value_float_tuple(n, v=0.):
-    return tuple(Expr.float(v) for _ in range(n))
+class Matrix(NamedTuple):
+    """Any 3D matrix, not necessarily a rotation matrix"""
+    xx: Expr = Expr.float(0)
+    xy: Expr = Expr.float(0)
+    xz: Expr = Expr.float(0)
+    yx: Expr = Expr.float(0)
+    yy: Expr = Expr.float(0)
+    yz: Expr = Expr.float(0)
+    zx: Expr = Expr.float(0)
+    zy: Expr = Expr.float(0)
+    zz: Expr = Expr.float(0)
+
+    @classmethod
+    def eye(cls):
+        o = Expr.float(1)
+        z = Expr.float(0)
+        return cls(o, z, z, z, o, z, z, z, o)
+
+    def __str__(self):
+        x = [f'{x}' for x in (self.xx, self.xy, self.xz, self.yx, self.yy, self.yz, self.zx, self.zy, self.zz)]
+        widths = [max(len(x[i+3*j]) for j in range(3)) for i in range(3)]
+        line_fmt = [f'>{w+2:d}s' for w in widths]
+        lines = '\n'.join(' '.join(f'{x[i+3*j]:{f:s}}' for i, f in zip(range(3), line_fmt)) for j in range(3))
+        return lines
+
+    def __repr__(self):
+        return str(self)
+
+    def __mul__(self, other: Union[MatrixType, VectorType, Expr]) -> Union[MatrixType, VectorType]:
+        if isinstance(other, Matrix):
+            return Matrix(
+                self.xx * other.xx + self.xy * other.yx + self.xz * other.zx,
+                self.xx * other.xy + self.xy * other.yy + self.xz * other.zy,
+                self.xx * other.xz + self.xy * other.yz + self.xz * other.zz,
+                self.yx * other.xx + self.yy * other.yx + self.yz * other.zx,
+                self.yx * other.xy + self.yy * other.yy + self.yz * other.zy,
+                self.yx * other.xz + self.yy * other.yz + self.yz * other.zz,
+                self.zx * other.xx + self.zy * other.yx + self.zz * other.zx,
+                self.zx * other.xy + self.zy * other.yy + self.zz * other.zy,
+                self.zx * other.xz + self.zy * other.yz + self.zz * other.zz,
+            )
+        elif isinstance(other, Vector):
+            return Vector(self.xx * other.x + self.xy * other.y + self.xz * other.z,
+                          self.yx * other.x + self.yy * other.y + self.yz * other.z,
+                          self.zx * other.x + self.zy * other.y + self.zz * other.z)
+        else:
+            return Matrix(self.xx * other, self.xy * other, self.xz * other,
+                          self.yx * other, self.yy * other, self.yz * other,
+                          self.zx * other, self.zy * other, self.zz * other)
+
+    def __add__(self, other: MatrixType) -> MatrixType:
+        if isinstance(other, Matrix):
+            return Matrix(self.xx + other.xx, self.xy + other.xy, self.xz + other.xz,
+                          self.yx + other.yx, self.yy + other.yy, self.yz + other.yz,
+                          self.zx + other.zx, self.zy + other.zy, self.zz + other.zz)
+        else:
+            raise RuntimeError(f'No addition with {type(other)}')
+
+    def __sub__(self, other: MatrixType) -> MatrixType:
+        if isinstance(other, Matrix):
+            return Matrix(self.xx - other.xx, self.xy - other.xy, self.xz - other.xz,
+                          self.yx - other.yx, self.yy - other.yy, self.yz - other.yz,
+                          self.zx - other.zx, self.zy - other.zy, self.zz - other.zz)
+        else:
+            raise RuntimeError(f'No subtraction with {type(other)}')
+
+
+class Vector(NamedTuple):
+    x: Expr = Expr.float(0)
+    y: Expr = Expr.float(0)
+    z: Expr = Expr.float(0)
+
+    def __mul__(self, other: RotationType) -> VectorType:
+        return Vector(self.x * other.xx + self.y * other.yx + self.z * other.zx,
+                      self.x * other.xy + self.y * other.yy + self.z * other.zy,
+                      self.x * other.xz + self.y * other.yz + self.z * other.zz)
+
+    def cross_matrix(self) -> Matrix:
+        z = Expr.float(0)
+        return Matrix(z, -self.z, self.y, self.z, z, -self.x, -self.y, self.x, z)
+
+
+class Angles(NamedTuple):
+    x: Expr = Expr.float(0)
+    y: Expr = Expr.float(0)
+    z: Expr = Expr.float(0)
+
+
+class Rotation(NamedTuple):
+    """A _valid_ 3-D rotation matrix flattened in row-order.
+
+    Note:
+        To be valid, the Rotation must have an inverse which is its (conjugate) transpose.
+        This is equivalent to the matrix being Orthogonal (or Unitary, if complex-valued)
+    """
+    xx: Expr = Expr.float(1)
+    xy: Expr = Expr.float(0)
+    xz: Expr = Expr.float(0)
+    yx: Expr = Expr.float(0)
+    yy: Expr = Expr.float(1)
+    yz: Expr = Expr.float(0)
+    zx: Expr = Expr.float(0)
+    zy: Expr = Expr.float(0)
+    zz: Expr = Expr.float(1)
+
+    def transpose(self) -> RotationType:
+        return Rotation(self.xx, self.yx, self.zx, self.xy, self.yy, self.zy, self.xz, self.yz, self.zz)
+
+    def inverse(self) -> RotationType:
+        return self.transpose()
+
+    def __mul__(self, other: Union[RotationType, Vector]) -> Union[RotationType, Vector]:
+        if isinstance(other, Vector):
+            return Vector(self.xx * other.x + self.xy * other.y + self.xz * other.z,
+                          self.yx * other.x + self.yy * other.y + self.yz * other.z,
+                          self.zx * other.x + self.zy * other.y + self.zz * other.z)
+        elif isinstance(other, Rotation):
+            return Rotation(
+                self.xx * other.xx + self.xy * other.yx + self.xz * other.zx,
+                self.xx * other.xy + self.xy * other.yy + self.xz * other.zy,
+                self.xx * other.xz + self.xy * other.yz + self.xz * other.zz,
+                self.yx * other.xx + self.yy * other.yx + self.yz * other.zx,
+                self.yx * other.xy + self.yy * other.yy + self.yz * other.zy,
+                self.yx * other.xz + self.yy * other.yz + self.yz * other.zz,
+                self.zx * other.xx + self.zy * other.yx + self.zz * other.zx,
+                self.zx * other.xy + self.zy * other.yy + self.zz * other.zy,
+                self.zx * other.xz + self.zy * other.yz + self.zz * other.zz,
+            )
+        raise RuntimeError(f'No multiplication with {type(other)}')
+
+    def __sub__(self, other: RotationType) -> Matrix:
+        return Matrix(self.xx - other.xx, self.xy - other.xy, self.xz - other.xz,
+                      self.yx - other.yx, self.yy - other.yy, self.yz - other.yz,
+                      self.zx - other.zx, self.zy - other.zy, self.zz - other.zz)
+
+
+class Seitz(NamedTuple):
+    xx: Expr = Expr.float(1)
+    xy: Expr = Expr.float(0)
+    xz: Expr = Expr.float(0)
+    xt: Expr = Expr.float(0)
+    yx: Expr = Expr.float(0)
+    yy: Expr = Expr.float(1)
+    yz: Expr = Expr.float(0)
+    yt: Expr = Expr.float(0)
+    zx: Expr = Expr.float(0)
+    zy: Expr = Expr.float(0)
+    zz: Expr = Expr.float(1)
+    zt: Expr = Expr.float(0)
+
+    def rotation(self) -> Rotation:
+        return Rotation(self.xx, self.xy, self.xz, self.yx, self.yy, self.yz, self.zx, self.zy, self.zz)
+
+    def vector(self) -> Vector:
+        return Vector(self.xt, self.yt, self.zt)
+
+    def inverse(self) -> SeitzType:
+        """
+        Special 4x3 (flat, row-ordered) matrix inverse.
+
+        For the special case of a _projective transformation matrix_ and acts on augmented vectors,
+        where the omitted last row would be [0, 0, 0, 1]. In this special case, we can express the matrix as
+            |R T|
+            |0 1|
+        where R is a 3x3 (rotation) matrix and T a 3-vector translation. Then we need only find the inverse of R, R^-1,
+        and note that T^-1 = - R^-1 T to find the inverse of the affine projective transformation matrix.
+        """
+        inv_r = self.rotation().inverse()
+        neg_inv_t = inv_r * self.vector()
+        return Seitz(inv_r.xx, inv_r.xy, inv_r.xz, -neg_inv_t.x,
+                     inv_r.yx, inv_r.yy, inv_r.yz, -neg_inv_t.y,
+                     inv_r.zx, inv_r.zy, inv_r.zz, -neg_inv_t.z)
+
+    def trace(self) -> Expr:
+        """Abuse this to be the trace of the rotation part"""
+        return self.xx + self.yy + self.zz
+
+    def __mul__(self, other: SeitzType) -> SeitzType:
+        """
+        Multiplication in the special case of two _projective transformation matrices_ with omitted last row [0, 0, 0, 1].
+        In this special case, we can express the matrix multiplication as
+            |A t| |B s|  =  | AB  As+t |
+            |0 1| |0 1|     |  0    1  |
+        where A and B are 3x3 (rotation) matrices and t and s 3-vector translations.
+        """
+        so = self.rotation() * other.rotation()
+        st = self.rotation() * other.vector()
+        s = self.vector()
+        return Seitz(so.xx, so.xy, so.xz, st.x + s.x,
+                     so.yx, so.yy, so.yz, st.y + s.y,
+                     so.zx, so.zy, so.zz, st.z + s.z)
 
 
 def cos_degree(theta_degree):
@@ -137,16 +325,17 @@ def axes_euler_angles(m: Rotation, degrees) -> Angles:
     rx = rxs[0] if len(rxs) == 1 else rxs[0]
     ry = rys[0] if len(rys) == 1 else rys[0]
     rz = rzs[0] if len(rzs) == 1 else rzs[0]
-    return rx, ry, rz
+    return Angles(rx, ry, rz)
 
 
 OrientationPartType = TypeVar('OrientationPartType', bound='OrientationPart')
 
 
+@dataclass
 class OrientationPart:
     """The Seitz matrix part of any arbitrary projective affine transformation"""
-    _axes: Seitz = field(default_factory=lambda: _value_float_tuple(12))
-    _coordinates: Seitz = field(default_factory=lambda: _value_float_tuple(12))
+    _axes: Seitz = field(default_factory=Seitz)
+    _coordinates: Seitz = field(default_factory=Seitz)
 
     @property
     def is_translation(self):
@@ -154,7 +343,7 @@ class OrientationPart:
 
     @property
     def is_rotation(self):
-        return (self._axes[0] + self._axes[5] + self._axes[10]) != Expr.float(3)
+        return (self._axes.inverse() * self._axes).trace() == Expr.float(3.)
 
     @property
     def rotation_axis_angle(self) -> tuple[Vector, Expr, str]:
@@ -162,9 +351,14 @@ class OrientationPart:
         from numpy import array, argmin, sqrt, real, imag, conj, sum
         if not self.is_rotation or not self.is_constant:
             raise RuntimeError('Not possible to determine the rotation axis and angle of a variable general transform')
-        matrix = [[self._axes[0].value.value, self._axes[1].value.value, self._axes[2].value.value],
-                  [self._axes[4].value.value, self._axes[5].value.value, self._axes[6].value.value],
-                  [self._axes[8].value.value, self._axes[9].value.value, self._axes[10].value.value]]
+        # For the matrix A in cross(axis, v) = A v,
+        # If flat is _axes, then R = 1 - A sin(angle) + A^2 (1-cos(angle))
+        #  if _coordinates, then R = 1 + A sin(angle) * A^2 (1-cos(angle))
+        # where the difference in sign is due to _coordinates rotating points and _axes rotating the axes instead.
+        flat = self._coordinates.rotation()
+        matrix = [[flat.xx.value, flat.xy.value, flat.xz.value],
+                  [flat.yx.value, flat.yy.value, flat.yz.value],
+                  [flat.zx.value, flat.zy.value, flat.zz.value]]
         dd, vv = eig(array(matrix))
         # The eigenvalues, dd, are (1+0j, a+bj, a-bj) of which we want 1+0j.
         axis = vv[:, argmin(sqrt(real(conj(dd-1) * (dd-1))))]
@@ -174,8 +368,14 @@ class OrientationPart:
         cos_angle = (matrix[0][0] + matrix[1][1] + matrix[2][2] - 1) / 2
         if abs(cos_angle) > 1:
             log.warn(f'Invalid cos(angle) {cos_angle} for {self}')
-        angle = acos_degree(cos_angle)
-        return (Expr.float(axis[0]), Expr.float(axis[1]), Expr.float(axis[2])), Expr.float(angle), 'degrees'
+        angle = Expr.float(acos_degree(cos_angle))
+        axis = Vector(Expr.float(axis[0]), Expr.float(axis[1]), Expr.float(axis[2]))
+
+        # Check that the rotation matrix signs all match:
+        a = axis.cross_matrix()
+        r = Matrix.eye() + a * sin_value(angle, True) + (a * a) * (Expr.float(1) - cos_value(angle, True))
+        # and flip the sign of angle if not:
+        return axis, -angle if any(flat[index] * r[index] < Expr.float(0) for index in range(9)) else angle, 'degrees'
 
     def __str__(self):
         x = [f'{x}' for x in self._axes]
@@ -196,12 +396,10 @@ class OrientationPart:
         return self.axes if 'axes' in which else self.coordinates
 
     def position(self, which=None) -> Vector:
-        t = self.seitz(which)
-        return t[3], t[7], t[11]
+        return self.seitz(which).vector()
 
     def angles(self, which=None, degrees=True) -> Angles:
-        t = self.seitz('axes')
-        return axes_euler_angles((t[0], t[1], t[2], t[4], t[5], t[6], t[8], t[9], t[10]), degrees)
+        return axes_euler_angles(self.seitz('axes').rotation(), degrees)
 
     @property
     def all_values(self) -> bool:
@@ -212,23 +410,20 @@ class OrientationPart:
         return all(x.is_constant for x in self._axes) and all(x.is_constant for x in self._coordinates)
 
     def inverse(self: OrientationPartType) -> OrientationPartType:
-        return self
+        return OrientationPart(self._axes.inverse(), self._coordinates.inverse())
 
     def __mul__(self: OrientationPartType, other: OrientationPartType) -> OrientationPartType:
         if not isinstance(other, OrientationPart):
             raise RuntimeError('Multiplication only defined for two orientation parts')
         if not self.is_constant or not other.is_constant:
             raise ValueError('Multiplication only defined for two *constant* orientation parts')
-        out = OrientationPart()
-        out._axes = seitz_multiply(self.axes, other.axes)
-        out._coordinates = seitz_multiply(self.coordinates, other.coordinates)
-        return out
+        return OrientationPart(self.axes * other.axes, self.coordinates * other.coordinates)
 
 
 @dataclass
 class TranslationPart(OrientationPart):
     """A specialization to the translation-only part of a projective affine transformation"""
-    v: Vector
+    v: Vector = field(default_factory=Vector)
 
     def __str__(self):
         return f'({self.v[0]}, {self.v[1]}, {self.v[2]}) [0, 0, 0]'
@@ -251,26 +446,25 @@ class TranslationPart(OrientationPart):
 
     def __post_init__(self):
         z, o = Expr.float(0), Expr.float(1)
-        self._axes = o, z, z, self.v[0], z, o, z, self.v[1], z, z, o, self.v[2]
+        self._axes = Seitz(o, z, z, self.v[0], z, o, z, self.v[1], z, z, o, self.v[2])
         self._coords = self._axes
 
     def inverse(self):
-        return TranslationPart(v=(-self.v[0], -self.v[1], -self.v[2]))
+        return TranslationPart(v=Vector(-self.v[0], -self.v[1], -self.v[2]))
 
     def position(self, which=None) -> Vector:
         return self.v
 
     def angles(self, which=None, degrees=True) -> Angles:
         z = Expr.float(0)
-        return z, z, z
+        return Angles(z, z, z)
 
 
 @dataclass
 class RotationPart(OrientationPart):
     """A specialization to the rotation-only part of a projective affine transformation"""
-    v: Expr
+    v: Expr = Expr.float(0)
     degrees: bool = True
-
 
     @property
     def is_constant(self):
@@ -286,7 +480,7 @@ class RotationPart(OrientationPart):
 
     @property
     def rotation_axis(self) -> Vector:
-        return Expr.float(0), Expr.float(0),  Expr.float(0)
+        return Vector(Expr.float(0), Expr.float(0),  Expr.float(0))
 
     @property
     def rotation_axis_angle(self) -> tuple[Vector, Expr, str]:
@@ -298,73 +492,73 @@ class RotationPart(OrientationPart):
 
     def position(self, which=None) -> Vector:
         z = Expr.float(0)
-        return z, z, z
+        return Vector(z, z, z)
 
 
 class RotationX(RotationPart):
     """A specialization to the rotation-around-X part of a projective affine transformation"""
     def __post_init__(self):
         c, s, o, z = self._cos_sin_one_zero()
-        self._axes = o, z, z, z, z, c, -s, z, z, s, c, z
-        self._coordinates = o, z, z, z, z, c, s, z, z, -s, c, z
+        self._axes = Seitz(o, z, z, z, z, c, -s, z, z, s, c, z)
+        self._coordinates = Seitz(o, z, z, z, z, c, s, z, z, -s, c, z)
 
     def inverse(self):
         return RotationX(v=-self.v, degrees=self.degrees)
 
     def angles(self, which=None, degrees=True) -> Angles:
         z = Expr.float(0)
-        return self.v, z, z
+        return Angles(self.v, z, z)
 
     def __str__(self):
         return f'(0, 0, 0) [{self.v}, 0, 0]'
 
     @property
     def rotation_axis(self) -> Vector:
-        return Expr.float(1), Expr.float(0), Expr.float(0)
+        return Vector(Expr.float(1), Expr.float(0), Expr.float(0))
 
 
 class RotationY(RotationPart):
     """A specialization to the rotation-around-Y part of a projective affine transformation"""
     def __post_init__(self):
         c, s, o, z = self._cos_sin_one_zero()
-        self._axes = c, z, s, z, z, o, z, z, -s, z, c, z
-        self._coordinates = c, z, -s, z, z, o, z, z, s, z, c, z
+        self._axes = Seitz(c, z, s, z, z, o, z, z, -s, z, c, z)
+        self._coordinates = Seitz(c, z, -s, z, z, o, z, z, s, z, c, z)
 
     def inverse(self):
         return RotationY(v=-self.v, degrees=self.degrees)
 
     def angles(self, which=None, degrees=True) -> Angles:
         z = Expr.float(0)
-        return z, self.v, z
+        return Angles(z, self.v, z)
 
     def __str__(self):
         return f'(0, 0, 0) [0, {self.v}, 0]'
 
     @property
     def rotation_axis(self) -> Vector:
-        return Expr.float(0), Expr.float(1), Expr.float(0)
+        return Vector(Expr.float(0), Expr.float(1), Expr.float(0))
 
 
 class RotationZ(RotationPart):
     """A specialization to the rotation-around-Z part of a projective affine transformation"""
     def __post_init__(self):
         c, s, o, z = self._cos_sin_one_zero()
-        self._axes = c, -s, z, z, s, c, z, z, z, z, o, z
-        self._coordinates = c, s, z, z, -s, c, z, z, z, z, o, z
+        self._axes = Seitz(c, -s, z, z, s, c, z, z, z, z, o, z)
+        self._coordinates = Seitz(c, s, z, z, -s, c, z, z, z, z, o, z)
 
     def inverse(self):
         return RotationZ(v=-self.v, degrees=self.degrees)
 
     def angles(self, which=None, degrees=True) -> Angles:
         z = Expr.float(0)
-        return z, z, self.v
+        return Angles(z, z, self.v)
 
     def __str__(self):
         return f'(0, 0, 0) [0, 0, {self.v}]'
 
     @property
     def rotation_axis(self) -> Vector:
-        return Expr.float(0), Expr.float(0), Expr.float(1)
+        return Vector(Expr.float(0), Expr.float(0), Expr.float(1))
 
 
 OrientationPartsType = TypeVar('OrientationPartsType', bound='OrientationParts')
@@ -511,8 +705,8 @@ class DependentOrientation:
         # include the full rotation chain to correctly position this component
         resolved_at_dep = None if dep_at is None else dep_at.combine()
         resolved_rot_dep = None if dep_angles is None else dep_angles._rotation
-        pos = OrientationParts.from_dependent_chain(resolved_at_dep, at, zero, degrees=degrees, copy=copy)
-        rot = OrientationParts.from_dependent_chain(resolved_rot_dep, zero, angles, degrees=degrees, copy=copy)
+        pos = OrientationParts.from_dependent_chain(resolved_at_dep, at, Angles(*zero), degrees=degrees, copy=copy)
+        rot = OrientationParts.from_dependent_chain(resolved_rot_dep, Vector(*zero), angles, degrees=degrees, copy=copy)
         return cls(pos, rot, degrees)
 
     @classmethod
@@ -555,127 +749,4 @@ class DependentOrientation:
             raise ValueError(f"__add__ undefined for DependentOrientation and {type(other)}")
 
 
-def matrix_det_2(m: tuple[Expr, Expr, Expr, Expr]):
-    """Determinant of a (flat, row ordered) 2x2 matrix"""
-    return m[0] * m[3] - m[1] * m[2]
 
-
-def matrix_det_3(m: Rotation):
-    """Determinant of a (flat, row ordered) 3x3 matrix"""
-    def d(i, j, k, l):
-        return matrix_det_2((m[i], m[j], m[k], m[l]))
-    return m[0] * d(4, 5, 7, 8) - m[1] * d(3, 5, 6, 8) + m[2] * d(3, 4, 6, 7)
-
-
-def matrix_inverse_3(m: Rotation):
-    """Inverse of a (flat, row ordered) 3x3 matrix"""
-    det = abs(matrix_det_3(m))
-
-    def d(i, j, k, n):
-        return matrix_det_2((m[i], m[j], m[k], m[n])) / det
-
-    return (d(4, 5, 7, 8), d(2, 1, 8, 7), d(1, 2, 4, 5),
-            d(5, 3, 8, 6), d(0, 2, 6, 8), d(2, 0, 5, 3),
-            d(3, 4, 6, 7), d(1, 0, 7, 6), d(0, 1, 3, 4))
-
-
-def matrix_matrix_multiply_3(a: Rotation, b: Rotation):
-    """Matrix multiplication of two (flat, row-ordered) matrices"""
-    x00 = a[0] * b[0] + a[1] * b[3] + a[2] * b[6]
-    x01 = a[0] * b[1] + a[1] * b[4] + a[2] * b[7]
-    x02 = a[0] * b[2] + a[1] * b[5] + a[2] * b[8]
-    x10 = a[3] * b[0] + a[4] * b[3] + a[5] * b[6]
-    x11 = a[3] * b[1] + a[4] * b[4] + a[5] * b[7]
-    x12 = a[3] * b[2] + a[4] * b[5] + a[5] * b[8]
-    x20 = a[6] * b[0] + a[7] * b[3] + a[8] * b[6]
-    x21 = a[6] * b[1] + a[7] * b[4] + a[8] * b[7]
-    x22 = a[6] * b[2] + a[7] * b[5] + a[8] * b[8]
-    return x00, x01, x02, x10, x11, x12, x20, x21, x22
-
-
-def matrix_matrix_multiply_4(a: Affine, b: Affine):
-    """Matrix multiplication of two (flat, row-ordered) 4x4 matrices"""
-    x00 = a[0] * b[0] + a[1] * b[4] + a[2] * b[8] + a[3] * b[12]
-    x01 = a[0] * b[1] + a[1] * b[5] + a[2] * b[9] + a[3] * b[13]
-    x02 = a[0] * b[2] + a[1] * b[6] + a[2] * b[10] + a[3] * b[14]
-    x03 = a[0] * b[3] + a[1] * b[7] + a[2] * b[11] + a[3] * b[15]
-    x10 = a[4] * b[0] + a[5] * b[4] + a[6] * b[8] + a[7] * b[12]
-    x11 = a[4] * b[1] + a[5] * b[5] + a[6] * b[9] + a[7] * b[13]
-    x12 = a[4] * b[2] + a[5] * b[6] + a[6] * b[10] + a[7] * b[14]
-    x13 = a[4] * b[3] + a[5] * b[7] + a[6] * b[11] + a[7] * b[15]
-    x20 = a[8] * b[0] + a[9] * b[4] + a[10] * b[8] + a[11] * b[12]
-    x21 = a[8] * b[1] + a[9] * b[5] + a[10] * b[9] + a[11] * b[13]
-    x22 = a[8] * b[2] + a[9] * b[6] + a[10] * b[10] + a[11] * b[14]
-    x23 = a[8] * b[3] + a[9] * b[7] + a[10] * b[11] + a[11] * b[15]
-    x30 = a[12] * b[0] + a[13] * b[4] + a[14] * b[8] + a[15] * b[12]
-    x31 = a[12] * b[1] + a[13] * b[5] + a[14] * b[9] + a[15] * b[13]
-    x32 = a[12] * b[2] + a[13] * b[6] + a[14] * b[10] + a[15] * b[14]
-    x33 = a[12] * b[3] + a[13] * b[7] + a[14] * b[11] + a[15] * b[15]
-    return x00, x01, x02, x03, x10, x11, x12, x13, x20, x21, x22, x23, x30, x31, x32, x33
-
-
-def matrix_vector_multiply_3(m: Rotation, v: Vector):
-    """Multiplication of a (flat, row-ordered) 3x3 matrix with a column 3-vector"""
-    x0 = m[0] * v[0] + m[1] * v[1] + m[2] * v[2]
-    x1 = m[3] * v[0] + m[4] * v[1] + m[5] * v[2]
-    x2 = m[6] * v[0] + m[7] * v[1] + m[8] * v[2]
-    return x0, x1, x2
-
-
-def matrix_vector_multiply_4(m: Affine, v: tuple[Expr, Expr, Expr, Expr]):
-    """Multiplication of a (flat, row-ordered) 3x3 matrix with a column 3-vector"""
-    x0 = m[0] * v[0] + m[1] * v[1] + m[2] * v[2] + m[3] * v[3]
-    x1 = m[4] * v[0] + m[5] * v[1] + m[6] * v[2] + m[7] * v[3]
-    x2 = m[8] * v[0] + m[9] * v[1] + m[10] * v[2] + m[11] * v[3]
-    x3 = m[12] * v[0] + m[13] * v[1] + m[14] * v[2] + m[15] * v[3]
-    return x0, x1, x2, x3
-
-
-def vector_matrix_multiply_3(v: Vector, m: Rotation):
-    """Multiplication of a row 3-vector with a (flat, row-ordered) 3x3 matrix"""
-    x0 = v[0] * m[0] + v[1] * m[3] + v[2] * m[6]
-    x1 = v[0] * m[1] + v[1] * m[4] + v[2] * m[7]
-    x2 = v[0] * m[2] + v[1] * m[5] + v[2] * m[8]
-    return x0, x1, x2
-
-
-def seitz_inverse(a: Seitz) -> Seitz:
-    """
-    Special 4x3 (flat, row-ordered) matrix inverse.
-
-    For the special case of a _projective transformation matrix_ and acts on augmented vectors,
-    where the omitted last row would be [0, 0, 0, 1]. In this special case, we can express the matrix as
-        |R T|
-        |0 1|
-    where R is a 3x3 (rotation) matrix and T a 3-vector translation. Then we need only find the inverse of R, R^-1,
-    and note that T^-1 = - R^-1 T to find the inverse of the affine projective transformation matrix.
-
-    If we were to further restrict the possible form of R to be orthogonal (or unitary, if we allow for complex-valued
-    matrices), then the transpose of R is even easier to find as the (conjugate) transpose of R.
-    """
-    inv_r = matrix_inverse_3((a[0], a[1], a[2], a[4], a[5], a[6], a[8], a[9], a[10]))
-    neg_inv_t = matrix_vector_multiply_3(inv_r, (a[3], a[7], a[11]))
-    inv_a = (inv_r[0], inv_r[1], inv_r[2], -neg_inv_t[0],
-             inv_r[3], inv_r[4], inv_r[5], -neg_inv_t[1],
-             inv_r[6], inv_r[7], inv_r[8], -neg_inv_t[2],)
-    return inv_a
-
-
-def seitz_multiply(a: Seitz, b: Seitz) -> Seitz:
-    """
-    Multiplication in the special case of two _projective transformation matrices_ with omitted last row [0, 0, 0, 1].
-    In this special case, we can express the matrix multiplication as
-        |A t| |B s|  =  | AB  As+t |
-        |0 1| |0 1|     |  0    1  |
-    where A and B are 3x3 (rotation) matrices and t and s 3-vector translations.
-    """
-    def s2m(s: Seitz) -> Rotation:
-        return s[0], s[1], s[2], s[4], s[5], s[6], s[8], s[9], s[10]
-
-    def s2v(s: Seitz) -> Vector:
-        return s[3], s[7], s[11]
-
-    AB = matrix_matrix_multiply_3(s2m(a), s2m(b))
-    As = matrix_vector_multiply_3(s2m(a), s2v(b))
-    t = s2v(a)
-    return AB[0], AB[1], AB[2], As[0]+t[0], AB[3], AB[4], AB[5], As[1]+t[1], AB[6], AB[7], AB[8], As[2]+t[2]
