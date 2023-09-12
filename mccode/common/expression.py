@@ -498,7 +498,7 @@ class Value:
             v = float(value) if value is not None else None
         except ValueError:
             v = value
-        return cls(v, DataType.float)
+        return cls(v, DataType.float, ObjectType.value, ShapeType.scalar)
 
     @classmethod
     def int(cls, value):
@@ -506,15 +506,15 @@ class Value:
             v = int(value) if value is not None else None
         except ValueError:
             v = value
-        return cls(v, DataType.int)
+        return cls(v, DataType.int, ObjectType.value, ShapeType.scalar)
 
     @classmethod
     def str(cls, value):
-        return cls(value, DataType.str)
+        return cls(value, DataType.str, ObjectType.value, ShapeType.scalar)
 
     @classmethod
     def id(cls, value):
-        return cls(value, DataType.str)
+        return cls(value, DataType.str, ObjectType.identifier, ShapeType.scalar)
 
     @classmethod
     def array(cls, value, dt=None):
@@ -534,7 +534,7 @@ class Value:
 
     @property
     def is_id(self):
-        return self.data_type != DataType.str and isinstance(self.value, str)
+        return self.object_type == ObjectType.identifier
 
     @property
     def is_parameter(self):
@@ -542,7 +542,7 @@ class Value:
 
     @property
     def is_str(self):
-        return self.data_type.is_str
+        return self.object_type == ObjectType.value and self.data_type.is_str
 
     @property
     def is_op(self):
@@ -558,7 +558,7 @@ class Value:
         return self.value == 0
 
     def is_value(self, v):
-        return not self.is_id and v.is_value(self.value) if hasattr(v, 'is_value') else self.value == v
+        return not self.is_id and (v.is_value(self.value) if hasattr(v, 'is_value') else self.value == v)
 
     @property
     def is_scalar(self):

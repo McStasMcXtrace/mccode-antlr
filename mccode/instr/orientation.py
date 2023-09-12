@@ -90,6 +90,17 @@ class Vector(NamedTuple):
         z = Expr.float(0)
         return Matrix(z, -self.z, self.y, self.z, z, -self.x, -self.y, self.x, z)
 
+    def length(self) -> Expr:
+        from mccode.common.expression import unary_expr
+        from math import sqrt
+        if self.x.is_zero and self.y.is_zero:
+            return abs(self.z)
+        if self.y.is_zero and self.z.is_zero:
+            return abs(self.x)
+        if self.z.is_zero and self.x.is_zero:
+            return abs(self.y)
+        return unary_expr(sqrt, 'sqrt', self.x * self.x + self.y * self.y + self.z * self.z)
+
 
 class Angles(NamedTuple):
     x: Expr = Expr.float(0)
@@ -393,7 +404,7 @@ class OrientationPart:
         return self._coordinates
 
     def seitz(self, which=None) -> Seitz:
-        return self.axes if 'axes' in which else self.coordinates
+        return self.axes if which is None or 'axes' in which else self.coordinates
 
     def position(self, which=None) -> Vector:
         return self.seitz(which).vector()
@@ -703,8 +714,8 @@ class DependentOrientation:
         zero = Expr.float(0), Expr.float(0), Expr.float(0)
         # if 'at' was defined RELATIVE to another component, the vector is *in that component's coordinate system*
         # include the full rotation chain to correctly position this component
-        resolved_at_dep = None if dep_at is None else dep_at.combine()
-        resolved_rot_dep = None if dep_angles is None else dep_angles._rotation
+        resolved_at_dep = None if dep_at is None else dep_at.combine().reduce()
+        resolved_rot_dep = None if dep_angles is None else dep_angles._rotation.reduce()
         pos = OrientationParts.from_dependent_chain(resolved_at_dep, at, Angles(*zero), degrees=degrees, copy=copy)
         rot = OrientationParts.from_dependent_chain(resolved_rot_dep, Vector(*zero), angles, degrees=degrees, copy=copy)
         return cls(pos, rot, degrees)

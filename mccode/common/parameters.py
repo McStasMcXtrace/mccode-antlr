@@ -46,6 +46,11 @@ class ComponentParameter:
     def compatible_value(self, value):
         return self.value.compatible(value, id_ok=True)
 
+    def __eq__(self, other):
+        if isinstance(other, ComponentParameter):
+            return self.name == other.name and self.value == other.value
+        return self.value == other
+
 
 def parameter_name_present(parameters: tuple[Union[InstrumentParameter, ComponentParameter]],
                            name: str) -> bool:

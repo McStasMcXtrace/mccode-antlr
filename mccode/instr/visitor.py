@@ -199,14 +199,16 @@ class InstrVisitor(McInstrVisitor):
         return self.visit(ctx.expr())
 
     def visitPlace(self, ctx: McInstrParser.PlaceContext):
+        from mccode.instr.orientation import Vector
         vector = self.visit(ctx.coords())
         relative = self.visit(ctx.reference())
-        return vector, relative
+        return Vector(*vector), relative
 
     def visitOrientation(self, ctx: McInstrParser.OrientationContext):
+        from mccode.instr.orientation import Angles
         angles = self.visit(ctx.coords())
         relative = self.visit(ctx.reference())
-        return angles, relative
+        return Angles(*angles), relative
 
     def visitGroupref(self, ctx: McInstrParser.GrouprefContext):
         return str(ctx.Identifier())

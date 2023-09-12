@@ -1,14 +1,15 @@
 from zenlog import log
 from dataclasses import dataclass, field
-from typing import TypeVar
+from typing import TypeVar, Union
 from ..comp import Comp
 from ..common import Expr
 from ..common import ComponentParameter, MetaData, parameter_name_present, RawC, blocks_to_raw_c
-from .orientation import DependentOrientation
+from .orientation import DependentOrientation, Vector, Angles
 from .jump import Jump
 
 InstanceReference = TypeVar('InstanceReference', bound='Instance')
-TripletReference = tuple[tuple[Expr, Expr, Expr], InstanceReference]
+VectorReference = tuple[Vector, InstanceReference]
+AnglesReference = tuple[Angles, InstanceReference]
 
 @dataclass
 class Instance:
@@ -19,8 +20,8 @@ class Instance:
     """
     name: str
     type: Comp
-    at_relative: TripletReference
-    rotate_relative: TripletReference
+    at_relative: VectorReference
+    rotate_relative: AnglesReference
     orientation: DependentOrientation = None
     parameters: tuple[ComponentParameter] = field(default_factory=tuple)
     removable: bool = False
@@ -63,7 +64,7 @@ class Instance:
         return output.getvalue()
 
     @classmethod
-    def from_instance(cls, name: str, ref: InstanceReference, at: TripletReference, rotate: TripletReference):
+    def from_instance(cls, name: str, ref: InstanceReference, at: VectorReference, rotate: AnglesReference):
         # from copy import deepcopy
         # copy each of: parameters, extend, group, jump, when, metadata
         return cls(name, ref.type, at, rotate,
@@ -74,9 +75,12 @@ class Instance:
                    metadata=tuple([md for md in ref.metadata]))
 
     def __post_init__(self):
+        def tr(t: Union[VectorReference, AnglesReference]) -> tuple[Union[Vector, Angles], DependentOrientation]:
+            va, rel = t
+            return va, rel if rel is None else rel.orientation
         if self.orientation is None:
-            at, at_rel = self.at_relative[0], None if self.at_relative[1] is None else self.at_relative[1].orientation
-            rt, rt_rel = self.rotate_relative[0], None if self.rotate_relative[1] is None else self.rotate_relative[1].orientation
+            at, at_rel = tr(self.at_relative)
+            rt, rt_rel = tr(self.rotate_relative)
             self.orientation = DependentOrientation.from_dependent_orientations(at_rel, at, rt_rel, rt)
 
     def set_parameter(self, name: str, value, overwrite=False, allow_repeated=True):
@@ -161,6 +165,6 @@ class Instance:
         return tuple(md.values())
 
 
-def _triplet_ref_str(tr: TripletReference):
+def _triplet_ref_str(tr: Union[VectorReference, AnglesReference]):
     pos, ref = tr
     return f'({",".join(str(p) for p in pos)}) {"ABSOLUTE" if ref is None else f"RELATIVE {ref.name}"}'
