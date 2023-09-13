@@ -207,7 +207,9 @@ class TestExpression(TestCase):
         self.assertFalse(par.is_id)
         self.assertTrue(par.is_parameter)
         # Verify that the whole reason for this object type existing works (inserting its name into macros)
-        self.assertEqual(str(par), "_instrument_var._parameters.instrument_parameter")
+        # self.assertEqual(str(par), "_instrument_var._parameters.instrument_parameter")
+        # Which didn't seem to be used anywhere _and_ broke instrument printing
+        self.assertEqual(str(par), "instrument_parameter")
 
     def test_UnaryOp(self):
         from mccode.common.expression import Value, UnaryOp
@@ -367,3 +369,27 @@ class TestExpression(TestCase):
         y = Expr.id('y')
         expr = BinaryOp('__call__', atan2, Expr([y, x]))
         self.assertEqual(atan2_y_x, expr)
+
+    def test_instrument_parameter(self):
+        from antlr4 import CommonTokenStream, InputStream
+        from mccode.grammar import McInstrParser, McInstrLexer
+        from mccode.instr import InstrVisitor
+        from mccode.reader import MCSTAS_REGISTRY, Reader
+        from mccode.common.expression import Value, ObjectType
+        instr_source = """
+        DEFINE INSTRUMENT blah(int par=0)
+        TRACE
+        COMPONENT origin = Progress_bar() AT (0, 0, 0) RELATIVE ABSOLUTE
+        COMPONENT source = Source_gen(T1=413.5, I1=10.22e12, T2=145.8, I2=3.44e13, T3=40.1, I3=2.78e13, dist=2,
+                                      radius=0.06, focus_xw=0.1, focus_yh=0.1, lambda0=1.0, dlambda=0.5)
+                           AT (0, 0, 0) RELATIVE PREVIOUS
+        COMPONENT monitor = PSD_monitor(nx=par, ny=par, xwidth=0.1, yheight=0.1) AT (0, 0, 10.1) RELATIVE PREVIOUS
+        END
+        """
+        parser = McInstrParser(CommonTokenStream(McInstrLexer(InputStream(instr_source))))
+        visitor = InstrVisitor(Reader(registries=[MCSTAS_REGISTRY, ]), None)
+        # Parse the instrument definition and return an Instr object
+        instr = visitor.visitProg(parser.prog())
+        nx = instr.components[-1].get_parameter('nx')
+        self.assertTrue(nx.value.is_parameter)
+        self.assertEqual(nx.value, Value('par', object_type=ObjectType.parameter))

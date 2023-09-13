@@ -44,6 +44,7 @@ instrument_parameter
 
 instrument_parameter_unit: Div StringLiteral;
 
+// Why not make TRACE optional?
 instrument_trace: Trace ((component_instance | search | instrument_trace_include)+)?;
 
 instrument_metadata: metadata+;

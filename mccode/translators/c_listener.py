@@ -1,5 +1,6 @@
 from zenlog import log
-from ..grammar import CParser, CListener
+from ..grammar import CParser, CListener, McInstrParser
+from ..instr import InstrVisitor
 from antlr4.error.ErrorListener import ErrorListener
 
 
@@ -115,6 +116,34 @@ class DeclaresCListener(CListener):
         self.debug(f'Exit initializer {self.last_value=}')
 
 
+class EvalCVisitor(InstrVisitor):
+    def __init__(self, found: dict = None, verbose=False):
+        super().__init__(None, None)
+        self.verbose = verbose
+        self.assigned = {} if found is None else found
+        self.prog = []
+
+    def debug(self, message):
+        if self.verbose:
+            log.debug(message)
+
+    def visitAssignment(self, ctx: McInstrParser.AssignmentContext):
+        name = str(ctx.Identifier())
+        value = self.visit(ctx.expr())
+        self.prog.append((name, value))
+        self.assigned[name] = value
+        self.debug(f'{literal_string(ctx)} -> {name} = {value}')
+
+    def visitExpressionIdentifier(self, ctx: McInstrParser.ExpressionIdentifierContext):
+        from ..common import Expr
+        # check if we already have a value for this identifier and insert it if we do:
+        name = str(ctx.Identifier())
+        if name in self.assigned:
+            return self.assigned[name]
+        return Expr.id(name)
+
+
+
 def extract_c_declared_variables_and_defined_types(block: str, user_types: list = None, verbose=False):
     from antlr4 import InputStream, CommonTokenStream
     from antlr4 import ParseTreeWalker
@@ -148,3 +177,26 @@ def extract_c_declared_variables(block: str, user_types: list = None, verbose=Fa
 def extract_c_defined_then_declared_variables(defined_in_block: str, declared_in_block):
     _, defined_in_types = extract_c_declared_variables_and_defined_types(defined_in_block)
     return extract_c_declared_variables(declared_in_block, user_types=defined_in_types)
+
+
+def evaluate_c_defined_variables(variables: dict[str, str], initialized_in: str, verbose=False):
+    """Evaluate individual statements from C-like source in an attempt to find values for the provided variables"""
+    from antlr4 import InputStream, CommonTokenStream
+    from ..grammar import McInstrLexer, McInstrParser
+    from ..common import Expr, DataType
+    lines = [f'{line};' for line in initialized_in.split(';') if len(line.strip())]
+    found = {}
+    for line in lines:
+        parser = McInstrParser(CommonTokenStream(McInstrLexer(InputStream(line))))
+        parser.addErrorListener((CErrorListener(line)))
+        visitor = EvalCVisitor(found=found, verbose=verbose)
+        visitor.visitAssignment(parser.assignment())
+        found = visitor.assigned
+
+    def get_found(name, data_type):
+        expr = found.get(name, Expr.id(name)).simplify()
+        if expr.is_singular:
+            expr.data_type = DataType.from_name(data_type)
+        return expr
+
+    return {v: get_found(v, data_type) for v, data_type in variables.items()}

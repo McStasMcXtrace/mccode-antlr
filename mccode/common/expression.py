@@ -105,6 +105,16 @@ class DataType(Enum):
     __mul__ = __add__
     __truediv__ = __add__
 
+    @classmethod
+    def from_name(cls, name):
+        if 'double' in name or 'float' in name:
+            return cls.float
+        if 'int' in name:
+            return cls.int
+        if 'char' in name or 'string' in name or 'str' in name:
+            return cls.str
+        return cls.undefined
+
     @property
     def is_int(self):
         return self == DataType.int
@@ -264,6 +274,15 @@ class TrinaryOp(Op):
         return len(self.first) == 1 and len(self.second) == 1 and len(self.third) == 1 \
             and self.first[0].vector_known and self.second[0].vector_known and self.third[0].vector_known
 
+    def simplify(self):
+        f, s, t = [[x.simplify() for x in y] for y in (self.first, self.second, self.third)]
+        if self.op == '__trinary__' and len(f) == 1:
+            if f[0].is_value(True) and not f[0].is_value(False):
+                return Expr(s)
+            if f[0].is_value(False) and not f[0].is_value(True):
+                return Expr(t)
+        return TrinaryOp(self.op, f, s, t)
+
 
 class BinaryOp(Op):
     def __init__(self, op, left, right):
@@ -350,6 +369,29 @@ class BinaryOp(Op):
     # def __len__(self):
     #     return max(len(self.left), len(self.right))
 
+    def simplify(self):
+        left = [x.simplify() for x in self.left]
+        right = [x.simplify() for x in self.right]
+        if len(left) == 1 and ((left[0].is_zero and self.op == '+') or (left[0].is_value(1) and self.op == '*')):
+            return Expr(right)
+        if len(right) == 1 and (
+                (right[0].is_zero and any(x == self.op for x in '+-')) or
+                (right[0].is_value(1) and any(x == self.op for x in '*/'))
+        ):
+            return Expr(left)
+        if len(left) == 1 and len(right) == 1 and left[0].is_constant and right[0].is_constant\
+                and self.op in ('+', '-', '*', '/'):
+            if self.op == '+':
+                return left[0] + right[0]
+            if self.op == '-':
+                return left[0] - right[0]
+            if self.op == '*':
+                return left[0] * right[0]
+            if self.op == '/':
+                return left[0] / right[0]
+        # punt!
+        return BinaryOp(self.op, left, right)
+
 
 class UnaryOp(Op):
     def __init__(self, op, value):
@@ -420,6 +462,12 @@ class UnaryOp(Op):
         log.debug(f'{self} > {other} has been called (but probably should not have been!)')
         return False
 
+    def simplify(self):
+        value = [v.simplify() for v in self.value]
+        if self.op == '__group__' and len(value) == 1 and isinstance(value[0], Value):
+            return Expr(value)
+        return UnaryOp(self.op, value)
+
 
 class Value:
     def __init__(self, value, data_type=None, object_type=None, shape_type=None):
@@ -483,8 +531,11 @@ class Value:
     def vector_known(self):
         return self.is_vector and self.has_value and not isinstance(self.value, str)
 
-    def _str_repr_(self):
+    def special_str(self):
         return f'_instrument_var._parameters.{self.value}' if self.is_parameter else f'{self.value}'
+
+    def _str_repr_(self):
+        return str(self.value)
 
     def __str__(self):
         return self._str_repr_()
@@ -716,6 +767,9 @@ class Value:
             return "instr_type_vector"
         raise RuntimeError(f"No known conversion from non-enumerated data type {self.data_type} + {self.shape_type}")
 
+    def simplify(self):
+        return self
+
 
 class Expr:
     def __init__(self, expr: Union[Value, UnaryOp, BinaryOp, list[Union[Value, UnaryOp, BinaryOp]]]):
@@ -786,6 +840,10 @@ class Expr:
     @classmethod
     def best(cls, value):
         return cls(Value.best(value))
+
+    @property
+    def is_singular(self):
+        return len(self.expr) == 1
 
     @property
     def is_op(self):
@@ -971,6 +1029,10 @@ class Expr:
         if len(self.expr) != 1:
             raise RuntimeError('No data type for array Expr objects')
         self.expr[0].shape_type = st
+
+    def simplify(self):
+        """Perform a very basic analysis to reduce the expression complexity"""
+        return Expr([x.simplify() for x in self.expr])
 
 
 def unary_expr(func, name, v):

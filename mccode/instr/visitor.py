@@ -11,7 +11,7 @@ def literal_string(ctx):
     return stream.getText(start_token.start, stop_token.stop)
 
 class InstrVisitor(McInstrVisitor):
-    def __init__(self, parent, filename, destination=None):
+    def __init__(self, parent, filename, destination=None, allow_assignment=False):
         self.parent = parent
         self.filename = filename
         self.state = Instr()
