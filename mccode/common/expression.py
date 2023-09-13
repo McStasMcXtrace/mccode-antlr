@@ -106,6 +106,14 @@ class DataType(Enum):
     __truediv__ = __add__
 
     @property
+    def is_int(self):
+        return self == DataType.int
+
+    @property
+    def is_float(self):
+        return self == DataType.float
+
+    @property
     def is_str(self):
         return self == DataType.str
 
@@ -286,9 +294,9 @@ class BinaryOp(Op):
         if '__call__' == self.op:
             return f'{lstr}({rstr})'
         if '__struct_access__' == self.op:
-            return f'{lstr}.{rstr}' if 'C' == self.style else f'getattr({lstr}, {rstr})'
+            return f'{lstr}.{rstr}' if 'C' == self.style else f'getattr({lstr}, "{rstr}")'
         if '__pointer_access__' == self.op:
-            return f'{lstr}->{rstr}' if 'C' == self.style else f'getattr({lstr}, {rstr})'
+            return f'{lstr}->{rstr}' if 'C' == self.style else f'getattr({lstr}, "{rstr}")'
         if '__getitem__' == self.op:
             return f'{lstr}[{rstr}]'
         if '__pow__' == self.op:
@@ -375,7 +383,8 @@ class UnaryOp(Op):
 
     def __neg__(self):
         if self.op == '-':
-            return self.value
+            # Avoid returning a list unless we need to
+            return self.value if len(self.value) != 1 else self.value[0]
         return UnaryOp('-', self)
 
     def __abs__(self):
@@ -514,7 +523,7 @@ class Value:
 
     @classmethod
     def id(cls, value):
-        return cls(value, DataType.str, ObjectType.identifier, ShapeType.scalar)
+        return cls(value, DataType.undefined, ObjectType.identifier, ShapeType.scalar)
 
     @classmethod
     def array(cls, value, dt=None):
@@ -614,6 +623,10 @@ class Value:
             return other
         if self.is_value(-1):
             return -other
+        if other.is_value(1):
+            return self
+        if other.is_value(-1):
+            return -self
         if other.is_op or self.is_id or other.is_id:
             return BinaryOp('*', self, other)
         return BinaryOp('*', self, other) if pdt.is_str else Value(self.value * other.value, pdt)
@@ -675,7 +688,6 @@ class Value:
         if self.is_id or other.is_op or other.is_id:
             return BinaryOp('__ge__', self, other)
         return self.value >= other.value
-
 
     def __pow__(self, power):
         if not isinstance(power, (Value, Op)):
