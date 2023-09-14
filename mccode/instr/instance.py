@@ -2,7 +2,7 @@ from zenlog import log
 from dataclasses import dataclass, field
 from typing import TypeVar, Union
 from ..comp import Comp
-from ..common import Expr
+from ..common import Expr, Value, DataType
 from ..common import ComponentParameter, MetaData, parameter_name_present, RawC, blocks_to_raw_c
 from .orientation import DependentOrientation, Vector, Angles
 from .jump import Jump
@@ -98,14 +98,23 @@ class Instance:
             else:
                 raise RuntimeError(f"Multiple definitions of {name} in component instance {self.name}")
         p = self.type.get_parameter(name)
+
         if not p.compatible_value(value):
             log.debug(f'{p=}, {name=}, {value=}')
             raise RuntimeError(f"Provided value for parameter {name} is not compatible with {self.type.name}")
-        v = value if isinstance(value, Expr) else Expr.best(value)
-        # is this parameter value *actually* an instrument parameter *name*
-        if v.is_id:
-            pass
-        self.parameters += (ComponentParameter(p.name, v), )
+
+        if isinstance(value, str):
+            value = Expr.parse(value)
+        elif not isinstance(value, Expr):
+            # Copy the data_type of the component definition parameter
+            # -- thus if value is a str but an int or float is expected, we will know it is an identifier
+            value = Expr(Value(value, data_type=p.value.data_type))
+
+        # 2023-09-14 This did nothing. Why was this here?
+        # # is this parameter value *actually* an instrument parameter *name*
+        # if value.is_id:
+        #     pass
+        self.parameters += (ComponentParameter(p.name, value), )
 
     def get_parameter(self, name: str):
         for par in self.parameters:

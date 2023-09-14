@@ -36,8 +36,14 @@ class TestExpression(TestCase):
 
     def test_ShapeType(self):
         from mccode.common.expression import ShapeType as ST
+        ut = ST.unknown
         st = ST.scalar
         vt = ST.vector
+        self.assertTrue(ut.compatible(st))
+        self.assertTrue(ut.compatible(vt))
+        self.assertTrue(ut.compatible(ut))
+        self.assertTrue(st.compatible(ut))
+        self.assertTrue(vt.compatible(ut))
         self.assertFalse(st.compatible(vt))
         self.assertFalse(vt.compatible(st))
         self.assertTrue(st.compatible(st))
@@ -137,6 +143,15 @@ class TestExpression(TestCase):
             self.assertFalse(x.is_vector)
         self.assertFalse(array_value.is_scalar)
         self.assertTrue(array_value.is_vector)
+
+    def test_null_vector_Value(self):
+        from mccode.common.expression import Value, ObjectType, ShapeType
+        from zenlog import log
+        array = Value.array("NULL")
+        # an Array is compatible with a raw string (nor a Value.best(str) which produces an identifier)
+        self.assertTrue(array.compatible("identifier"))
+        # but not a quoted string
+        self.assertFalse(array.compatible('"Not an identifier"'))
 
     def _numeric_Value_checks(self, one, two):
         self.assertEqual(one, one)
@@ -393,3 +408,53 @@ class TestExpression(TestCase):
         nx = instr.components[-1].get_parameter('nx')
         self.assertTrue(nx.value.is_parameter)
         self.assertEqual(nx.value, Value('par', object_type=ObjectType.parameter))
+
+    def test_simplify(self):
+        from mccode.common.expression import Expr, Value
+        is_two = Expr.parse('(2+4)/(1+2)')
+        self.assertTrue(isinstance(is_two, Expr))
+        is_two = is_two.simplify()
+        # Simplifying an expression yields an expression
+        self.assertTrue(isinstance(is_two, Expr))
+        # Which is equal to the expected result of 2
+        self.assertEqual(is_two, Expr.int(2))
+        # For it to be constant it can only have one sub expression part:
+        self.assertEqual(len(is_two.expr), 1)
+        # Which must be a Value
+        self.assertTrue(isinstance(is_two.expr[0], Value))
+        # That is not an identifier
+        self.assertFalse(is_two.expr[0].is_id)
+        # Finally, the real test -- successfully simplifying an Expr produces a constant Expr
+        self.assertTrue(is_two.is_constant)
+
+    def test_evaluate(self):
+        from mccode.common.expression import Expr, Value
+        known = {'bw1phase': Expr.float(0)}
+        phase = Expr.parse('bw1phase / 2')
+        self.assertTrue(isinstance(phase, Expr))
+        phase = phase.evaluate(known)
+        # Evaluating an expression yields an expression
+        self.assertTrue(isinstance(phase, Expr))
+        # Which is equal to the expected result of 0
+        self.assertEqual(phase, Expr.float(0))
+        # For it to be constant it can only have one sub expression part:
+        self.assertEqual(len(phase.expr), 1)
+        # Which must be a Value
+        self.assertTrue(isinstance(phase.expr[0], Value))
+        # That is not an identifier
+        self.assertFalse(phase.expr[0].is_id)
+        # Finally, the real test -- successfully evaluating (and simplifying) an Expr produces a constant Expr
+        self.assertTrue(phase.is_constant)
+
+    def test_depends_on(self):
+        from mccode.common.expression import Expr
+        phase = Expr.parse('bw1phase / 2')
+        self.assertTrue(phase.depends_on('bw1phase'))
+
+        expr = Expr.parse('floor(1.4445)/sin(pi * angle / 180.)')
+        for name in ('angle', 'pi'):
+            self.assertTrue(expr.depends_on(name))
+        for func_name in ('floor', 'sin'):
+            self.assertFalse(expr.depends_on(func_name))
+        for not_name in ('1.4445', '180.', 1.445, 180.0):
+            self.assertFalse(expr.depends_on(not_name))

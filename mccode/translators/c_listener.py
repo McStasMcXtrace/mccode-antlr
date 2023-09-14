@@ -1,6 +1,7 @@
 from zenlog import log
 from ..grammar import CParser, CListener, McInstrParser
 from ..instr import InstrVisitor
+from ..common import Expr
 from antlr4.error.ErrorListener import ErrorListener
 
 
@@ -179,13 +180,14 @@ def extract_c_defined_then_declared_variables(defined_in_block: str, declared_in
     return extract_c_declared_variables(declared_in_block, user_types=defined_in_types)
 
 
-def evaluate_c_defined_variables(variables: dict[str, str], initialized_in: str, verbose=False):
+def evaluate_c_defined_variables(variables: dict[str, str], initialized_in: str, known: dict[str, Expr] = None,
+                                 verbose=False):
     """Evaluate individual statements from C-like source in an attempt to find values for the provided variables"""
     from antlr4 import InputStream, CommonTokenStream
     from ..grammar import McInstrLexer, McInstrParser
     from ..common import Expr, DataType
     lines = [f'{line};' for line in initialized_in.split(';') if len(line.strip())]
-    found = {}
+    found = {} if known is None else known
     for line in lines:
         parser = McInstrParser(CommonTokenStream(McInstrLexer(InputStream(line))))
         parser.addErrorListener((CErrorListener(line)))
@@ -200,3 +202,21 @@ def evaluate_c_defined_variables(variables: dict[str, str], initialized_in: str,
         return expr
 
     return {v: get_found(v, data_type) for v, data_type in variables.items()}
+
+
+def _get_expr(type_name: str, initial_value: str) -> Expr:
+    from ..common import DataType, Value
+    expr = Expr(Value(None)) if initial_value is None else Expr.parse(initial_value)
+    expr.data_type = DataType.from_name(type_name)
+    return expr
+
+
+def extract_c_declared_expressions(block: str, user_types: list = None, verbose=False) -> dict[str, Expr]:
+    variables = extract_c_declared_variables(block, user_types, verbose=verbose)
+    return {name: _get_expr(dt, val) for name, (dt, val) in variables.items()}
+
+
+def evaluate_c_defined_expressions(variables: dict[str, Expr], initialized_in: str, verbose=False) -> dict[str, Expr]:
+    """For defined identifiers, evaluate a (simple) block of C code to determine the end values of the identifiers"""
+    names_types = {name: expr.data_type.name for name, expr in variables.items()}
+    return evaluate_c_defined_variables(names_types, initialized_in, known=variables, verbose=verbose)

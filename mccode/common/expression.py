@@ -57,15 +57,16 @@ class ObjectType(Enum):
 
 
 class ShapeType(Enum):
+    unknown = 0
     scalar = 1
     vector = 2
 
     @property
     def mccode_c_type(self):
-        return '' if self == ShapeType.scalar else '*'
+        return '*' if self.is_vector else ''
 
     def compatible(self, other):
-        return self == other
+        return self == ShapeType.unknown or other == ShapeType.unknown or self == other
 
     @property
     def is_scalar(self):
@@ -114,6 +115,16 @@ class DataType(Enum):
         if 'char' in name or 'string' in name or 'str' in name:
             return cls.str
         return cls.undefined
+
+    @property
+    def name(self):
+        if self == DataType.int:
+            return 'int'
+        if self == DataType.float:
+            return 'float'
+        if self == DataType.str:
+            return 'str'
+        return 'undefined'
 
     @property
     def is_int(self):
@@ -283,6 +294,13 @@ class TrinaryOp(Op):
                 return Expr(t)
         return TrinaryOp(self.op, f, s, t)
 
+    def evaluate(self, known: dict):
+        first, second, third = [[x.evaluate(known) for x in y] for y in (self.first, self.second, self.third)]
+        return TrinaryOp(self.op, first, second, third).simplify()
+
+    def depends_on(self, name: str):
+        return any(any(x.depends_on(name) for x in y) for y in (self.first, self.second, self.third))
+
 
 class BinaryOp(Op):
     def __init__(self, op, left, right):
@@ -392,6 +410,13 @@ class BinaryOp(Op):
         # punt!
         return BinaryOp(self.op, left, right)
 
+    def evaluate(self, known: dict):
+        left, right = [[x.evaluate(known) for x in y] for y in (self.left, self.right)]
+        return BinaryOp(self.op, left, right).simplify()
+
+    def depends_on(self, name: str):
+        return any(any(x.depends_on(name) for x in y) for y in (self.left, self.right))
+
 
 class UnaryOp(Op):
     def __init__(self, op, value):
@@ -465,8 +490,15 @@ class UnaryOp(Op):
     def simplify(self):
         value = [v.simplify() for v in self.value]
         if self.op == '__group__' and len(value) == 1 and isinstance(value[0], Value):
-            return Expr(value)
+            return value[0]  # Expr(value)
         return UnaryOp(self.op, value)
+
+    def evaluate(self, known: dict):
+        value = [x.evaluate(known) for x in self.value]
+        return UnaryOp(self.op, value).simplify()
+
+    def depends_on(self, name: str):
+        return any(x.depends_on(name) for x in self.value)
 
 
 class Value:
@@ -547,6 +579,8 @@ class Value:
         return hash(str(self))
 
     def compatible(self, other, id_ok=False):
+        if isinstance(other, Expr) and other.is_singular:
+            other = other.expr[0]
         if isinstance(other, (UnaryOp, BinaryOp)):
             return id_ok
         value = other if isinstance(other, Value) else Value.best(other)
@@ -586,8 +620,11 @@ class Value:
 
     @classmethod
     def best(cls, value):
-        if isinstance(value, str):
+        if isinstance(value, str) and value[0] == '"' and value[-1] == '"':
             return cls(value, DataType.str)
+        elif isinstance(value, str):
+            # Any string value which is not wrapped in double quotes must(?) be an identifier
+            return cls(value, DataType.undefined, object_type=ObjectType.identifier, shape_type=ShapeType.unknown)
         if isinstance(value, int) or (isinstance(value, float) and value.is_integer()):
             return cls(value, DataType.int)
         return cls(value, DataType.float)
@@ -595,6 +632,10 @@ class Value:
     @property
     def is_id(self):
         return self.object_type == ObjectType.identifier
+
+    @property
+    def is_constant(self):
+        return not self.is_id
 
     @property
     def is_parameter(self):
@@ -769,6 +810,17 @@ class Value:
 
     def simplify(self):
         return self
+
+    def evaluate(self, known: dict):
+        if not self.is_constant and self.value in known:
+            result = known[self.value]
+            if isinstance(result, Expr) and result.is_singular:
+                return result.expr[0]
+            return result
+        return self
+
+    def depends_on(self, name: str):
+        return not self.is_constant and self.value == name
 
 
 class Expr:
@@ -1033,6 +1085,12 @@ class Expr:
     def simplify(self):
         """Perform a very basic analysis to reduce the expression complexity"""
         return Expr([x.simplify() for x in self.expr])
+
+    def evaluate(self, known: dict):
+        return Expr([x.evaluate(known) for x in self.expr]).simplify()
+
+    def depends_on(self, name: str):
+        return any(x.depends_on(name) for x in self.expr)
 
 
 def unary_expr(func, name, v):
