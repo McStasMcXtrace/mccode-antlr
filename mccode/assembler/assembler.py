@@ -2,6 +2,7 @@ from typing import Union
 from ..common import Expr, InstrumentParameter
 from ..instr import Instr, Instance
 from ..reader import Reader, Registry
+from zenlog import log
 
 
 class Assembler:
@@ -45,7 +46,7 @@ class Assembler:
             instance.set_parameters(**parameters)
         return instance
 
-    def parameter(self, string, ignore_repeated=False):
+    def parameter(self, par, ignore_repeated=False):
         """Add a parameter to the underlying Instr.
 
         Note
@@ -53,15 +54,26 @@ class Assembler:
         The ignore_repeated keyword argument can be set to True in order to merely ensure that a parameter exists.
         Otherwise, repeatedly specifying the same parameter will raise a RuntimeError.
         """
-        self.instrument.add_parameter(InstrumentParameter.parse(string), ignore_repeated=ignore_repeated)
+        if isinstance(par, str):
+            par = InstrumentParameter.parse(par)
+        if not isinstance(par, InstrumentParameter):
+            log.warning(f'Unhandled parameter {par}')
+        self.instrument.add_parameter(par, ignore_repeated=ignore_repeated)
 
-    def parameters(self, **pairs):
+    def parameters(self, *pars, **pairs):
+        for par in list(pars):
+            if isinstance(par, str):
+                par = InstrumentParameter.parse(par)
+            if not isinstance(par, InstrumentParameter):
+                log.warning(f'Unhandled parameter(s) {par}')
+            self.instrument.add_parameter(par)
+
         for name, value in pairs.items():
-            if not isinstance(pairs, InstrumentParameter):
-                if hasattr(value, '__len__') and len(value) == 2 and isinstance(value[1], str):
-                    value, unit = value
-                elif isinstance(value, dict) and 'unit' in value and 'value' in dict:
+            if not isinstance(value, InstrumentParameter):
+                if isinstance(value, dict) and 'unit' in value and 'value' in value:
                     value, unit = value['value'], value['unit']
+                elif isinstance(value, (list, tuple)) and len(value) == 2 and isinstance(value[1], str):
+                    value, unit = value
                 else:
                     unit = ''
                 value = InstrumentParameter(name, unit, value if isinstance(value, Expr) else Expr.best(value))
