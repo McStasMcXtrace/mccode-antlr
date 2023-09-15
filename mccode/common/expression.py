@@ -99,12 +99,19 @@ class DataType(Enum):
         if self == other:
             return self
         if (self == DataType.float and other == DataType.int) or (self == DataType.int and other == DataType.float):
-            return DataType.int
+            return DataType.float
         return DataType.str
 
     __sub__ = __add__
     __mul__ = __add__
-    __truediv__ = __add__
+
+    def __truediv__(self, other):
+        if self == DataType.str or other == DataType.str:
+            raise RuntimeError('Division of strings is undefined')
+        return DataType.float
+
+    def __floordiv__(self, other):
+        return DataType.int
 
     @classmethod
     def from_name(cls, name):
@@ -161,6 +168,9 @@ class Op:
     def __hash__(self):
         return hash(str(self))
 
+    def __int__(self):
+        raise RuntimeError('No conversion to int for operations')
+
     @property
     def is_op(self):
         return True
@@ -171,6 +181,10 @@ class Op:
 
     @property
     def is_id(self):
+        return False
+
+    @property
+    def is_constant(self):
         return False
 
     @property
@@ -223,6 +237,15 @@ class Op:
         if other.is_value(-1):
             return -self
         return BinaryOp('/', self, other)
+
+    def __floordiv__(self, other):
+        if other.is_zero:
+            raise RuntimeError('Division by zero')
+        if other.is_value(1):
+            return self
+        if other.is_value(-1):
+            return -self
+        return BinaryOp('//', self, other)
 
     def __neg__(self):
         return UnaryOp('-', self)
@@ -354,6 +377,9 @@ class BinaryOp(Op):
             return f'{lstr} && {rstr}' if 'C' == self.style else f'{lstr} and {rstr}'
         if any(x in self.op for x in '+-'):
             return f'({lstr} {self.op} {rstr})'
+        if self.op == '//' and 'C' == self.style:
+            # Verify that the operands are integers before reducing to a single slash?
+            return f'{lstr} / {rstr}'
         if any(x in self.op for x in '*/'):
             return f'{lstr} {self.op} {rstr}'
         return f'{self.op}({lstr}, {rstr})'
@@ -513,6 +539,11 @@ class Value:
         self._object = object_type
         self._data = data_type
         self._shape = shape_type
+
+    def __int__(self):
+        if self.data_type != DataType.int:
+            raise RuntimeError('Non-integer data type Value; round first')
+        return self._value
 
     @property
     def value(self):
@@ -676,17 +707,20 @@ class Value:
     def vector_len(self):
         return len(self.value) if self.is_vector else 1
 
+    def as_type(self, dt):
+        return Value(self.value, data_type=dt, object_type=self.object_type, shape_type=self.shape_type)
+
     def __add__(self, other):
         other = other if isinstance(other, (Value, Op)) else Value.best(other)
         if self.is_zero:
             return other
         if other.is_zero:
             return self
-        if other.is_op and isinstance(other, UnaryOp) and other.op == '-':
-            return self - other.value
+        if other.is_op and isinstance(other, UnaryOp) and other.op == '-' and len(other.value) == 1:
+            return self - other.value[0]
         if self.is_id and (isinstance(other, Value) and not isinstance(other.value, str) and other < 0):
             return self - (-other.value)
-        if other.is_op or self.is_id or other.is_id:
+        if other.is_op or self.is_id or other.is_id or not self.is_constant or not other.is_constant:
             return BinaryOp('+', self, other)
         pdt = self.data_type + other.data_type
         return BinaryOp('+', self, other) if pdt.is_str else Value(self.value + other.value, pdt)
@@ -697,11 +731,11 @@ class Value:
             return -other
         if other.is_zero:
             return self
-        if other.is_op and isinstance(other, UnaryOp) and other.op == '-':
-            return self + other.value
+        if other.is_op and isinstance(other, UnaryOp) and other.op == '-' and len(other.value) == 1:
+            return self + other.value[0]
         if self.is_id and (isinstance(other, Value) and not isinstance(other.value, str) and other < 0):
             return self + (-other.value)
-        if other.is_op or self.is_id or other.is_id:
+        if other.is_op or self.is_id or other.is_id or not self.is_constant or not other.is_constant:
             return BinaryOp('-', self, other)
         pdt = self.data_type - other.data_type
         return BinaryOp('-', self, other) if pdt.is_str else Value(self.value - other.value, pdt)
@@ -712,13 +746,13 @@ class Value:
         if self.is_zero or other.is_zero:
             return Value(0, DataType.int if pdt.is_str else pdt)
         if self.is_value(1):
-            return other
+            return other.as_type(pdt)
         if self.is_value(-1):
-            return -other
+            return (-other).as_type(pdt)
         if other.is_value(1):
-            return self
+            return (self).as_type(pdt)
         if other.is_value(-1):
-            return -self
+            return (-self).as_type(pdt)
         if other.is_op or self.is_id or other.is_id:
             return BinaryOp('*', self, other)
         return BinaryOp('*', self, other) if pdt.is_str else Value(self.value * other.value, pdt)
@@ -729,14 +763,29 @@ class Value:
         if self.is_zero:
             return Value(0, DataType.int if pdt.is_str else pdt)
         if other.is_value(1):
-            return self
+            return (self).as_type(pdt)
         if other.is_value(-1):
-            return -self
+            return (-self).as_type(pdt)
         if other.is_zero:
             raise RuntimeError('Division by zero!')
         if other.is_op or self.is_id or other.is_id:
             return BinaryOp('/', self, other)
         return BinaryOp('/', self, other) if pdt.is_str else Value(self.value / other.value, pdt)
+
+    def __floordiv__(self, other):
+        other = other if isinstance(other, (Value, Op)) else Value.best(other)
+        pdt = self.data_type // other.data_type
+        if self.is_zero:
+            return Value(0, DataType.int)
+        if other.is_value(1):
+            return Value.int(round(self.value))
+        if other.is_value(-1):
+            return -Value.int(round(self.value))
+        if other.is_zero:
+            raise RuntimeError('Division by zero!')
+        if other.is_op or self.is_id or other.is_id:
+            return BinaryOp('//', self, other)
+        return BinaryOp('//', self, other) if pdt.is_str else Value.int(self.value // other.value)
 
     def __neg__(self):
         return UnaryOp('-', self) if self.is_id or self.data_type.is_str else Value(-self.value, self.data_type)
@@ -958,29 +1007,52 @@ class Expr:
         other_expr = other.expr[0] if (isinstance(other, Expr) and len(other.expr) == 1) else other
         return len(self.expr) == 1 and self.expr[0].compatible(other_expr, id_ok)
 
-    def __add__(self, other):
+    def _prep_numeric_operation(self, msg: str, other):
         if len(self.expr) != 1:
-            raise RuntimeError('Can not add to array Expr')
-        other_expr = other.expr[0] if (isinstance(other, Expr) and len(other.expr) == 1) else other
-        return Expr(self.expr[0] + other_expr)
+            raise RuntimeError(f'Can not {msg} array Expr')
+        return other.expr[0] if (isinstance(other, Expr) and len(other.expr) == 1) else other
+
+    def _prep_rev_numeric_operation(self, msg: str, other):
+        r = self._prep_numeric_operation(msg, other)
+        if not isinstance(r, (Expr, TrinaryOp, BinaryOp, UnaryOp, Value)):
+            r = Value.best(r)
+        return r
+
+    def __add__(self, other):
+        return Expr(self.expr[0] + self._prep_numeric_operation('add to', other))
 
     def __sub__(self, other):
-        if len(self.expr) != 1:
-            raise RuntimeError('Can not subtract array Expr')
-        other_expr = other.expr[0] if (isinstance(other, Expr) and len(other.expr) == 1) else other
-        return Expr(self.expr[0] - other_expr)
+        return Expr(self.expr[0] - self._prep_numeric_operation('subtract', other))
 
     def __mul__(self, other):
-        if len(self.expr) != 1:
-            raise RuntimeError('Can not multiply array Expr')
-        other_expr = other.expr[0] if (isinstance(other, Expr) and len(other.expr) == 1) else other
-        return Expr(self.expr[0] * other_expr)
+        return Expr(self.expr[0] * self._prep_numeric_operation('multiply', other))
 
     def __truediv__(self, other):
-        if len(self.expr) != 1:
-            raise RuntimeError('Can not divide array Expr')
-        other_expr = other.expr[0] if (isinstance(other, Expr) and len(other.expr) == 1) else other
-        return Expr(self.expr[0] / other_expr)
+        return Expr(self.expr[0] / self._prep_numeric_operation('divide', other))
+
+    def __floordiv__(self, other):
+        return Expr(self.expr[0] // self._prep_numeric_operation('divide', other))
+
+    def __pow__(self, other):
+        return Expr(self.expr[0] ** self._prep_numeric_operation('raise', other))
+
+    def __radd__(self, other):
+        return Expr(self._prep_rev_numeric_operation('add to', other) + self.expr[0])
+
+    def __rsub__(self, other):
+        return Expr(self._prep_rev_numeric_operation('subtract', other) - self.expr[0])
+
+    def __rmul__(self, other):
+        return Expr(self._prep_rev_numeric_operation('multiply', other) * self.expr[0])
+
+    def __rtruediv__(self, other):
+        return Expr(self._prep_rev_numeric_operation('divide', other) / self.expr[0])
+
+    def __rfloordiv__(self, other):
+        return Expr(self._prep_rev_numeric_operation('divide', other) // self.expr[0])
+
+    def __rpow__(self, other):
+        return Expr(self._prep_rev_numeric_operation('raise', other) ** self.expr[0])
 
     def __neg__(self):
         return Expr([-x for x in self.expr])
@@ -1043,6 +1115,11 @@ class Expr:
                     return False
             return True
         return len(self.expr) == 1 and self.expr[0] >= other
+
+    def __int__(self):
+        if not len(self.expr) == 1:
+            raise RuntimeError('No conversion to int for array Expr objects')
+        return int(self.expr[0])
 
     @property
     def mccode_c_type(self):

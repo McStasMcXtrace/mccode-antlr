@@ -458,3 +458,22 @@ class TestExpression(TestCase):
             self.assertFalse(expr.depends_on(func_name))
         for not_name in ('1.4445', '180.', 1.445, 180.0):
             self.assertFalse(expr.depends_on(not_name))
+
+    def test_numeric_operations(self):
+        from mccode.common.expression import Expr, DataType
+        x = Expr.float(1.)
+        for res in (1 + x, x + 1, 2 * x, x / 0.5, 2 / x):
+            self.assertTrue(isinstance(res, Expr))
+            self.assertTrue(res.data_type == DataType.float)
+            self.assertEqual(res, Expr.float(2))
+            self.assertEqual(res, 2)
+
+    def test_numeric_expressions(self):
+        from mccode.common.expression import Expr
+        for n_slits in (2, Expr.int(2)):
+            for theta_0 in (Expr.float(100), Expr.id('variable')):
+                delta = theta_0 / 2.0
+                edges = [y * 360.0 / n_slits + x for y in range(int(n_slits)) for x in (-delta, delta)]
+                self.assertEqual(len(edges), 4)
+                for edge in edges:
+                    self.assertTrue(isinstance(edge, Expr))
