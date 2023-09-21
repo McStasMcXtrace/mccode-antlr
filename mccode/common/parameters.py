@@ -9,13 +9,6 @@ class InstrumentParameter:
     unit: str
     value: Expr
 
-    def __str__(self):
-        from io import StringIO
-        from mccode.common import TextWrapper
-        output = StringIO()
-        self.to_file(output, TextWrapper())
-        return output.getvalue()
-
     def to_file(self, output, wrapper):
         from .expression import DataType
         line = ''
@@ -25,25 +18,22 @@ class InstrumentParameter:
             line = 'vector '
         elif self.value.data_type == DataType.int:
             line = 'int '
-        if len(line):
-            if not self.value.has_value and self.unit is None:
-                line = wrapper.type_parameter(line, self.name)
-            elif not self.value.has_value:
-                line = wrapper.type_parmeter_unit(line, self.name, self.unit)
-            elif self.unit is None:
-                line = wrapper.type_parameter_value(line, self.name, self.value)
-            else:
-                line = wrapper.type_parmeter_unit_value(line, self.name, self.unit, self.value)
-        else:
-            if not self.value.has_value and self.unit is None:
-                line = wrapper.parameter(self.name)
-            elif not self.value.has_value:
-                line = wrapper.parmeter_unit(self.name, self.unit)
-            elif self.unit is None:
-                line = wrapper.parameter_value(self.name, self.value)
-            else:
-                line = wrapper.parmeter_unit_value(self.name, self.unit, self.value)
+        line = wrapper.datatype(line)+wrapper.parameter(self.name)
+        if not self.unit is None:
+            line += wrapper.unit(self.unit)
+        if self.value.has_value:
+            line += "=" + wrapper.value(self.value)
         print(line, file=output)
+
+    def to_string(self, wrapper):
+        from io import StringIO
+        output = StringIO()
+        self.to_file(output, wrapper)
+        return output.getvalue()
+
+    def __str__(self):
+        from mccode.common import TextWrapper
+        return self.to_string(TextWrapper())
 
     @staticmethod
     def parse(s: str):
@@ -63,11 +53,18 @@ class ComponentParameter:
     name: str
     value: Expr
 
+    def to_string(self, wrapper):
+        from io import StringIO
+        output = StringIO()
+        self.to_file(output, wrapper)
+        return output.getvalue()
+
     def __str__(self):
-        return f"{self.name}={self.value}"
+        from mccode.common import TextWrapper
+        return self.to_string(TextWrapper())
 
     def to_file(self, output, wrapper):
-        print(wrapper.parameter_value(self.name, self.value), file=output)
+        print(wrapper.parameter(self.name) + '=' + wrapper.value(self.value), file=output)
 
     def compatible_value(self, value):
         return self.value.compatible(value, id_ok=True)

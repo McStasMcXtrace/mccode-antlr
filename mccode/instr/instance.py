@@ -37,7 +37,7 @@ class Instance:
         if self.cpu:
             print(wrapper.line('CPU', []), file=output)
 
-        instance_parameters = ', '.join(p.to_file(output=output, wrapper=wrapper) for p in self.parameters)
+        instance_parameters = ', '.join(p.to_string(wrapper=wrapper) for p in self.parameters)
         first_line = wrapper.line('COMPONENT', [f'{self.name} = {self.type.name}({instance_parameters})'])
         print(first_line, file=output)
 

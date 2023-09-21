@@ -37,13 +37,16 @@ class Instr:
         if wrapper is None:
             from mccode.common import TextWrapper
             wrapper = TextWrapper(width=120)
-        comment_lines = [wrapper.comment('Instrument:', self.name), wrapper.comment('Source:', self.source)]
-        comment_lines.extend([wrapper.comment('Contains:', f'"%include {inc}"') for inc in self.included])
-        comment_lines.append('Component definitions located via registries:')
-        comment_lines.extend([registry.to_file(output=output, wrapper=wrapper) for registry in self.registries])
-        comment_lines = '\n * '.join(comment_lines)
-        print(comment_lines, file=output)
-        instr_parameters = ', '.join(p.to_file(output=output, wrapper=wrapper) for p in self.parameters)
+        print(wrapper.comment('Instrument:', self.name), file=output)
+        print(wrapper.comment('Source:', self.source), file=output)
+        for include in self.included:
+            print(wrapper.comment('Contains:', f'"%include {include}"'), file=output)
+        print(wrapper.start_block_comment('Component definitions located via registries:'), file=output)
+        for registry in self.registries:
+            registry.to_file(output=output, wrapper=wrapper)
+        print(wrapper.end_block_comment(), file=output)
+
+        instr_parameters = ', '.join(p.to_string(wrapper=wrapper) for p in self.parameters)
         first_line = wrapper.line('DEFINE INSTRUMENT', [f'{self.name}({instr_parameters})'])
         print(first_line, file=output)
 

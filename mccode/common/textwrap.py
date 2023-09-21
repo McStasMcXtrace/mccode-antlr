@@ -22,6 +22,14 @@ class TextWrapper(PyTextWrapper):
         lines[0] = f'{name} {lines[0].strip()}'
         return '/*' + '\n* '.join(lines) + '\n*/'
 
+    @staticmethod
+    def start_block_comment(name: str) -> str:
+        return f'/* {name}'
+
+    @staticmethod
+    def end_block_comment() -> str:
+        return '*/'
+
     def block(self, name: str, content: str) -> str:
         return '\n'.join([name + '%{', *self.wrap(content), '}%'])
 
@@ -33,35 +41,20 @@ class TextWrapper(PyTextWrapper):
         return f'{name} "{mimetype}" {item} %{{{value}%}}'
 
     @staticmethod
+    def datatype(data_type: str) -> str:
+        return data_type
+
+    @staticmethod
     def parameter(parameter: str) -> str:
         return f'{parameter}'
 
     @staticmethod
-    def parameter_unit(parameter: str, unit: str) -> str:
-        return f'{parameter}/"{unit}"'
-    @staticmethod
-    def parameter_value(parameter: str, value: str) -> str:
-        return f'{parameter}={value}'
+    def unit(unit: str) -> str:
+        return f'/{unit}'
 
     @staticmethod
-    def parameter_unit_value(parameter: str, unit: str, value: str) -> str:
-        return f'{parameter}/"{unit}"={value}'
-
-    @staticmethod
-    def type_parameter(data_type: str, parameter: str) -> str:
-        return f'{data_type} {parameter}'
-
-    @staticmethod
-    def type_parameter_unit(data_type: str, parameter: str, unit: str) -> str:
-        return f'{data_type} {parameter}/"{unit}"'
-
-    @staticmethod
-    def type_parameter_value(data_type: str, parameter: str, value: str) -> str:
-        return f'{data_type} {parameter}={value}'
-
-    @staticmethod
-    def type_parameter_unit_value(data_type: str, parameter: str, unit: str, value: str) -> str:
-        return f'{data_type} {parameter}/"{unit}"={value}'
+    def value(value: str) -> str:
+        return f'{value}'
 
     @staticmethod
     def start_list(name: str) -> str:
@@ -136,6 +129,14 @@ class HTMLWrapper:
     def comment(name: str, content: str) -> str:
         return f"<details><summary>{name}</summary>{content}</details>"
 
+    @staticmethod
+    def start_block_comment(name: str) -> str:
+        return f'<details><summary>{name}</summary>'
+
+    @staticmethod
+    def end_block_comment() -> str:
+        return '</details>'
+
     def block(self, name: str, content: str) -> str:
         return '<br>'.join([f"<b>{name}</b>" + '%{', *self.wrap(content), '}%'])
 
@@ -147,20 +148,20 @@ class HTMLWrapper:
         return f'<b>{name}</b> <code>"{mimetype}"</code>" <var>{item}</var> %{{<pre>{value}</pre>%}}'
 
     @staticmethod
+    def datatype(data_type: str) -> str:
+        return f'<code>{data_type}</code>'
+
+    @staticmethod
     def parameter(parameter: str) -> str:
         return f'<var>{parameter}</var>'
 
     @staticmethod
-    def parameter_unit(parameter: str, unit: str) -> str:
-        return f'<var>{parameter}</var>/"{unit}"'
+    def unit(unit: str) -> str:
+        return f'/{unit}'
 
     @staticmethod
-    def parameter_value(parameter: str, value: str) -> str:
-        return f'<var>{parameter}</var>=<code>{value}</code>'
-
-    @staticmethod
-    def parameter_unit_value(parameter: str, unit: str, value: str) -> str:
-        return f'<var>{parameter}</var>/"{unit}"=<code>{value}</code>'
+    def value(value: str) -> str:
+        return f'<code>{value}</code>'
 
     @staticmethod
     def start_list(name: str) -> str:
