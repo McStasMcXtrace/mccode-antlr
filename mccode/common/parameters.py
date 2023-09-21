@@ -10,17 +10,40 @@ class InstrumentParameter:
     value: Expr
 
     def __str__(self):
+        from io import StringIO
+        from mccode.common import TextWrapper
+        output = StringIO()
+        self.to_file(output, TextWrapper())
+        return output.getvalue()
+
+    def to_file(self, output, wrapper):
         from .expression import DataType
-        mctype = ''
+        line = ''
         if self.value.is_str:
-            mctype = 'string '
+            line = 'string '
         elif self.value.is_vector and self.value.data_type == DataType.float:
-            mctype = 'vector '
+            line = 'vector '
         elif self.value.data_type == DataType.int:
-            mctype = 'int '
-        name = self.name if self.unit is None else f'{self.name}/{self.unit}'
-        default = f' = {self.value}' if self.value.has_value else ''
-        return f'{mctype}{name}{default}'
+            line = 'int '
+        if len(line):
+            if not self.value.has_value and self.unit is None:
+                line = wrapper.type_parameter(line, self.name)
+            elif not self.value.has_value:
+                line = wrapper.type_parmeter_unit(line, self.name, self.unit)
+            elif self.unit is None:
+                line = wrapper.type_parameter_value(line, self.name, self.value)
+            else:
+                line = wrapper.type_parmeter_unit_value(line, self.name, self.unit, self.value)
+        else:
+            if not self.value.has_value and self.unit is None:
+                line = wrapper.parameter(self.name)
+            elif not self.value.has_value:
+                line = wrapper.parmeter_unit(self.name, self.unit)
+            elif self.unit is None:
+                line = wrapper.parameter_value(self.name, self.value)
+            else:
+                line = wrapper.parmeter_unit_value(self.name, self.unit, self.value)
+        print(line, file=output)
 
     @staticmethod
     def parse(s: str):
@@ -42,6 +65,9 @@ class ComponentParameter:
 
     def __str__(self):
         return f"{self.name}={self.value}"
+
+    def to_file(self, output, wrapper):
+        print(wrapper.parameter_value(self.name, self.value), file=output)
 
     def compatible_value(self, value):
         return self.value.compatible(value, id_ok=True)

@@ -34,28 +34,28 @@ class Instance:
     metadata: tuple[MetaData] = field(default_factory=tuple)
 
     def to_file(self, output, wrapper=None):
-        print(file=output)
         if self.cpu:
-            print('CPU', file=output)
-        instance_parameters = ', '.join(str(p) for p in self.parameters)
-        first_line = f'COMPONENT {self.name} = {self.type.name}({instance_parameters})'
-        if wrapper is not None and len(first_line) > wrapper.width:
-            instance_parameters = '\n'.join(wrapper.wrap(instance_parameters, '  '))
-            first_line = f'COMPONENT {self.name} = {self.type.name}(\n{instance_parameters}\n)'
+            print(wrapper.line('CPU', []), file=output)
+
+        instance_parameters = ', '.join(p.to_file(output=output, wrapper=wrapper) for p in self.parameters)
+        first_line = wrapper.line('COMPONENT', [f'{self.name} = {self.type.name}({instance_parameters})'])
         print(first_line, file=output)
 
         if self.when is not None:
-            print(f'WHEN {str(self.when)}', file=output)
-        print(f'AT {_triplet_ref_str(self.at_relative)} ROTATED {_triplet_ref_str(self.rotate_relative)}', file=output)
+            print(wrapper.line('WHEN', [str(self.when)]), file=output)
+
+        print(wrapper.line('AT', [_triplet_ref_str(self.at_relative)]), file=output)
+        print(wrapper.line('ROTATED', [_triplet_ref_str(self.rotate_relative)]), file=output)
+
         if self.group is not None:
-            print(f'GROUP {self.group}', file=output)
+            print(wrapper.line('GROUP', [self.group]), file=output)
         if self.extend:
             extends = '\n'.join(str(ext) for ext in self.extend)
-            print(f'EXTEND %{{{extends}%}}', file=output)
+            print(wrapper.block('EXTEND', extends), file=output)
         for jump in self.jump:
-            jump.to_file(output)
+            jump.to_file(output, wrapper)
         for metadata in self.metadata:
-            metadata.to_file(output)
+            metadata.to_file(output, wrapper)
 
     def __str__(self):
         from io import StringIO

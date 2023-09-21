@@ -37,43 +37,51 @@ class Instr:
         if wrapper is None:
             from mccode.common import TextWrapper
             wrapper = TextWrapper(width=120)
-        comment_lines = [f'Instrument: {self.name}', f'Source: {self.source}']
-        comment_lines.extend([f' Contains {instr} via "%include {instr}"' for instr in self.included])
+        comment_lines = [wrapper.comment('Instrument:', self.name), wrapper.comment('Source:', self.source)]
+        comment_lines.extend([wrapper.comment('Contains:', f'"%include {inc}"') for inc in self.included])
         comment_lines.append('Component definitions located via registries:')
-        comment_lines.extend([str(registry) for registry in self.registries])
+        comment_lines.extend([registry.to_file(output=output, wrapper=wrapper) for registry in self.registries])
         comment_lines = '\n * '.join(comment_lines)
-        print(f'/* {comment_lines} */', file=output)
-        instr_parameters = ', '.join(str(p) for p in self.parameters)
-        first_line = f"DEFINE INSTRUMENT {self.name}({instr_parameters})"
-        if wrapper is not None and len(first_line) > wrapper.width:
-            instr_parameters = '\n'.join(wrapper.wrap(instr_parameters, '  '))
-            first_line = f"DEFINE INSTRUMENT {self.name}(\n{instr_parameters}\n)"
+        print(comment_lines, file=output)
+        instr_parameters = ', '.join(p.to_file(output=output, wrapper=wrapper) for p in self.parameters)
+        first_line = wrapper.line('DEFINE INSTRUMENT', [f'{self.name}({instr_parameters})'])
         print(first_line, file=output)
 
         for metadata in self.metadata:
-            metadata.to_file(output)
+            metadata.to_file(output=output, wrapper=wrapper)
         if self.flags:
-            print(f'DEPENDENCY "{" ".join(f for f in self.flags)}"', file=output)
+            print(wrapper.line('DEPENDENCY ', list(self.flags)), file=output)
+
         if self.declare:
-            print(f'DECLARE %{{{_join_rawc_tuple(self.declare, wrapper)}%}} /* end of DECLARE */', file=output)
+            print(wrapper.block('DECLARE', _join_rawc_tuple(self.declare, wrapper)), file=output)
         if self.user:
-            print(f'USERVARS %{{{_join_rawc_tuple(self.user, wrapper)}%}} /* end of USERVARS */', file=output)
+            print(wrapper.block('USERVARS', _join_rawc_tuple(self.user, wrapper)), file=output)
         if self.initialize:
-            print(f'INITIALIZE %{{{_join_rawc_tuple(self.initialize, wrapper)}%}} /* end of INITIALIZE */', file=output)
-        print('TRACE', file=output)
+            print(wrapper.block('INITIALIZE', _join_rawc_tuple(self.initialize, wrapper)), file=output)
+
+        print(wrapper.start_list('TRACE'), file=output)
         for instance in self.components:
+            print(wrapper.start_list_item(), file=output)
             instance.to_file(output, wrapper)
+            print(wrapper.end_list_item(), file=output)
         if self.save:
-            print(f'SAVE %{{{_join_rawc_tuple(self.save, wrapper)}%}} /* end of SAVE */', file=output)
+            print(wrapper.block('SAVE', _join_rawc_tuple(self.save, wrapper)), file=output)
         if self.final:
-            print(f'FINALLY %{{{_join_rawc_tuple(self.final, wrapper)}%}} /* end of FINALLY */', file=output)
-        print('END', file=output)
+            print(wrapper.block('FINALLY', _join_rawc_tuple(self.final, wrapper)), file=output)
+        print(wrapper.end_list('END'), file=output)
 
     def __str__(self):
         from mccode.common import TextWrapper
         wrapper = TextWrapper(width=80)
         output = StringIO()
         self.to_file(output, wrapper=wrapper)
+        return output.getvalue()
+
+    def _repr_html_(self):
+        from mccode.common import HTMLWrapper
+        wrapper = HTMLWrapper()
+        output = StringIO()
+        self.to_file(output=output, wrapper=wrapper)
         return output.getvalue()
 
     def add_component(self, a: Instance):

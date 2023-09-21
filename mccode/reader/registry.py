@@ -18,6 +18,16 @@ class Registry:
     root = None
     pooch = None
 
+    def __str__(self):
+        from io import StringIO
+        from mccode.common import TextWrapper
+        output = StringIO()
+        self.to_file(output, TextWrapper())
+        return output.getvalue()
+
+    def to_file(self, output, wrapper):
+        print('Registry<>', file=output)
+
     def known(self, name: str, ext: str = None):
         pass
 
@@ -73,8 +83,13 @@ class RemoteRegistry(Registry):
         else:
             raise RuntimeError(f"The provided filename {filename} is not a path or file packaged with this module")
 
-    def __str__(self):
-        return f'RemoteRegistry<name={self.name}, url={self.pooch.base_url}, filename={self.filename}>'
+    def to_file(self, output, wrapper):
+        contents = wrapper.escape('<') + ', '.join([
+            wrapper.parameter_value('name', self.name),
+            wrapper.parameter_value('url', 'UNDEF' if self.pooch is None else wrapper.url(self.pooch.base_url)),
+            wrapper.parameter_value('filename', self.filename),
+        ]) + wrapper.escape('>')
+        print(wrapper.line(RemoteRegistry, contents), file=output)
 
     def known(self, name: str, ext: str = None):
         compare = _name_plus_suffix(name, ext)
@@ -144,8 +159,12 @@ class LocalRegistry(Registry):
         self.name = name
         self.root = Path(root)
 
-    def __str__(self):
-        return f'LocalRegistry<name={self.name}, root={self.root}>'
+    def to_file(self, output, wrapper):
+        contents = wrapper.escape('<') + ', '.join([
+            wrapper.parameter_value('name', self.name),
+            wrapper.parameter_value('root', wrapper.url(self.pooch.base_url)),
+        ]) + wrapper.escape('>')
+        print(wrapper.line('LocalRegistry', contents), file=output)
 
     def _filetype_iterator(self, filetype: str):
         return self.root.glob(f'**/*.{filetype}')

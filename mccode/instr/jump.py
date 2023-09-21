@@ -10,7 +10,7 @@ class Jump:
     condition: Expr
     absolute_target: int = -1
 
-    def to_file(self, output):
+    def to_file(self, output, wrapper):
         # self.target is one of "PREVIOUS", "PREVIOUS_{i}, "MYSELF", "MYSELF_{i}, "NEXT",
         # or "{component instance identifier}"
         jump_name = self.target
@@ -19,4 +19,4 @@ class Jump:
         if abs(self.relative_target) > 1:
             jump_name += f' ({abs(self.relative_target)})'
         when_iter = 'ITERATE' if self.iterate else 'WHEN'
-        print(f'JUMP {jump_name} {when_iter} {str(self.condition)}', file=output)
+        print(wrapper.line('JUMP', [jump_name, when_iter, str(self.condition)]), file=output)

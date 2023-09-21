@@ -31,8 +31,8 @@ class MetaData:
     mimetype: str
     value: str
 
-    def to_file(self, output):
-        print(f'METADATA "{self.mimetype}" {self.name} %{{{self.value}%}}', file=output)
+    def to_file(self, output, wrapper):
+        print(wrapper.metadata_group('METADATA', self.mimetype, self.name, self.value), file=output)
 
     @staticmethod
     def partial_from_tokens(source: DataSource, mimetype: str, name: str, value: str):

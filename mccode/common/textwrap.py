@@ -16,7 +16,84 @@ class TextWrapper(PyTextWrapper):
             pad = ''
         return [self._wrap_line(line, self.width, pad) for line in text.splitlines(True)]
 
-    def _wrap_line(self, line, width, pad) -> str:
+    def comment(self, name: str, content: str) -> str:
+        pad = ' '*(len(name) + 1)
+        lines = self.wrap(content, pad=pad)
+        lines[0] = f'{name} {lines[0].strip()}'
+        return '/*' + '\n* '.join(lines) + '\n*/'
+
+    def block(self, name: str, content: str) -> str:
+        return '\n'.join([name + '%{', *self.wrap(content), '}%'])
+
+    def line(self, name: str, items: list[str], sep: str = ' ') -> str:
+        return '\n'.join(self.wrap(f'{name} {sep.join(items)}'))
+
+    @staticmethod
+    def metadata_group(name: str, mimetype: str, item: str, value: str) -> str:
+        return f'{name} "{mimetype}" {item} %{{{value}%}}'
+
+    @staticmethod
+    def parameter(parameter: str) -> str:
+        return f'{parameter}'
+
+    @staticmethod
+    def parameter_unit(parameter: str, unit: str) -> str:
+        return f'{parameter}/"{unit}"'
+    @staticmethod
+    def parameter_value(parameter: str, value: str) -> str:
+        return f'{parameter}={value}'
+
+    @staticmethod
+    def parameter_unit_value(parameter: str, unit: str, value: str) -> str:
+        return f'{parameter}/"{unit}"={value}'
+
+    @staticmethod
+    def type_parameter(data_type: str, parameter: str) -> str:
+        return f'{data_type} {parameter}'
+
+    @staticmethod
+    def type_parameter_unit(data_type: str, parameter: str, unit: str) -> str:
+        return f'{data_type} {parameter}/"{unit}"'
+
+    @staticmethod
+    def type_parameter_value(data_type: str, parameter: str, value: str) -> str:
+        return f'{data_type} {parameter}={value}'
+
+    @staticmethod
+    def type_parameter_unit_value(data_type: str, parameter: str, unit: str, value: str) -> str:
+        return f'{data_type} {parameter}/"{unit}"={value}'
+
+    @staticmethod
+    def start_list(name: str) -> str:
+        return name
+
+    @staticmethod
+    def end_list(name: str) -> str:
+        return name
+
+    @staticmethod
+    def start_list_item() -> str:
+        return ''
+
+    @staticmethod
+    def end_list_item() -> str:
+        return ''
+
+    @staticmethod
+    def list_item(content: str) -> str:
+        return content
+
+    @staticmethod
+    def escape(content: str) -> str:
+        return content
+
+    @staticmethod
+    def url(content: str) -> str:
+        return content
+
+
+    @staticmethod
+    def _wrap_line(line, width, pad) -> str:
         # This is not good enough. TODO Use a combined McCode _and_ C parser to identify reasonable line break points
         return line
 
@@ -47,3 +124,68 @@ class TextWrapper(PyTextWrapper):
         #     if x > 0:
         #         return pad + line[:x] + f'\n' + self._wrap_line(line[x:], width, pad)
         # return pad + line
+
+
+class HTMLWrapper:
+
+    @staticmethod
+    def wrap(text: str, pad: str = None) -> list[str]:
+        return [text]
+
+    @staticmethod
+    def comment(name: str, content: str) -> str:
+        return f"<details><summary>{name}</summary>{content}</details>"
+
+    def block(self, name: str, content: str) -> str:
+        return '<br>'.join([f"<b>{name}</b>" + '%{', *self.wrap(content), '}%'])
+
+    def line(self, name: str, items: list[str], sep: str = ' ') -> str:
+        return ''.join(self.wrap(f'<b>{name}</b> {sep.join(items)}'))
+
+    @staticmethod
+    def metadata_group(name: str, mimetype: str, item: str, value: str) -> str:
+        return f'<b>{name}</b> <code>"{mimetype}"</code>" <var>{item}</var> %{{<pre>{value}</pre>%}}'
+
+    @staticmethod
+    def parameter(parameter: str) -> str:
+        return f'<var>{parameter}</var>'
+
+    @staticmethod
+    def parameter_unit(parameter: str, unit: str) -> str:
+        return f'<var>{parameter}</var>/"{unit}"'
+
+    @staticmethod
+    def parameter_value(parameter: str, value: str) -> str:
+        return f'<var>{parameter}</var>=<code>{value}</code>'
+
+    @staticmethod
+    def parameter_unit_value(parameter: str, unit: str, value: str) -> str:
+        return f'<var>{parameter}</var>/"{unit}"=<code>{value}</code>'
+
+    @staticmethod
+    def start_list(name: str) -> str:
+        return f'<ul> {name}'
+
+    @staticmethod
+    def end_list(name: str) -> str:
+        return f'</ul> {name}'
+
+    @staticmethod
+    def start_list_item() -> str:
+        return '<li>'
+
+    @staticmethod
+    def end_list_item() -> str:
+        return '</li>'
+    @staticmethod
+    def list_item(content: str) -> str:
+        return f'<li>{content}</li>'
+
+    @staticmethod
+    def escape(content: str) -> str:
+        from html import escape
+        return escape(content)
+
+    @staticmethod
+    def url(content: str) -> str:
+        return f'<a href="{content}">{content}</a>'
