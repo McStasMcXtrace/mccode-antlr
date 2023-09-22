@@ -87,12 +87,12 @@ class RemoteRegistry(Registry):
             raise RuntimeError(f"The provided filename {filename} is not a path or file packaged with this module")
 
     def to_file(self, output, wrapper):
-        contents = '(' + ','.join([
+        contents = '(' + ', '.join([
             wrapper.parameter('name') + '=' + wrapper.value(self.name),
             wrapper.parameter('url') + ('' if self.pooch is None else ('=' + wrapper.url(self.pooch.base_url))),
             wrapper.parameter('filename') + '=' + wrapper.value(self.filename),
         ]) + ')'
-        print(wrapper.line('RemoteRegistry', [contents]), file=output)
+        print(wrapper.line('RemoteRegistry', [contents], ''), file=output)
 
     def known(self, name: str, ext: str = None):
         compare = _name_plus_suffix(name, ext)
@@ -163,11 +163,11 @@ class LocalRegistry(Registry):
         self.root = Path(root)
 
     def to_file(self, output, wrapper):
-        contents = '(' + ','.join([
+        contents = '(' + ', '.join([
             wrapper.parameter('name') + '=' + wrapper.value(self.name),
-            wrapper.parameter('root') + '=' + wrapper.url(self.root),
+            wrapper.parameter('root') + '=' + wrapper.url(self.root.as_posix()),
         ]) + ')'
-        print(wrapper.line('LocalRegistry', [contents]), file=output)
+        print(wrapper.line('LocalRegistry', [contents], ''), file=output)
 
     def _filetype_iterator(self, filetype: str):
         return self.root.glob(f'**/*.{filetype}')

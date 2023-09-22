@@ -101,11 +101,23 @@ class Vector(NamedTuple):
             return abs(self.y)
         return unary_expr(sqrt, 'sqrt', self.x * self.x + self.y * self.y + self.z * self.z)
 
+    def is_null(self) -> bool:
+        return self.x.is_zero and self.y.is_zero and self.z.is_zero
+
+    def __str__(self):
+        return f'({self.x}, {self.y}, {self.z})'
+
 
 class Angles(NamedTuple):
     x: Expr = Expr.float(0)
     y: Expr = Expr.float(0)
     z: Expr = Expr.float(0)
+
+    def is_null(self) -> bool:
+        return self.x.is_zero and self.y.is_zero and self.z.is_zero
+
+    def __str__(self):
+        return f'({self.x}, {self.y}, {self.z})'
 
 
 class Rotation(NamedTuple):

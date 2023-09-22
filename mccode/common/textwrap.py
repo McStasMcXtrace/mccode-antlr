@@ -31,10 +31,13 @@ class TextWrapper(PyTextWrapper):
         return '*/'
 
     def block(self, name: str, content: str) -> str:
-        return '\n'.join([name + '%{', *self.wrap(content), '}%'])
+        return '\n'.join([name + ' %{', content + '}% '])
 
     def line(self, name: str, items: list[str], sep: str = ' ') -> str:
         return '\n'.join(self.wrap(f'{name} {sep.join(items)}'))
+
+    def lines(self, items: list[str]) -> str:
+        return '\n'.join('\n'.join(self.wrap(line)) for line in items)
 
     @staticmethod
     def metadata_group(name: str, mimetype: str, item: str, value: str) -> str:
@@ -77,6 +80,10 @@ class TextWrapper(PyTextWrapper):
         return content
 
     @staticmethod
+    def list_items(items: list[str]) -> str:
+        return '\n'.join([item for item in items])
+
+    @staticmethod
     def escape(content: str) -> str:
         return content
 
@@ -84,6 +91,21 @@ class TextWrapper(PyTextWrapper):
     def url(content: str) -> str:
         return content
 
+    @staticmethod
+    def bold(content: str) -> str:
+        return content
+
+    @staticmethod
+    def emph(content: str) -> str:
+        return content
+
+    @staticmethod
+    def br() -> str:
+        return ''
+
+    @staticmethod
+    def hide(content: str) -> str:
+        return content
 
     @staticmethod
     def _wrap_line(line, width, pad) -> str:
@@ -120,6 +142,9 @@ class TextWrapper(PyTextWrapper):
 
 
 class HTMLWrapper:
+    def __init__(self, hider: str, hidden: str):
+        self.hider = hider
+        self.hidden = hidden
 
     @staticmethod
     def wrap(text: str, pad: str = None) -> list[str]:
@@ -138,10 +163,13 @@ class HTMLWrapper:
         return '</details>'
 
     def block(self, name: str, content: str) -> str:
-        return '<br>'.join([f"<b>{name}</b>" + '%{', *self.wrap(content), '}%'])
+        return '<br>'.join([self.bold(name) + ' %{' + self.hide(f'<pre>{content}</pre>') + '}% '])
 
     def line(self, name: str, items: list[str], sep: str = ' ') -> str:
-        return ''.join(self.wrap(f'<b>{name}</b> {sep.join(items)}'))
+        return ''.join(self.wrap(f'<b>{name}</b> {sep.join(items)}')) + '<br>'
+
+    def lines(self, items: list[str]) -> str:
+        return '<br>'.join('<br>'.join(self.wrap(line)) for line in items)
 
     @staticmethod
     def metadata_group(name: str, mimetype: str, item: str, value: str) -> str:
@@ -159,9 +187,8 @@ class HTMLWrapper:
     def unit(unit: str) -> str:
         return f'/{unit}'
 
-    @staticmethod
-    def value(value: str) -> str:
-        return f'<code>{value}</code>'
+    def value(self, value: str) -> str:
+        return f'<code>{self.escape(str(value))}</code>'
 
     @staticmethod
     def start_list(name: str) -> str:
@@ -183,10 +210,38 @@ class HTMLWrapper:
         return f'<li>{content}</li>'
 
     @staticmethod
+    def list_items(items: list[str]) -> str:
+        return ''.join([f'<li>{item}</li>' for item in items])
+
+    @staticmethod
     def escape(content: str) -> str:
         from html import escape
-        return escape(content)
+        return escape(str(content))
 
     @staticmethod
     def url(content: str) -> str:
         return f'<a href="{content}">{content}</a>'
+
+    @staticmethod
+    def bold(content: str) -> str:
+        return f'<b style="font-size:small">{content}</b>'
+
+    @staticmethod
+    def emph(content: str) -> str:
+        return f'<em>{content}</em>'
+
+    @staticmethod
+    def br() -> str:
+        return '<br>'
+
+    def hide(self, content: str) -> str:
+        from uuid import uuid4
+
+        def span(c, tag, i, cont):
+            return f'<span class="{c}" {tag}="{i}">{cont}</span>'
+
+        if len(content.strip()):
+            uuid = 'g-' + str(uuid4())  # a random UUID that _does not_ start with a 0
+            return span(self.hider, 'data-id', uuid, span(self.hidden, 'id', uuid, content))
+
+        return content

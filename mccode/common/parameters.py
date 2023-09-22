@@ -29,7 +29,7 @@ class InstrumentParameter:
         from io import StringIO
         output = StringIO()
         self.to_file(output, wrapper)
-        return output.getvalue()
+        return output.getvalue().strip()
 
     def __str__(self):
         from mccode.common import TextWrapper
@@ -57,7 +57,7 @@ class ComponentParameter:
         from io import StringIO
         output = StringIO()
         self.to_file(output, wrapper)
-        return output.getvalue()
+        return output.getvalue().strip()
 
     def __str__(self):
         from mccode.common import TextWrapper

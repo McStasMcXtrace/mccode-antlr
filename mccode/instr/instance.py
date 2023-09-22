@@ -37,15 +37,18 @@ class Instance:
         if self.cpu:
             print(wrapper.line('CPU', []), file=output)
 
-        instance_parameters = ', '.join(p.to_string(wrapper=wrapper) for p in self.parameters)
-        first_line = wrapper.line('COMPONENT', [f'{self.name} = {self.type.name}({instance_parameters})'])
-        print(first_line, file=output)
+        instance_parameters = wrapper.hide(', '.join(p.to_string(wrapper=wrapper) for p in self.parameters))
+        line = wrapper.bold('COMPONENT') + f' {self.name} = {self.type.name}({instance_parameters}) '
 
         if self.when is not None:
-            print(wrapper.line('WHEN', [str(self.when)]), file=output)
+            line += wrapper.bold('WHEN') + ' ' + wrapper.code(str(self.when)) + ' '
 
-        print(wrapper.line('AT', [_triplet_ref_str(self.at_relative)]), file=output)
-        print(wrapper.line('ROTATED', [_triplet_ref_str(self.rotate_relative)]), file=output)
+        def rf(which, x):
+            return _triplet_ref_str(wrapper.bold(which), x, wrapper.bold('ABSOLUTE'), wrapper.bold('RELATIVE'))
+
+        line += rf('AT', self.at_relative) + ' '
+        line += rf('ROTATED', self.rotate_relative) + wrapper.br()
+        print(line, file=output)
 
         if self.group is not None:
             print(wrapper.line('GROUP', [self.group]), file=output)
@@ -174,6 +177,10 @@ class Instance:
         return tuple(md.values())
 
 
-def _triplet_ref_str(tr: Union[VectorReference, AnglesReference]):
+def _triplet_ref_str(which, tr: Union[VectorReference, AnglesReference], absolute, relative):
     pos, ref = tr
-    return f'({",".join(str(p) for p in pos)}) {"ABSOLUTE" if ref is None else f"RELATIVE {ref.name}"}'
+    if isinstance(pos, tuple):
+        pos = Vector(*pos)
+    if pos.is_null() and ref is None:
+        return ''
+    return f'{which} {pos} {absolute if ref is None else f"{relative} {ref.name}"}'

@@ -37,16 +37,16 @@ class Instr:
         if wrapper is None:
             from mccode.common import TextWrapper
             wrapper = TextWrapper(width=120)
-        print(wrapper.comment('Instrument:', self.name), file=output)
-        print(wrapper.comment('Source:', self.source), file=output)
-        for include in self.included:
-            print(wrapper.comment('Contains:', f'"%include {include}"'), file=output)
-        print(wrapper.start_block_comment('Component definitions located via registries:'), file=output)
+        print(wrapper.start_block_comment(f'Instrument {self.name}'), file=output)
+        print(wrapper.line('Instrument:', [self.name]), file=output)
+        print(wrapper.line('Source:', [self.source]), file=output)
+        print(wrapper.line('Contains:', [f'"%include {include}"' for include in self.included]), file=output)
+        print(wrapper.line('Registries:', [registry.name for registry in self.registries]), file=output)
         for registry in self.registries:
             registry.to_file(output=output, wrapper=wrapper)
         print(wrapper.end_block_comment(), file=output)
 
-        instr_parameters = ', '.join(p.to_string(wrapper=wrapper) for p in self.parameters)
+        instr_parameters = wrapper.hide(', '.join(p.to_string(wrapper=wrapper) for p in self.parameters))
         first_line = wrapper.line('DEFINE INSTRUMENT', [f'{self.name}({instr_parameters})'])
         print(first_line, file=output)
 
@@ -56,11 +56,11 @@ class Instr:
             print(wrapper.line('DEPENDENCY ', list(self.flags)), file=output)
 
         if self.declare:
-            print(wrapper.block('DECLARE', _join_rawc_tuple(self.declare, wrapper)), file=output)
+            print(wrapper.block('DECLARE', _join_rawc_tuple(self.declare)), file=output)
         if self.user:
-            print(wrapper.block('USERVARS', _join_rawc_tuple(self.user, wrapper)), file=output)
+            print(wrapper.block('USERVARS', _join_rawc_tuple(self.user)), file=output)
         if self.initialize:
-            print(wrapper.block('INITIALIZE', _join_rawc_tuple(self.initialize, wrapper)), file=output)
+            print(wrapper.block('INITIALIZE', _join_rawc_tuple(self.initialize)), file=output)
 
         print(wrapper.start_list('TRACE'), file=output)
         for instance in self.components:
@@ -68,9 +68,9 @@ class Instr:
             instance.to_file(output, wrapper)
             print(wrapper.end_list_item(), file=output)
         if self.save:
-            print(wrapper.block('SAVE', _join_rawc_tuple(self.save, wrapper)), file=output)
+            print(wrapper.block('SAVE', _join_rawc_tuple(self.save)), file=output)
         if self.final:
-            print(wrapper.block('FINALLY', _join_rawc_tuple(self.final, wrapper)), file=output)
+            print(wrapper.block('FINALLY', _join_rawc_tuple(self.final)), file=output)
         print(wrapper.end_list('END'), file=output)
 
     def __str__(self):
@@ -82,10 +82,34 @@ class Instr:
 
     def _repr_html_(self):
         from mccode.common import HTMLWrapper
-        wrapper = HTMLWrapper()
+        wrapper = HTMLWrapper(hider='hider', hidden='hidden')
         output = StringIO()
         self.to_file(output=output, wrapper=wrapper)
-        return output.getvalue()
+        body = output.getvalue()
+        style = """
+        <style> 
+        .hider {cursor: pointer; user-select: none;}
+        .hider::before {content: "...";}
+        .hidden-before::before {display: none;}
+        .hidden {display: none;}
+        .active {display: block;}
+        </style>
+        """
+        script = """
+        <script>
+        var toggler = document.getElementsByClassName("hider");
+        var i;
+        for (i = 0; i < toggler.length; i++) {
+            toggler[i].addEventListener("click", function() {
+                var id = this.getAttribute('data-id');
+                this.parentElement.querySelector(`.hidden[id=${id}]`).classList.toggle("active");
+                this.classList.toggle("hidden-before");
+            });
+        }
+        </script>
+        """
+        html = f'<html><head><title>{self.name}</title>{style}</head><body>{body}{script}</body></html>'
+        return html
 
     def add_component(self, a: Instance):
         if any(x.name == a.name for x in self.components):
@@ -293,8 +317,5 @@ class Instr:
         return [self._replace_env_getpath_cmd(flag) for flag in replaced_flags]
 
 
-def _join_rawc_tuple(rawc_tuple: tuple[RawC], wrapper=None):
-    lines = [line for rc in rawc_tuple for line in str(rc).split('\n')]
-    if wrapper is not None:
-        lines = ['\n'.join(wrapper.wrap(line)) for line in lines]
-    return '\n'.join(lines)
+def _join_rawc_tuple(rawc_tuple: tuple[RawC]):
+    return '\n'.join([str(rc) for rc in rawc_tuple])
