@@ -60,11 +60,15 @@ class Instance:
         for metadata in self.metadata:
             metadata.to_file(output, wrapper)
 
-    def __str__(self):
+    def to_string(self, wrapper):
         from io import StringIO
         output = StringIO()
-        self.to_file(output)
+        self.to_file(output, wrapper)
         return output.getvalue()
+
+    def __str__(self):
+        from mccode.common import TextWrapper
+        return self.to_string(TextWrapper())
 
     @classmethod
     def from_instance(cls, name: str, ref: InstanceReference, at: VectorReference, rotate: AnglesReference):

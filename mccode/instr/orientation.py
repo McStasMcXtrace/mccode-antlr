@@ -342,9 +342,9 @@ def _rotation_angles_to_axes_coordinates(rotated: Angles, degrees=True):
 
 def axes_euler_angles(m: Rotation, degrees) -> Angles:
     """Return the angles vector which could have been used to produce this 'axes' rotation matrix"""
-    rxs = atan2_value(-m[8], m[7], degrees=degrees)
-    rys = atan2_value(m[6], cos_from_sin_value(m[6]), degrees=degrees)
-    rzs = atan2_value(-m[4], m[0], degrees=degrees)
+    rxs = atan2_value(-m.zy, m.zz, degrees=degrees)
+    rys = atan2_value(m.zx, cos_from_sin_value(m.zx), degrees=degrees)
+    rzs = atan2_value(-m.yx, m.xx, degrees=degrees)
     rx = rxs[0] if len(rxs) == 1 else rxs[0]
     ry = rys[0] if len(rys) == 1 else rys[0]
     rz = rzs[0] if len(rzs) == 1 else rzs[0]
@@ -360,25 +360,32 @@ class OrientationPart:
     _axes: Seitz = field(default_factory=Seitz)
     _coordinates: Seitz = field(default_factory=Seitz)
 
+    def __post_init__(self):
+        # The zero-initialized variant of this class is the identity matrix
+        if self._axes == Seitz() and self._coordinates == Seitz():
+            print('Identity matrix')
+
     @property
     def is_translation(self):
         return any(not p.is_zero for p in (self._axes[3], self._axes[7], self._axes[11]))
 
     @property
     def is_rotation(self):
-        return (self._axes.inverse() * self._axes).trace() == Expr.float(3.)
+        # The first condition _should_ always be true -- the second is only true if this is not the identity matrix
+        return (self._axes.inverse() * self._axes).trace() == Expr.float(3.) and self._axes.trace() != Expr.float(3.)
 
     @property
     def rotation_axis_angle(self) -> tuple[Vector, Expr, str]:
         from numpy.linalg import eig
         from numpy import array, argmin, sqrt, real, imag, conj, sum
-        if not self.is_rotation or not self.is_constant:
+        if self.is_translation or not self.is_constant:
             raise RuntimeError('Not possible to determine the rotation axis and angle of a variable general transform')
         # For the matrix A in cross(axis, v) = A v,
         # If flat is _axes, then R = 1 - A sin(angle) + A^2 (1-cos(angle))
         #  if _coordinates, then R = 1 + A sin(angle) * A^2 (1-cos(angle))
         # where the difference in sign is due to _coordinates rotating points and _axes rotating the axes instead.
         flat = self._coordinates.rotation()
+        print(flat)
         matrix = [[flat.xx.value, flat.xy.value, flat.xz.value],
                   [flat.yx.value, flat.yy.value, flat.yz.value],
                   [flat.zx.value, flat.zy.value, flat.zz.value]]
@@ -441,6 +448,23 @@ class OrientationPart:
         if not self.is_constant or not other.is_constant:
             raise ValueError('Multiplication only defined for two *constant* orientation parts')
         return OrientationPart(self.axes * other.axes, self.coordinates * other.coordinates)
+
+    def specialization(self):
+        if not self.is_rotation:
+            return TranslationPart(v=self.position())
+        elif not self.is_translation:
+            axis, angles, units = self.rotation_axis_angle
+            if axis == Vector(Expr.float(1), Expr.float(0), Expr.float(0)):
+                return RotationX(v=angles, degrees=units == 'degrees')
+            elif axis == Vector(Expr.float(0), Expr.float(1), Expr.float(0)):
+                return RotationY(v=angles, degrees=units == 'degrees')
+            elif axis == Vector(Expr.float(0), Expr.float(0), Expr.float(1)):
+                return RotationZ(v=angles, degrees=units == 'degrees')
+        return self
+
+    def __eq__(self, other: OrientationPartType):
+        # Two orientation part objects are equal if and only if their axes and coordinates are equal
+        return self.axes == other.axes and self.coordinates == other.coordinates
 
 
 @dataclass
@@ -517,6 +541,9 @@ class RotationPart(OrientationPart):
         z = Expr.float(0)
         return Vector(z, z, z)
 
+    def __str__(self):
+        return f'(0, 0, 0) [? ? ?; {self.v}]'
+
 
 class RotationX(RotationPart):
     """A specialization to the rotation-around-X part of a projective affine transformation"""
@@ -590,10 +617,11 @@ OrientationPartsType = TypeVar('OrientationPartsType', bound='OrientationParts')
 @dataclass
 class OrientationParts:
     """A list of unresolved or partially resolved successive projective affine transformation(s)"""
-    _stack: tuple[OrientationPart] = field(default_factory=tuple)
+    _stack: tuple[OrientationPart, ...] = field(default_factory=tuple)
 
     def __str__(self):
-        return f'OrientationParts<{len(self._stack)}>'
+        inner = ','.join(str(x) for x in self._stack) if len(self._stack) else ''
+        return f'OrientationParts<{inner}>'
 
     def stack(self):
         return self._stack
@@ -656,7 +684,7 @@ class OrientationParts:
         """
         stack = () if dep is None else dep._copy(deep=copy)
         stack += cls.from_at_rotated(at, rotated, degrees).stack()
-        return cls(stack)
+        return cls(stack).reduce()
 
     def inverse(self):
         """Return the inverse transformation of the full chain
@@ -686,7 +714,13 @@ class OrientationParts:
                 reduced[-1] = top * reduced[-1]
             else:
                 reduced.append(top)
-        return OrientationParts(tuple(reduced))
+
+        for x in reduced:
+            if not isinstance(x, OrientationPart):
+                raise RuntimeError('Non-OrientationPart in reduced list')
+        # See if any entries can be replaced by specializations
+        # return OrientationParts(tuple(x.specialization() for x in reduced))
+        return OrientationParts(tuple(x for x in reduced if isinstance(x, OrientationPart)))
 
     def resolve(self):
         """Fully combine all parts of the chain, may raise an error if such a proceedure is disallowed"""

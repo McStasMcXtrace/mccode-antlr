@@ -73,14 +73,17 @@ class Instr:
             print(wrapper.block('FINALLY', _join_rawc_tuple(self.final)), file=output)
         print(wrapper.end_list('END'), file=output)
 
-    def __str__(self):
-        from mccode.common import TextWrapper
-        wrapper = TextWrapper(width=80)
+    def to_string(self, wrapper):
+        from io import StringIO
         output = StringIO()
-        self.to_file(output, wrapper=wrapper)
+        self.to_file(output, wrapper)
         return output.getvalue()
 
-    def _repr_html_(self):
+    def __str__(self):
+        from mccode.common import TextWrapper
+        return self.to_string(TextWrapper())
+
+    def _my_repr_html_(self):
         from mccode.common import HTMLWrapper
         wrapper = HTMLWrapper(hider='hider', hidden='hidden')
         output = StringIO()
