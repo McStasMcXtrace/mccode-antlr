@@ -26,7 +26,87 @@ def _random_angles_degrees():
     return [Expr.float(random.rand() * 360 - 180) for _ in range(3)]
 
 
+def _random_vector(minimum: float = 0, maximum: float = 1):
+    from numpy import random
+    from mccode.common import Expr
+    from mccode.instr.orientation import Vector
+
+    def _random():
+        return Expr.float(random.rand() * (maximum - minimum) + minimum)
+
+    return Vector(_random(), _random(), _random())
+
+
 class TestOrientation(TestCase):
+    def test_matrix_vector_multiply(self):
+        from mccode.instr.orientation import Vector, Matrix
+        from mccode.common import Expr
+        from numpy import random
+        v = Vector(*[Expr.float(random.rand()) for _ in range(3)])
+        m = Matrix(*[Expr.float(random.rand()) for _ in range(9)])
+        mv = m * v
+        self.assertEqual(mv.x, m.xx * v.x + m.xy * v.y + m.xz * v.z)
+        self.assertEqual(mv.y, m.yx * v.x + m.yy * v.y + m.yz * v.z)
+        self.assertEqual(mv.z, m.zx * v.x + m.zy * v.y + m.zz * v.z)
+        z, o = Expr.float(0), Expr.float(1)
+        identity = Matrix(o, z, z, z, o, z, z, z, o)
+        self.assertEqual(identity * v, v)
+        exchange_xy = Matrix(z, o, z, o, z, z, z, z, o)
+        self.assertEqual(exchange_xy * v, Vector(v.y, v.x, v.z))
+        exchange_xz = Matrix(z, z, o, z, o, z, o, z, z)
+        self.assertEqual(exchange_xz * v, Vector(v.z, v.y, v.x))
+        exchange_yz = Matrix(o, z, z, z, z, o, z, o, z)
+        self.assertEqual(exchange_yz * v, Vector(v.x, v.z, v.y))
+
+    def test_matrix_matrix_subtract(self):
+        from mccode.instr.orientation import Matrix, Vector
+        from mccode.common import Expr
+        from numpy import random
+        m1 = Matrix(*[Expr.float(random.rand()) for _ in range(9)])
+        m2 = Matrix(*[Expr.float(random.rand()) for _ in range(9)])
+        m3 = m1 - m2
+        for i in range(9):
+            self.assertEqual(m1[i] - m2[i], m3[i])
+        m4 = m3 - m3
+        v = Vector(*[Expr.float(random.rand()) for _ in range(3)])
+        self.assertTrue((m4 * v).is_null)
+
+    def test_vector_length(self):
+        from mccode.instr.orientation import Vector
+        from mccode.common import Expr
+        from numpy import random, sqrt
+        v = Vector(Expr.float(0), Expr.float(0), Expr.float(0))
+        self.assertEqual(v.length(), Expr.float(0))
+        self.assertTrue(v.is_null())
+
+        v = Vector(Expr.float(2), Expr.float(0), Expr.float(0))
+        self.assertEqual(v.length(), Expr.float(2))
+        v = Vector(Expr.float(0), Expr.float(-9), Expr.float(0))
+        self.assertEqual(v.length(), Expr.float(9))
+        raw_v = [random.rand() for _ in range(3)]
+        v = Vector(*[Expr.float(x) for x in raw_v])
+        self.assertAlmostEqual(v.length(), Expr.float(sqrt(sum([x * x for x in raw_v]))))
+
+    def test_rotation_matrix(self):
+        from mccode.instr.orientation import Rotation, Angles, _rotation_angles_to_axes_coordinates
+        from mccode.common import Expr
+        from numpy import random, pi
+        a = Angles(*[Expr.float(random.rand() * 2 * pi - pi) for _ in range(3)])
+        while a.is_null():
+            a = Angles(*[Expr.float(random.rand() * 2 * pi - pi) for _ in range(3)])
+        axes, coordinates = _rotation_angles_to_axes_coordinates(a, degrees=False)
+        r = Rotation(*axes)
+        inv_r = r.inverse()
+        one = r * inv_r
+        identity = Rotation()
+        for i in range(9):
+            self.assertAlmostEqual(one[i], identity[i])
+
+        zero = r - r
+        for i in range(9):
+            self.assertEqual(zero[i], Expr.float(0))
+
+
     def test_seitz_multiply_identity(self):
         from numpy import random
         from mccode.common import Expr
@@ -62,10 +142,11 @@ class TestOrientation(TestCase):
 
     def test_OrientationPart(self):
         from mccode.common import Expr
-        from mccode.instr.orientation import OrientationPart, Vector
-        op = OrientationPart()
+        from mccode.instr.orientation import OrientPart, Vector
+        op = OrientPart()
         self.assertFalse(op.is_translation)
         self.assertFalse(op.is_rotation)
+        self.assertTrue(op.is_identity)
         self.assertTrue(op.all_values)
         self.assertTrue(op.is_constant)
 
@@ -79,9 +160,18 @@ class TestOrientation(TestCase):
         rx, ry, rz = _make_seitz_list(tx, ty, tz, degrees=True)
 
         # for individual rotations, it's easy to prove that axes and coordinates rotate opposite each other:
-        opx = OrientationPart(rx, rx.inverse())
-        opy = OrientationPart(ry, ry.inverse())
-        opz = OrientationPart(rz, rz.inverse())
+        opx = OrientPart(rx, rx.inverse())
+        opy = OrientPart(ry, ry.inverse())
+        opz = OrientPart(rz, rz.inverse())
+
+        for o in (opx, opy, opz):
+            self.assertTrue(o.is_rotation)
+            self.assertFalse(o.is_translation)
+            self.assertFalse(o.is_identity)
+            self.assertTrue(o.all_values)
+            self.assertTrue(o.is_constant)
+            self.assertTrue((o * o.inverse()).is_identity)
+            self.assertTrue((o.inverse() * o).is_identity)
 
         vx = Vector(Expr.float(1), Expr.float(0), Expr.float(0))
         vy = Vector(Expr.float(0), Expr.float(1), Expr.float(0))
@@ -104,7 +194,8 @@ class TestOrientation(TestCase):
         rp = RotationPart()
         self.assertTrue(rp.is_constant)
         self.assertFalse(rp.is_translation)
-        self.assertTrue(rp.is_rotation)
+        self.assertFalse(rp.is_rotation)
+        self.assertTrue(rp.is_identity)
         self.assertEqual(rp.rotation_axis, Vector(Expr.float(0), Expr.float(0), Expr.float(0)))
         self.assertEqual(rp.position(), Vector(Expr.float(0), Expr.float(0), Expr.float(0)))
 
@@ -115,34 +206,64 @@ class TestOrientation(TestCase):
         self.assertTrue(rpx.is_constant)
         self.assertFalse(rpx.is_translation)
         self.assertTrue(rpx.is_rotation)
+        self.assertFalse(rpx.is_identity)
         self.assertEqual(rpx.rotation_axis, Vector(Expr.float(1), Expr.float(0), Expr.float(0)))
         self.assertEqual(rpx.angles(), Angles(tx, Expr.float(0), Expr.float(0)))
+        self.assertTrue((rpx * rpx.inverse()).is_identity)
 
         rpy = RotationY(v=ty, degrees=True)
         self.assertTrue(rpy.is_constant)
         self.assertFalse(rpy.is_translation)
         self.assertTrue(rpy.is_rotation)
+        self.assertFalse(rpy.is_identity)
         self.assertEqual(rpy.rotation_axis, Vector(Expr.float(0), Expr.float(1), Expr.float(0)))
         self.assertEqual(rpy.angles(), Angles(Expr.float(0), ty, Expr.float(0)))
+        self.assertTrue((rpy * rpy.inverse()).is_identity)
 
         rpz = RotationZ(v=tz, degrees=True)
         self.assertTrue(rpz.is_constant)
         self.assertFalse(rpz.is_translation)
         self.assertTrue(rpz.is_rotation)
+        self.assertFalse(rpz.is_identity)
         self.assertEqual(rpz.rotation_axis, Vector(Expr.float(0), Expr.float(0), Expr.float(1)))
         self.assertEqual(rpz.angles(), Angles(Expr.float(0), Expr.float(0), tz))
+        self.assertTrue((rpz * rpz.inverse()).is_identity)
+
+    def test_Vector(self):
+        from mccode.instr.orientation import Vector
+        from mccode.common import Expr
+        tx = Vector(Expr.float(1), Expr.float(0), Expr.float(0))
+        ty = Vector(Expr.float(0), Expr.float(1), Expr.float(0))
+        tz = Vector(Expr.float(0), Expr.float(0), Expr.float(1))
+
+        cxy = tx * ty.cross_matrix()
+        self.assertEqual(cxy, tz)
+        czx = tz * tx.cross_matrix()
+        self.assertEqual(czx, ty)
+        cyz = ty * tz.cross_matrix()
+        self.assertEqual(cyz, tx)
+
+    def test_TranslationPart(self):
+        from mccode.instr.orientation import TranslationPart, Vector
+        t = _random_vector(0.1, 1.0)
+        tp = TranslationPart(v=t)
+        self.assertTrue(tp.is_translation)
+        self.assertFalse(tp.is_rotation)
+        self.assertFalse(tp.is_identity)
+        self.assertEqual(tp.position(), t)
+        self.assertTrue((tp * tp.inverse()).is_identity)
 
     def test_OrientationParts(self):
         from mccode.common import Expr
         from mccode.instr.orientation import TranslationPart, Vector
         from mccode.instr.orientation import RotationX, RotationY, RotationZ
-        from mccode.instr.orientation import OrientationParts
+        from mccode.instr.orientation import OrientParts
 
         tx = TranslationPart(v=Vector(Expr.float(0.1), Expr.float(0), Expr.float(0)))
         ty = TranslationPart(v=Vector(Expr.float(0.), Expr.float(0.2), Expr.float(0)))
         tz = TranslationPart(v=Vector(Expr.float(0.), Expr.float(0), Expr.float(0.3)))
 
-        op = OrientationParts((tx, ty, tz)).reduce()
+        op = OrientParts((tx, ty, tz)).reduce()
         self.assertEqual(len(op.stack()), 1)
         t = op.stack()[0]
         self.assertEqual(t, TranslationPart(v=Vector(Expr.float(0.1), Expr.float(0.2), Expr.float(0.3))))
@@ -151,32 +272,32 @@ class TestOrientation(TestCase):
         ry = RotationY(v=Expr.float(45), degrees=True)
         rz = RotationZ(v=Expr.float(60), degrees=True)
 
-        rx2 = OrientationParts((rx, rx)).reduce()
+        rx2 = OrientParts((rx, rx)).reduce()
         self.assertEqual(len(rx2.stack()), 1)
         rx2 = rx2.stack()[0]
         rx60 = RotationX(v=Expr.float(60), degrees=True)
         for a, b in zip(rx2.seitz(), rx60.seitz()):
             self.assertAlmostEqual(a, b)
 
-        for a, b in zip((OrientationParts((rx,)) + OrientationParts((rx,))).reduce().stack()[0].seitz(), rx2.seitz()):
+        for a, b in zip((OrientParts((rx,)) + OrientParts((rx,))).reduce().stack()[0].seitz(), rx2.seitz()):
             self.assertEqual(a, b)
 
-        ry2 = OrientationParts((ry, ry)).reduce()
+        ry2 = OrientParts((ry, ry)).reduce()
         self.assertEqual(len(ry2.stack()), 1)
         ry2 = ry2.stack()[0]
         ry90 = RotationY(v=Expr.float(90), degrees=True)
         for a, b in zip(ry2.seitz(), ry90.seitz()):
             self.assertAlmostEqual(a, b)
 
-        rz2 = OrientationParts((rz, rz)).reduce()
+        rz2 = OrientParts((rz, rz)).reduce()
         self.assertEqual(len(rz2.stack()), 1)
         rz2 = rz2.stack()[0]
         rz120 = RotationZ(v=Expr.float(120), degrees=True)
         for a, b in zip(rz2.seitz(), rz120.seitz()):
             self.assertAlmostEqual(a, b)
 
-        rxy = OrientationParts((rx, ry)).reduce().stack()[0]
-        ryx = OrientationParts((ry, rx)).reduce().stack()[0]
+        rxy = OrientParts((rx, ry)).reduce().stack()[0]
+        ryx = OrientParts((ry, rx)).reduce().stack()[0]
         for j in ('xx', 'yy', 'zz'):
             self.assertAlmostEqual(getattr(rxy.seitz(), j), getattr(ryx.seitz(), j))
         for i, j in [('xy', 'yx')]:
@@ -184,25 +305,59 @@ class TestOrientation(TestCase):
         for i, j in [('xz', 'zx'), ('yz', 'zy')]:
             self.assertAlmostEqual(getattr(rxy.seitz(), i), -getattr(ryx.seitz(), j))
 
-        trx = OrientationParts((t, rx)).reduce().stack()[0]
-        rxt = OrientationParts((rx, t)).reduce().stack()[0]
+        trx = OrientParts((t, rx)).reduce().stack()[0]
+        rxt = OrientParts((rx, t)).reduce().stack()[0]
         for j in ('xx', 'yy', 'zz', 'xy', 'yx', 'xz', 'zx', 'yz', 'zy', 'xt'):
             self.assertAlmostEqual(getattr(trx.seitz(), j), getattr(rxt.seitz(), j))
         for j in ('yt', 'zt'):
             self.assertNotAlmostEqual(getattr(trx.seitz(), j), getattr(rxt.seitz(), j))
 
-        trz = OrientationParts((t, rz)).reduce().stack()[0]
-        rzt = OrientationParts((rz, t)).reduce().stack()[0]
+        trz = OrientParts((t, rz)).reduce().stack()[0]
+        rzt = OrientParts((rz, t)).reduce().stack()[0]
         for j in ('xx', 'yy', 'zz', 'xy', 'yx', 'xz', 'zx', 'yz', 'zy', 'zt'):
             self.assertAlmostEqual(getattr(trz.seitz(), j), getattr(rzt.seitz(), j))
         for j in ('xt', 'yt'):
             self.assertNotAlmostEqual(getattr(trz.seitz(), j), getattr(rzt.seitz(), j))
 
-    def test_DependentOrientation(self):
+        trz2 = OrientParts() + t + rz
+        self.assertTrue(isinstance(trz2, OrientParts))
+        self.assertEqual(len(trz2.stack()), 2)
+        trz2 = trz2.reduce().stack()[0]
+        self.assertEqual(trz2, trz)
+
+    def test_OrientationParts_from_at_rotated(self):
+        from mccode.instr.orientation import OrientParts, Seitz, RotationX, RotationY, RotationZ, TranslationPart, Angles
+        from mccode.common import Expr
+        tx, ty, tz = _random_angles_degrees()
+        rx, ry, rz = _make_seitz_list(tx, ty, tz, degrees=True)
+        t = _random_vector(0.1, 1.0)
+        op = OrientParts.from_at_rotated(t, Angles(tx, ty, tz), degrees=True)
+        self.assertEqual(len(op.stack()), 4)
+        self.assertEqual(op.stack()[0], TranslationPart(v=t))
+        self.assertEqual(op.stack()[1], RotationX(v=Expr.float(tx), degrees=True))
+        self.assertEqual(op.stack()[2], RotationY(v=Expr.float(ty), degrees=True))
+        self.assertEqual(op.stack()[3], RotationZ(v=Expr.float(tz), degrees=True))
+
+        inv_op = op.inverse()
+        self.assertEqual(len(inv_op.stack()), 4)
+        self.assertEqual(inv_op.stack()[0], RotationZ(v=Expr.float(-tz), degrees=True))
+        self.assertEqual(inv_op.stack()[1], RotationY(v=Expr.float(-ty), degrees=True))
+        self.assertEqual(inv_op.stack()[2], RotationX(v=Expr.float(-tx), degrees=True))
+
+        full = (op + inv_op).reduce()
+        resolved = (op + inv_op).resolve()
+        self.assertEqual(len(full.stack()), 1)
+        full = full.stack()[0]
+        self.assertEqual(full, resolved)
+        full = full.seitz()
+        identity = Seitz()
+        for i in range(9):
+            self.assertAlmostEqual(full[i], identity[i])
+
+    def test_DependentOrientation_no_rotations(self):
         from mccode.common import Expr
         from mccode.instr.orientation import TranslationPart, Vector, Angles
-        from mccode.instr.orientation import RotationX, RotationY, RotationZ
-        from mccode.instr.orientation import OrientationParts, DependentOrientation
+        from mccode.instr.orientation import OrientParts, DependentOrientation
 
         v123 = Vector(Expr.float(0.1), Expr.float(0.2), Expr.float(0.3))
         v321 = Vector(Expr.float(0.3), Expr.float(0.2), Expr.float(0.1))
@@ -215,6 +370,43 @@ class TestOrientation(TestCase):
         self.assertEqual(dop.position(), v123)
 
         d2 = DependentOrientation.from_dependent_orientation(dop, v321, a000)
-        t444 = OrientationParts((t123, t321)).reduce().stack()[0]
+        t444 = OrientParts((t123, t321)).reduce().stack()[0]
         self.assertEqual(d2.position(), t444.position())
         self.assertEqual(d2.angles(), a000)
+
+    def test_DependentOrientation_with_rotations(self):
+        from mccode.common import Expr
+        from mccode.instr.orientation import TranslationPart, Vector, Angles
+        from mccode.instr.orientation import RotationX, RotationY, RotationZ
+        from mccode.instr.orientation import OrientParts, DependentOrientation
+
+        tx, ty, tz = _random_angles_degrees()
+        f = Expr.float
+
+        for a in (Angles(tx, f(0), f(0)), Angles(f(0), ty, f(0)), Angles(f(0), f(0), tz)):
+            v = _random_vector(0.1, 1.0)
+            dop = DependentOrientation.from_dependent_orientation(None, v, a)
+            self.assertEqual(dop.position(), v)
+            self.assertEqual(dop.angles(), a)
+            print(dop)
+
+        # Rotate 90 degrees around z axis
+        z90 = Angles(f(0), f(0), f(90))
+        # Then rotate 90 degrees around x axis
+        x90 = Angles(f(90), f(0), f(0))
+        # This permutes the axes x'=y, y'=z, z'=x
+        xyz = DependentOrientation()
+        inter = DependentOrientation.from_dependent_orientation(xyz, Vector(f(0), f(0), f(0)), z90)
+        yzx = DependentOrientation.from_dependent_orientation(inter, Vector(f(0), f(0), f(0)), x90)
+
+        self.assertEqual(yzx._position.resolve().seitz(), yzx._rotation.resolve().seitz())
+
+        self.assertNotEqual(yzx.angles(), Angles(f(90), f(0), f(90)))
+        self.assertEqual(yzx.angles(), Angles(f(180), f(90), f(-90)))
+
+
+        #
+        # d2 = DependentOrientation.from_dependent_orientation(dop, v321, a000)
+        # t444 = OrientationParts((t123, t321)).reduce().stack()[0]
+        # self.assertEqual(d2.position(), t444.position())
+        # self.assertEqual(d2.angles(), a000)

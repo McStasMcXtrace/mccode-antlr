@@ -1,6 +1,6 @@
 from .instr import Instr
 from .instance import Instance
-from .orientation import DependentOrientation, OrientationParts, OrientationPart, TranslationPart, RotationPart
+from .orientation import DependentOrientation, OrientParts, OrientPart, TranslationPart, RotationPart
 from .jump import Jump
 from .group import Group
 from .visitor import InstrVisitor
@@ -11,8 +11,8 @@ __all__ = [
     'Instance',
     'TranslationPart',
     'RotationPart',
-    'OrientationPart',
-    'OrientationParts',
+    'OrientPart',
+    'OrientParts',
     'DependentOrientation',
     'Jump',
     'Group',

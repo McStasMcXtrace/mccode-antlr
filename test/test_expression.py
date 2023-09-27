@@ -72,32 +72,35 @@ class TestExpression(TestCase):
             self.assertEqual(x + x, x)
             self.assertEqual(x - x, x)
             self.assertEqual(x * x, x)
-            self.assertEqual(x / x, x)
 
         for x in (f, i, s):
             self.assertEqual(x + u, x)
             self.assertEqual(x - u, x)
             self.assertEqual(x * u, x)
-            self.assertEqual(x / u, x)
             self.assertEqual(u + x, x)
             self.assertEqual(u - x, x)
             self.assertEqual(u * x, x)
-            self.assertEqual(u / x, x)
+
+        for x in (u, f, i):
+            self.assertEqual(x // x, i)
+            self.assertEqual(x / x, f)
+            self.assertEqual(x / u, f)
+            self.assertEqual(u / x, f)
 
         for x in (u, f, i):
             self.assertEqual(x + s, s)
             self.assertEqual(x - s, s)
             self.assertEqual(x * s, s)
-            self.assertEqual(x / s, s)
             self.assertEqual(s + x, s)
             self.assertEqual(s - x, s)
             self.assertEqual(s * x, s)
-            self.assertEqual(s / x, s)
+            self.assertRaises(RuntimeError, lambda: x / s)
+            self.assertRaises(RuntimeError, lambda: s / x)
 
-        self.assertEqual(i + f, i)
-        self.assertEqual(i - f, i)
-        self.assertEqual(i * f, i)
-        self.assertEqual(i / f, i)
+        self.assertEqual(i + f, f)
+        self.assertEqual(i - f, f)
+        self.assertEqual(i * f, f)
+        self.assertEqual(i / f, f)
 
         self.assertEqual(i.mccode_c_type, 'int')
         self.assertEqual(f.mccode_c_type, 'double')
@@ -190,7 +193,7 @@ class TestExpression(TestCase):
         self.assertEqual(one + one, BinaryOp('+', one, one))
         self.assertEqual(two - one, BinaryOp('-', two, one))
         self.assertEqual(one * one, BinaryOp('*', one, one))
-        self.assertEqual(two / two, BinaryOp('/', two, two))
+        self.assertRaises(RuntimeError, lambda: two / one)
         self.assertEqual(one - two, BinaryOp('-', one, two))
         self.assertEqual(one.mccode_c_type, 'char *')
         self.assertEqual(one.mccode_c_type_name, 'instr_type_string')
