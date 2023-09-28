@@ -407,11 +407,6 @@ class OrientPart:
     _axes: Seitz = field(default_factory=Seitz)
     _coordinates: Seitz = field(default_factory=Seitz)
 
-    def __post_init__(self):
-        # The zero-initialized variant of this class is the identity matrix
-        if self._axes == Seitz() and self._coordinates == Seitz():
-            print('Identity matrix')
-
     @property
     def is_translation(self):
         return any(not p.is_zero for p in (self._axes[3], self._axes[7], self._axes[11]))
@@ -436,7 +431,6 @@ class OrientPart:
         #  if _coordinates, then R = 1 + A sin(angle) * A^2 (1-cos(angle))
         # where the difference in sign is due to _coordinates rotating points and _axes rotating the axes instead.
         flat = self._coordinates.rotation()
-        print(flat)
         matrix = [[flat.xx.value, flat.xy.value, flat.xz.value],
                   [flat.yx.value, flat.yy.value, flat.yz.value],
                   [flat.zx.value, flat.zy.value, flat.zz.value]]

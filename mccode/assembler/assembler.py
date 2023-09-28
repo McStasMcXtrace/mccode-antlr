@@ -3,7 +3,7 @@ from ..common import Expr, InstrumentParameter
 from ..instr import Instr, Instance
 from ..reader import Reader, Registry
 from zenlog import log
-
+from mccode.instr.orientation import Vector, Angles
 
 class Assembler:
     """Interactive instrument assembly"""
@@ -38,9 +38,18 @@ class Assembler:
         v = tuple(x if isinstance(x, Expr) else Expr.best(x) for x in v)
         return (v[0], v[1], v[2]), ref
 
+    def _handle_at(self, a=None) -> tuple[Vector, Union[Instance, None]]:
+        at_tuple, ref = self._handle_at_rotate(a)
+        return Vector(*at_tuple), ref
+
+    def _handle_rotate(self, a=None, at_ref=None) -> tuple[Angles, Union[Instance, None]]:
+        rot_tuple, ref = self._handle_at_rotate(a)
+        return Angles(*rot_tuple), ref or at_ref
+
     def component(self, name: str, type_name: str, at=None, rotate=None, parameters=None):
         comp_type = self.reader.get_component(type_name)
-        instance = Instance(name, comp_type, self._handle_at_rotate(at), self._handle_at_rotate(rotate))
+        at, ref = self._handle_at(at)
+        instance = Instance(name, comp_type, at_relative=(at, ref), rotate_relative=self._handle_rotate(rotate, ref))
         self.instrument.add_component(instance)
         if isinstance(parameters, dict):
             instance.set_parameters(**parameters)

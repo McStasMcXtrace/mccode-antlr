@@ -82,13 +82,19 @@ class Instance:
                    metadata=tuple([md for md in ref.metadata]))
 
     def __post_init__(self):
-        def tr(t: Union[VectorReference, AnglesReference]) -> tuple[Union[Vector, Angles], Orient]:
-            va, rel = t
-            return va, rel if rel is None else rel.orientation
         if self.orientation is None:
-            at, at_rel = tr(self.at_relative)
-            rt, rt_rel = tr(self.rotate_relative)
-            self.orientation = Orient.from_dependent_orientations(at_rel, at, rt_rel, rt)
+            ar, rr = self.at_relative, self.rotate_relative
+            if not isinstance(ar[0], Vector) or not isinstance(rr[0], Angles):
+                log.warn(f'Expected {ar=} and {rr=} to be Vector and Angles respectively')
+            if rr[1] is None and ar[1] is not None:
+                log.warn(f'Expected rotation reference to be specified when at reference is specified')
+            at = ar if isinstance(ar[0], Vector) else Vector(*ar[0])
+            an, ar = (ar[1].name, ar[1].orientation) if ar[1] else ("ABSOLUTE", None)
+            rt = rr[0] if isinstance(rr[0], Angles) else Angles(*rr[0])
+            rn, rr = (rr[1].name, rr[1].orientation) if rr[1] else (an, ar)
+
+            print(f'{self.name}: at={str(at)} {an}, rt={str(rt)} {rn}')
+            self.orientation = Orient.from_dependent_orientations(ar, at, rr, rt)
 
     def set_parameter(self, name: str, value, overwrite=False, allow_repeated=True):
         if not parameter_name_present(self.type.define, name) and not parameter_name_present(self.type.setting, name):
