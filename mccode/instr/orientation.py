@@ -4,6 +4,7 @@ from zenlog import log
 from typing import TypeVar, NamedTuple, Union
 
 VectorType = TypeVar('VectorType', bound='Vector')
+AnglesType = TypeVar('AnglesType', bound='Angles')
 MatrixType = TypeVar('MatrixType', bound='Matrix')
 RotationType = TypeVar('RotationType', bound='Rotation')
 SeitzType = TypeVar('SeitzType', bound='Seitz')
@@ -81,10 +82,18 @@ class Vector(NamedTuple):
     y: Expr = Expr.float(0)
     z: Expr = Expr.float(0)
 
-    def __mul__(self, other: Union[MatrixType, RotationType]) -> VectorType:
+    def __mul__(self, other: Union[MatrixType, RotationType, Expr]) -> VectorType:
+        if isinstance(other, Expr):
+            return Vector(self.x * other, self.y * other, self.z * other)
         return Vector(self.x * other.xx + self.y * other.yx + self.z * other.zx,
                       self.x * other.xy + self.y * other.yy + self.z * other.zy,
                       self.x * other.xz + self.y * other.yz + self.z * other.zz)
+
+    def __add__(self, other: VectorType) -> VectorType:
+        return Vector(self.x + other.x, self.y + other.y, self.z + other.z)
+
+    def __sub__(self, other: VectorType) -> VectorType:
+        return Vector(self.x - other.x, self.y - other.y, self.z - other.z)
 
     def cross_matrix(self) -> Matrix:
         z = Expr.float(0)
@@ -112,6 +121,15 @@ class Angles(NamedTuple):
     x: Expr = Expr.float(0)
     y: Expr = Expr.float(0)
     z: Expr = Expr.float(0)
+
+    def __mul__(self, other: Expr) -> AnglesType:
+        return Angles(self.x * other, self.y * other, self.z * other)
+
+    def __add__(self, other: AnglesType) -> AnglesType:
+        return Angles(self.x + other.x, self.y + other.y, self.z + other.z)
+
+    def __sub__(self, other: AnglesType) -> AnglesType:
+        return Angles(self.x - other.x, self.y - other.y, self.z - other.z)
 
     def is_null(self) -> bool:
         return self.x.is_zero and self.y.is_zero and self.z.is_zero
@@ -167,6 +185,21 @@ class Rotation(NamedTuple):
                       self.yx - other.yx, self.yy - other.yy, self.yz - other.yz,
                       self.zx - other.zx, self.zy - other.zy, self.zz - other.zz)
 
+    @staticmethod
+    def from_angles(angles: Angles, degrees=True) -> RotationType:
+        """Construct a rotation matrix from three angles"""
+        from math import cos, sin
+        from mccode.common import Expr, unary_expr
+        s = [unary_expr(sin_degree if degrees else sin, 'sin', j) for j in angles]
+        c = [unary_expr(cos_degree if degrees else cos, 'cos', j) for j in angles]
+        z, o = Expr.float(0), Expr.float(1)
+        rx = Rotation() if angles.x.is_zero else Rotation(o, z, z, z, c[0], s[0], z, -s[0], c[0])
+        ry = Rotation() if angles.y.is_zero else Rotation(c[1], z, -s[1], z, o, z, s[1], z, c[1])
+        rz = Rotation() if angles.z.is_zero else Rotation(c[2], s[2], z, -s[2], c[2], z, z, z, o)
+        # Return the McCode convention of applying the rotations in the order x, y, z
+        return rz * (ry * rx)
+
+
 
 class Seitz(NamedTuple):
     xx: Expr = Expr.float(1)
@@ -181,6 +214,18 @@ class Seitz(NamedTuple):
     zy: Expr = Expr.float(0)
     zz: Expr = Expr.float(1)
     zt: Expr = Expr.float(0)
+
+    @classmethod
+    def from_rotation(cls, rotation: Rotation):
+        return cls(rotation.xx, rotation.xy, rotation.xz, Expr.float(0),
+                   rotation.yx, rotation.yy, rotation.yz, Expr.float(0),
+                   rotation.zx, rotation.zy, rotation.zz, Expr.float(0))
+
+    @classmethod
+    def from_vector(cls, vector: Vector):
+        return cls(Expr.float(1), Expr.float(0), Expr.float(0), vector.x,
+                   Expr.float(0), Expr.float(1), Expr.float(0), vector.y,
+                   Expr.float(0), Expr.float(0), Expr.float(1), vector.z)
 
     def rotation(self) -> Rotation:
         return Rotation(self.xx, self.xy, self.xz, self.yx, self.yy, self.yz, self.zx, self.zy, self.zz)
@@ -384,7 +429,7 @@ class OrientPart:
     def rotation_axis_angle(self) -> tuple[Vector, Expr, str]:
         from numpy.linalg import eig
         from numpy import array, argmin, sqrt, real, imag, conj, sum
-        if self.is_translation or not self.is_constant:
+        if not self.is_constant:
             raise RuntimeError('Not possible to determine the rotation axis and angle of a variable general transform')
         # For the matrix A in cross(axis, v) = A v,
         # If flat is _axes, then R = 1 - A sin(angle) + A^2 (1-cos(angle))
@@ -438,6 +483,9 @@ class OrientPart:
     def position(self, which=None) -> Vector:
         return self.seitz(which).vector()
 
+    def rotation(self, which=None) -> Rotation:
+        return self.seitz(which).rotation()
+
     def angles(self, which=None, degrees=True) -> Angles:
         return axes_euler_angles(self.seitz('axes').rotation(), degrees)
 
@@ -455,8 +503,6 @@ class OrientPart:
     def __mul__(self: OrientationPartType, other: OrientationPartType) -> OrientationPartType:
         if not isinstance(other, OrientPart):
             raise RuntimeError('Multiplication only defined for two orientation parts')
-        if not self.is_constant or not other.is_constant:
-            raise ValueError('Multiplication only defined for two *constant* orientation parts')
         return OrientPart(self.axes * other.axes, self.coordinates * other.coordinates)
 
     def specialization(self):
@@ -637,7 +683,11 @@ class OrientParts:
 
     def __str__(self):
         inner = ','.join(str(x) for x in self._stack) if len(self._stack) else ''
-        return f'OrientationParts<{inner}>'
+        return f'OrientParts<{inner}>'
+
+    def __repr__(self):
+        inner = ','.join(repr(x) for x in self._stack) if len(self._stack) else ''
+        return f'OrientParts<{inner}>'
 
     def stack(self):
         return self._stack
@@ -684,7 +734,7 @@ class OrientParts:
         return cls(s)
 
     @classmethod
-    def from_dependent_chain(cls, dep: OrientationPartsType, at: Vector, rotated: Angles, degrees=True, copy=True):
+    def from_dependent_chain(cls, dep: OrientationPartsType, at: Vector = None, rotated: Angles = None, degrees=True, copy=True):
         """
         If it is beneficial to rotate around Z before rotating around the resulting X,
         one can have successive components which are rotated (0,0,rz) (rx,0,0).
@@ -699,7 +749,7 @@ class OrientParts:
         :return: A OrientationParts object representing the chained operations
         """
         stack = () if dep is None else dep._copy(deep=copy)
-        stack += cls.from_at_rotated(at, rotated, degrees).stack()
+        stack += cls.from_at_rotated(at or Vector(), rotated or Angles(), degrees).stack()
         return cls(stack).reduce()
 
     def inverse(self):
@@ -726,10 +776,16 @@ class OrientParts:
 
         reduced = [self._stack[0]]
         for top in self._stack[1:]:
-            if reduced[-1].is_constant and top.is_constant:
+            if reduced[-1].is_constant and reduced[-1].is_identity:
+                # Any combination which results in the identity matrix can be removed
+                reduced[-1] = top
+            elif reduced[-1].is_constant and top.is_constant:
                 reduced[-1] = top * reduced[-1]
             else:
                 reduced.append(top)
+                
+        if len(reduced) > 1 and reduced[-1].is_constant and reduced[-1].is_identity:
+            reduced.pop()
 
         for x in reduced:
             if not isinstance(x, OrientPart):
@@ -748,61 +804,72 @@ class OrientParts:
             resolved = work * resolved
         return resolved
 
+    def position(self, which=None):
+        return self.resolve().position(which=which)
 
-DependentOrientationType = TypeVar('DependentOrientationType', bound='DependentOrientation')
+    def rotation(self, which=None):
+        return self.resolve().rotation(which=which)
+
+
+OrientType = TypeVar('OrientType', bound='Orient')
 
 
 @dataclass
-class DependentOrientation:
+class Orient:
     """Un-evaluated lists of dependent operations that position and orient an object in a coordinate system"""
     _position: OrientParts = field(default_factory=OrientParts)
     _rotation: OrientParts = field(default_factory=OrientParts)
     _degrees: bool = True
 
     def __str__(self):
-        return f'DependentOrientation<{self._position}, {self._rotation}>'
+        return f'Orient<{self._position}, {self._rotation}>'
+
+    def __repr__(self):
+        return f'Orient<{repr(self._position)}, {repr(self._rotation)}>'
 
     @property
     def degrees(self):
         return self._degrees
 
     @classmethod
-    def from_dependent_orientations(cls,
-                                    dep_at: DependentOrientationType,
-                                    at: Vector,
-                                    dep_angles: DependentOrientationType,
-                                    angles: Angles,
+    def from_dependent_orientations(cls, rel: OrientType, at: Vector, rot: OrientType, angles: Angles,
                                     degrees=True, copy=True):
-        zero = Expr.float(0), Expr.float(0), Expr.float(0)
         # if 'at' was defined RELATIVE to another component, the vector is *in that component's coordinate system*
-        # include the full rotation chain to correctly position this component
-        resolved_at_dep = None if dep_at is None else dep_at.combine().reduce()
-        print(resolved_at_dep)
-        resolved_rot_dep = None if dep_angles is None else dep_angles._rotation.reduce()
-        print(resolved_rot_dep)
-        pos = OrientParts.from_dependent_chain(resolved_at_dep, at, Angles(*zero), degrees=degrees, copy=copy)
-        rot = OrientParts.from_dependent_chain(resolved_rot_dep, Vector(*zero), angles, degrees=degrees, copy=copy)
+        at = Vector(*at) if isinstance(at, tuple) else at
+        angles = Angles(*angles) if isinstance(angles, tuple) else angles
+        rel = rel or Orient()
+        # this multiplication may look backwards, but we are rotating the coordinates not axes
+        pos = OrientParts((TranslationPart(v=rel.position() + rel.rotation() * at),))
+        rot = OrientParts.from_dependent_chain(rot and rot.rotation_parts(), rotated=angles, degrees=degrees, copy=copy)
         return cls(pos, rot, degrees)
 
+
     @classmethod
-    def from_dependent_orientation(cls,
-                                   dep_on: DependentOrientationType,
-                                   at: Vector,
-                                   angles: Angles,
-                                   degrees=True, copy=True):
-        return cls.from_dependent_orientations(dep_on, at, dep_on, angles, degrees=degrees, copy=copy)
+    def from_dependent_orientation(cls, dep: OrientType, at: Vector, angles: Angles, degrees=True, copy=True):
+        dep = dep or Orient()
+        at = Vector(*at) if isinstance(at, tuple) else at
+        angles = Angles(*angles) if isinstance(angles, tuple) else angles
+        pos = OrientParts((TranslationPart(v=dep.position() + dep.rotation() * at),))
+        rot = OrientParts.from_dependent_chain(dep.rotation_parts(), rotated=angles, degrees=degrees, copy=copy)
+        return cls(pos, rot, degrees)
 
-    def position(self, which=None):
-        return self._position.resolve().position(which=which)
-
-    def angles(self, which=None):
+    def angles(self, which=None) -> Angles:
         return self._rotation.resolve().angles(which=which)
 
+    def position(self, which=None) -> Vector:
+        return self._position.position(which=which)
+
+    def rotation(self, which=None) -> Rotation:
+        return self._rotation.rotation(which=which)
+
+    def rotation_parts(self, which=None) -> OrientParts:
+        return self._rotation.reduce()
+
     def inverse(self):
-        return DependentOrientation(self._position.inverse(), self._rotation.inverse())
+        return Orient(self._position.inverse(), self._rotation.inverse())
 
     def reduce(self):
-        return DependentOrientation(self._position.reduce(), self._rotation.reduce())
+        return Orient(self._position.reduce(), self._rotation.reduce())
 
     def combine(self) -> OrientParts:
         # The full positioning & orienting stack goes through all positioning operations
@@ -812,10 +879,10 @@ class DependentOrientation:
         return OrientParts(comb)
 
     def __add__(self, other):
-        if isinstance(other, DependentOrientation):
-            return DependentOrientation(self._position + other._position, self._rotation + other._rotation)
+        if isinstance(other, Orient):
+            return Orient(self._position + other._position, self._rotation + other._rotation)
         elif isinstance(other, (OrientPart, OrientParts)):
-            return DependentOrientation(self._position + other, self._rotation + other)
+            return Orient(self._position + other, self._rotation + other)
         else:
             raise ValueError(f"__add__ undefined for DependentOrientation and {type(other)}")
 

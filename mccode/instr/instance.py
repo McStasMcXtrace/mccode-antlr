@@ -4,7 +4,7 @@ from typing import TypeVar, Union
 from ..comp import Comp
 from ..common import Expr, Value, DataType
 from ..common import ComponentParameter, MetaData, parameter_name_present, RawC, blocks_to_raw_c
-from .orientation import DependentOrientation, Vector, Angles
+from .orientation import Orient, Vector, Angles
 from .jump import Jump
 
 InstanceReference = TypeVar('InstanceReference', bound='Instance')
@@ -22,7 +22,7 @@ class Instance:
     type: Comp
     at_relative: VectorReference
     rotate_relative: AnglesReference
-    orientation: DependentOrientation = None
+    orientation: Orient = None
     parameters: tuple[ComponentParameter] = field(default_factory=tuple)
     removable: bool = False
     cpu: bool = False
@@ -82,13 +82,13 @@ class Instance:
                    metadata=tuple([md for md in ref.metadata]))
 
     def __post_init__(self):
-        def tr(t: Union[VectorReference, AnglesReference]) -> tuple[Union[Vector, Angles], DependentOrientation]:
+        def tr(t: Union[VectorReference, AnglesReference]) -> tuple[Union[Vector, Angles], Orient]:
             va, rel = t
             return va, rel if rel is None else rel.orientation
         if self.orientation is None:
             at, at_rel = tr(self.at_relative)
             rt, rt_rel = tr(self.rotate_relative)
-            self.orientation = DependentOrientation.from_dependent_orientations(at_rel, at, rt_rel, rt)
+            self.orientation = Orient.from_dependent_orientations(at_rel, at, rt_rel, rt)
 
     def set_parameter(self, name: str, value, overwrite=False, allow_repeated=True):
         if not parameter_name_present(self.type.define, name) and not parameter_name_present(self.type.setting, name):

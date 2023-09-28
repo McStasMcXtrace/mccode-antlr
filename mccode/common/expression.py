@@ -256,6 +256,9 @@ class Op:
     def __abs__(self):
         return UnaryOp('abs', self)
 
+    def as_type(self, pdt):
+        raise NotImplementedError()
+
 
 class TrinaryOp(Op):
     def __init__(self, op, first, second, third):
@@ -275,6 +278,12 @@ class TrinaryOp(Op):
         if len(left_data_types) != 1 or len(right_data_types) != 1:
             raise RuntimeError('Multiple data types in one value not supported')
         self.data_type = left_data_types[0] + right_data_types[0]
+
+    def as_type(self, pdt):
+        first = [x.as_type(pdt) for x in self.first]
+        second = [x.as_type(pdt) for x in self.second]
+        third = [x.as_type(pdt) for x in self.third]
+        return TrinaryOp(self.op, first, second, third)
 
     def _str_repr_(self, first, second, third):
         if '__trinary__' == self.op:
@@ -350,6 +359,11 @@ class BinaryOp(Op):
         self.data_type = data_type
         self.style = 'C'  # there should be a better way to do this
 
+    def as_type(self, pdt):
+        left = [x.as_type(pdt) for x in self.left]
+        right = [x.as_type(pdt) for x in self.right]
+        return BinaryOp(self.op, left, right)
+
     def _str_repr_(self, lstr, rstr):
         if '__call__' == self.op:
             return f'{lstr}({rstr})'
@@ -393,7 +407,13 @@ class BinaryOp(Op):
     def __eq__(self, other):
         if not isinstance(other, BinaryOp):
             return False
-        return self.op == other.op and self.left == other.left and self.right == other.right
+        if self.op != other.op:
+            return False
+        if self.op == '*' or self.op == '+':
+            # Have we implemented any other commutative operations?
+            if self.left == other.right and self.right == other.left:
+                return True
+        return self.left == other.left and self.right == other.right
 
     def __round__(self, n=None):
         return self if self.data_type.is_int else UnaryOp('round', self)
@@ -458,6 +478,10 @@ class UnaryOp(Op):
             raise RuntimeError('Multiple data types in one value not supported')
         self.data_type = data_types[0]
         self.style = 'C'  # there should be a better way to do this
+
+    def as_type(self, pdt):
+        value = [x.as_type(pdt) for x in self.value]
+        return UnaryOp(self.op, value)
 
     def _str_repr_(self, vstr):
         if '__group__' == self.op:

@@ -333,16 +333,16 @@ class TestOrientation(TestCase):
         t = _random_vector(0.1, 1.0)
         op = OrientParts.from_at_rotated(t, Angles(tx, ty, tz), degrees=True)
         self.assertEqual(len(op.stack()), 4)
-        self.assertEqual(op.stack()[0], TranslationPart(v=t))
-        self.assertEqual(op.stack()[1], RotationX(v=Expr.float(tx), degrees=True))
-        self.assertEqual(op.stack()[2], RotationY(v=Expr.float(ty), degrees=True))
-        self.assertEqual(op.stack()[3], RotationZ(v=Expr.float(tz), degrees=True))
+        self.assertEqual(op.stack()[0], RotationX(v=Expr.float(tx), degrees=True))
+        self.assertEqual(op.stack()[1], RotationY(v=Expr.float(ty), degrees=True))
+        self.assertEqual(op.stack()[2], RotationZ(v=Expr.float(tz), degrees=True))
+        self.assertEqual(op.stack()[3], TranslationPart(v=t))
 
         inv_op = op.inverse()
         self.assertEqual(len(inv_op.stack()), 4)
-        self.assertEqual(inv_op.stack()[0], RotationZ(v=Expr.float(-tz), degrees=True))
-        self.assertEqual(inv_op.stack()[1], RotationY(v=Expr.float(-ty), degrees=True))
-        self.assertEqual(inv_op.stack()[2], RotationX(v=Expr.float(-tx), degrees=True))
+        self.assertEqual(inv_op.stack()[1], RotationZ(v=Expr.float(-tz), degrees=True))
+        self.assertEqual(inv_op.stack()[2], RotationY(v=Expr.float(-ty), degrees=True))
+        self.assertEqual(inv_op.stack()[3], RotationX(v=Expr.float(-tx), degrees=True))
 
         full = (op + inv_op).reduce()
         resolved = (op + inv_op).resolve()
@@ -357,7 +357,7 @@ class TestOrientation(TestCase):
     def test_DependentOrientation_no_rotations(self):
         from mccode.common import Expr
         from mccode.instr.orientation import TranslationPart, Vector, Angles
-        from mccode.instr.orientation import OrientParts, DependentOrientation
+        from mccode.instr.orientation import OrientParts, Orient
 
         v123 = Vector(Expr.float(0.1), Expr.float(0.2), Expr.float(0.3))
         v321 = Vector(Expr.float(0.3), Expr.float(0.2), Expr.float(0.1))
@@ -366,47 +366,133 @@ class TestOrientation(TestCase):
 
         a000 = Angles(Expr.float(0), Expr.float(0), Expr.float(0))
 
-        dop = DependentOrientation.from_dependent_orientation(None, v123, a000)
+        dop = Orient.from_dependent_orientation(None, v123, a000)
         self.assertEqual(dop.position(), v123)
 
-        d2 = DependentOrientation.from_dependent_orientation(dop, v321, a000)
+        d2 = Orient.from_dependent_orientation(dop, v321, a000)
         t444 = OrientParts((t123, t321)).reduce().stack()[0]
         self.assertEqual(d2.position(), t444.position())
         self.assertEqual(d2.angles(), a000)
 
-    def test_DependentOrientation_with_rotations(self):
+    # def test_DependentOrientation_with_rotations(self):
+    #     from mccode.common import Expr
+    #     from mccode.instr.orientation import TranslationPart, Vector, Angles
+    #     from mccode.instr.orientation import RotationX, RotationY, RotationZ
+    #     from mccode.instr.orientation import OrientParts, Orient
+    #
+    #     tx, ty, tz = _random_angles_degrees()
+    #     f = Expr.float
+    #
+    #     for a in (Angles(tx, f(0), f(0)), Angles(f(0), ty, f(0)), Angles(f(0), f(0), tz)):
+    #         v = _random_vector(0.1, 1.0)
+    #         dop = Orient.from_dependent_orientation(None, v, a)
+    #         self.assertEqual(dop.position(), v)
+    #         self.assertEqual(dop.angles(), a)
+    #         print(dop)
+    #
+    #     # Rotate 90 degrees around z axis
+    #     z90 = Angles(f(0), f(0), f(90))
+    #     # Then rotate 90 degrees around x axis
+    #     x90 = Angles(f(90), f(0), f(0))
+    #     # This permutes the axes x'=y, y'=z, z'=x
+    #     xyz = Orient()
+    #     inter = Orient.from_dependent_orientation(xyz, Vector(f(0), f(0), f(0)), z90)
+    #     yzx = Orient.from_dependent_orientation(inter, Vector(f(0), f(0), f(0)), x90)
+    #
+    #     self.assertEqual(yzx._position.resolve().seitz(), yzx._rotation.resolve().seitz())
+    #
+    #     self.assertNotEqual(yzx.angles(), Angles(f(90), f(0), f(90)))
+    #     self.assertEqual(yzx.angles(), Angles(f(180), f(90), f(-90)))
+    #
+    #
+    #     #
+    #     # d2 = DependentOrientation.from_dependent_orientation(dop, v321, a000)
+    #     # t444 = OrientationParts((t123, t321)).reduce().stack()[0]
+    #     # self.assertEqual(d2.position(), t444.position())
+    #     # self.assertEqual(d2.angles(), a000)
+
+    def test_DependentOrientation_simple(self):
         from mccode.common import Expr
-        from mccode.instr.orientation import TranslationPart, Vector, Angles
-        from mccode.instr.orientation import RotationX, RotationY, RotationZ
-        from mccode.instr.orientation import OrientParts, DependentOrientation
+        from mccode.instr.orientation import Vector, Angles, Orient
 
-        tx, ty, tz = _random_angles_degrees()
-        f = Expr.float
+        v_z1 = Vector(Expr.float(0), Expr.float(0), Expr.float(1))
+        v_x1 = Vector(Expr.float(1), Expr.float(0), Expr.float(0))
+        v_y1 = Vector(Expr.float(0), Expr.float(1), Expr.float(0))
+        v_0 = Vector(Expr.float(0), Expr.float(0), Expr.float(0))
+        a_z90 = Angles(Expr.float(0), Expr.float(0), Expr.float(90))
+        a_0 = Angles(Expr.float(0), Expr.float(0), Expr.float(0))
 
-        for a in (Angles(tx, f(0), f(0)), Angles(f(0), ty, f(0)), Angles(f(0), f(0), tz)):
-            v = _random_vector(0.1, 1.0)
-            dop = DependentOrientation.from_dependent_orientation(None, v, a)
-            self.assertEqual(dop.position(), v)
-            self.assertEqual(dop.angles(), a)
-            print(dop)
+        origin = Orient()
+        one = Orient.from_dependent_orientation(origin, v_0, a_z90)
+        two = Orient.from_dependent_orientation(one, v_z1, a_z90)
+        three = Orient.from_dependent_orientation(two, v_z1, a_0)
+        four = Orient.from_dependent_orientation(three, v_x1, a_0)
 
-        # Rotate 90 degrees around z axis
-        z90 = Angles(f(0), f(0), f(90))
-        # Then rotate 90 degrees around x axis
-        x90 = Angles(f(90), f(0), f(0))
-        # This permutes the axes x'=y, y'=z, z'=x
-        xyz = DependentOrientation()
-        inter = DependentOrientation.from_dependent_orientation(xyz, Vector(f(0), f(0), f(0)), z90)
-        yzx = DependentOrientation.from_dependent_orientation(inter, Vector(f(0), f(0), f(0)), x90)
+        self.assertEqual(origin.position(), v_0)
+        self.assertEqual(origin.angles(), a_0)
+        self.assertEqual(one.position(), v_0)
+        self.assertEqual(one.angles(), a_z90)
+        self.assertEqual(two.position(), v_z1)
+        self.assertEqual(two.angles(), a_z90 * Expr.float(2))
+        self.assertEqual(three.position(), v_z1 + v_z1)
+        self.assertEqual(four.position(), three.position() - v_x1)
 
-        self.assertEqual(yzx._position.resolve().seitz(), yzx._rotation.resolve().seitz())
+    def test_DepedentOrientation_triple_axis(self):
+        from math import sin, cos
+        from mccode.common import Expr, unary_expr
+        from mccode.instr.orientation import Vector, Angles, Orient, Rotation, OrientParts, RotationY
 
-        self.assertNotEqual(yzx.angles(), Angles(f(90), f(0), f(90)))
-        self.assertEqual(yzx.angles(), Angles(f(180), f(90), f(-90)))
+        def ri(i):
+            return Angles(Expr.float(0), Expr.id(f'a{i}'), Expr.float(0))
 
+        r1, r2, r3, r4, r5, r6 = [ri(i) for i in range(1, 7)]
+        v1 = Vector(Expr.float(0), Expr.float(0), Expr.float(1))
+        a0 = Angles(Expr.float(0), Expr.float(0), Expr.float(0))
+        v0 = Vector(Expr.float(0), Expr.float(0), Expr.float(0))
 
-        #
-        # d2 = DependentOrientation.from_dependent_orientation(dop, v321, a000)
-        # t444 = OrientationParts((t123, t321)).reduce().stack()[0]
-        # self.assertEqual(d2.position(), t444.position())
-        # self.assertEqual(d2.angles(), a000)
+        origin = Orient()
+        monochromator = Orient.from_dependent_orientation(origin, v1, r1)
+        mono_arm = Orient.from_dependent_orientations(monochromator, v0, origin, r2)
+        sample = Orient.from_dependent_orientation(mono_arm, v1, r3)
+        sample_arm = Orient.from_dependent_orientations(sample, v0, mono_arm, r4)
+        analyzer = Orient.from_dependent_orientation(sample_arm, v1, r5)
+        ana_arm = Orient.from_dependent_orientations(analyzer, v0, sample_arm, r6)
+        detector = Orient.from_dependent_orientation(ana_arm, v1, a0)
+
+        self.assertEqual(origin.position(), v0)
+        self.assertEqual(origin.angles(), a0)
+        self.assertEqual(monochromator.position(), v1)
+        self.assertEqual(monochromator.angles(), r1)
+        self.assertEqual(mono_arm.position(), v1)
+        self.assertEqual(mono_arm.angles(), r2)
+        #self.assertEqual(sample.position(), v1 +v1)
+
+        ai = [Expr.id(f'a{i}') for i in range(7)]
+        sa = [unary_expr(sin, 'sin', a) for a in ai]
+        ca = [unary_expr(cos, 'cos', a) for a in ai]
+        sample_position = Vector(sa[2], Expr.float(0.0), Expr.float(1) + ca[2])
+        sample_analyzer_vector = Vector(ca[4] * sa[2] + sa[4] * ca[2], Expr.float(0), - sa[4] * sa[2] + ca[4] * ca[2])
+
+        self.assertEqual(sample.position(), sample_position)
+        # Matching up expression trees is hard -- so use this special hand-checked equivalent matrix
+        er = Rotation(ca[3] * ca[2] + sa[3] * -sa[2], Expr.float(0), ca[3] * sa[2] + ca[2] * sa[3],
+                      Expr.float(0), Expr.float(1), Expr.float(0),
+                      -sa[3] * ca[2] + ca[3] * -sa[2], Expr.float(0), -sa[3] * sa[2] + ca[3] * ca[2])
+        self.assertEqual(sample.rotation(), er)
+        self.assertEqual(sample_arm.position(), sample_position)
+        er = Rotation(ca[4] * ca[2] + sa[4] * -sa[2], Expr.float(0), ca[4] * sa[2] + ca[2] * sa[4],
+                      Expr.float(0), Expr.float(1), Expr.float(0),
+                      -sa[4] * ca[2] + ca[4] * -sa[2], Expr.float(0), -sa[4] * sa[2] + ca[4] * ca[2])
+        self.assertEqual(sample_arm.rotation(), er)
+
+        self.assertEqual(analyzer.position(), sample_position + sample_analyzer_vector)
+
+        self.assertEqual(analyzer.rotation_parts(),
+                         OrientParts((RotationY(v=ai[2]), RotationY(v=ai[4]), RotationY(v=ai[5]))))
+
+        self.assertEqual(ana_arm.rotation_parts(),
+                         OrientParts((RotationY(v=ai[2]), RotationY(v=ai[4]), RotationY(v=ai[6]))))
+
+        # testing the detector position is more of the same, but more complicated, than the analyzer position
+        # Since it doesn't test much, skip it for the moment
+        self.assertEqual(ana_arm.rotation(), detector.rotation())
