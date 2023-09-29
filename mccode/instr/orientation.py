@@ -76,6 +76,16 @@ class Matrix(NamedTuple):
         else:
             raise RuntimeError(f'No subtraction with {type(other)}')
 
+    def __abs__(self) -> MatrixType:
+        return Matrix(abs(self.xx), abs(self.xy), abs(self.xz),
+                      abs(self.yx), abs(self.yy), abs(self.yz),
+                      abs(self.zx), abs(self.zy), abs(self.zz))
+
+    def __round__(self, n=None) -> MatrixType:
+        return Matrix(round(self.xx, n), round(self.xy, n), round(self.xz, n),
+                      round(self.yx, n), round(self.yy, n), round(self.yz, n),
+                      round(self.zx, n), round(self.zy, n), round(self.zz, n))
+
 
 class Vector(NamedTuple):
     x: Expr = Expr.float(0)
@@ -155,6 +165,9 @@ class Rotation(NamedTuple):
     zy: Expr = Expr.float(0)
     zz: Expr = Expr.float(1)
 
+    def __str__(self):
+        return f'[({self.xx}, {self.xy}, {self.xz})({self.yx}, {self.yy}, {self.yz})({self.zx}, {self.zy}, {self.zz})]'
+
     def transpose(self) -> RotationType:
         return Rotation(self.xx, self.yx, self.zx, self.xy, self.yy, self.zy, self.xz, self.yz, self.zz)
 
@@ -200,7 +213,6 @@ class Rotation(NamedTuple):
         return rz * (ry * rx)
 
 
-
 class Seitz(NamedTuple):
     xx: Expr = Expr.float(1)
     xy: Expr = Expr.float(0)
@@ -226,6 +238,9 @@ class Seitz(NamedTuple):
         return cls(Expr.float(1), Expr.float(0), Expr.float(0), vector.x,
                    Expr.float(0), Expr.float(1), Expr.float(0), vector.y,
                    Expr.float(0), Expr.float(0), Expr.float(1), vector.z)
+
+    def __str__(self):
+        return f'[{str(self.rotation())}|{str(self.vector())}]'
 
     def rotation(self) -> Rotation:
         return Rotation(self.xx, self.xy, self.xz, self.yx, self.yy, self.yz, self.zx, self.zy, self.zz)
@@ -407,6 +422,11 @@ class OrientPart:
     _axes: Seitz = field(default_factory=Seitz)
     _coordinates: Seitz = field(default_factory=Seitz)
 
+    def __post_init__(self):
+        """If this is not defined, the subclass' __post_init__ may not be called"""
+        # (On one system, the absence of this method did not affect the calling of the subclass post_init)
+        pass
+
     @property
     def is_translation(self):
         return any(not p.is_zero for p in (self._axes[3], self._axes[7], self._axes[11]))
@@ -428,7 +448,7 @@ class OrientPart:
             raise RuntimeError('Not possible to determine the rotation axis and angle of a variable general transform')
         # For the matrix A in cross(axis, v) = A v,
         # If flat is _axes, then R = 1 - A sin(angle) + A^2 (1-cos(angle))
-        #  if _coordinates, then R = 1 + A sin(angle) * A^2 (1-cos(angle))
+        #  if _coordinates, then R = 1 + A sin(angle) + A^2 (1-cos(angle))
         # where the difference in sign is due to _coordinates rotating points and _axes rotating the axes instead.
         flat = self._coordinates.rotation()
         matrix = [[flat.xx.value, flat.xy.value, flat.xz.value],
@@ -497,7 +517,7 @@ class OrientPart:
     def __mul__(self: OrientationPartType, other: OrientationPartType) -> OrientationPartType:
         if not isinstance(other, OrientPart):
             raise RuntimeError('Multiplication only defined for two orientation parts')
-        return OrientPart(self.axes * other.axes, self.coordinates * other.coordinates)
+        return OrientPart(self.axes * other.axes,  other.coordinates * self.coordinates)
 
     def specialization(self):
         if not self.is_rotation:
@@ -566,6 +586,11 @@ class RotationPart(OrientPart):
     v: Expr = Expr.float(0)
     degrees: bool = True
 
+    def __post_init__(self):
+        """If this is not defined, the subclass' __post_init__ will not be called"""
+        # On one system the absence of this method prevented the subclass' __post_init__ from being called
+        pass
+
     @property
     def is_constant(self):
         return self.v.has_value
@@ -605,8 +630,8 @@ class RotationX(RotationPart):
     """A specialization to the rotation-around-X part of a projective affine transformation"""
     def __post_init__(self):
         c, s, o, z = self._cos_sin_one_zero()
-        self._axes = Seitz(o, z, z, z, z, c, -s, z, z, s, c, z)
-        self._coordinates = Seitz(o, z, z, z, z, c, s, z, z, -s, c, z)
+        self._axes = Seitz(o, z, z, z, z, c, s, z, z, -s, c, z)
+        self._coordinates = Seitz(o, z, z, z, z, c, -s, z, z, s, c, z)
 
     def inverse(self):
         return RotationX(v=-self.v, degrees=self.degrees)
@@ -627,8 +652,8 @@ class RotationY(RotationPart):
     """A specialization to the rotation-around-Y part of a projective affine transformation"""
     def __post_init__(self):
         c, s, o, z = self._cos_sin_one_zero()
-        self._axes = Seitz(c, z, s, z, z, o, z, z, -s, z, c, z)
-        self._coordinates = Seitz(c, z, -s, z, z, o, z, z, s, z, c, z)
+        self._axes = Seitz(c, z, -s, z, z, o, z, z, s, z, c, z)
+        self._coordinates = Seitz(c, z, s, z, z, o, z, z, -s, z, c, z)
 
     def inverse(self):
         return RotationY(v=-self.v, degrees=self.degrees)
@@ -649,8 +674,8 @@ class RotationZ(RotationPart):
     """A specialization to the rotation-around-Z part of a projective affine transformation"""
     def __post_init__(self):
         c, s, o, z = self._cos_sin_one_zero()
-        self._axes = Seitz(c, -s, z, z, s, c, z, z, z, z, o, z)
-        self._coordinates = Seitz(c, s, z, z, -s, c, z, z, z, z, o, z)
+        self._axes = Seitz(c, s, z, z, -s, c, z, z, z, z, o, z)
+        self._coordinates = Seitz(c, -s, z, z, s, c, z, z, z, z, o, z)
 
     def inverse(self):
         return RotationZ(v=-self.v, degrees=self.degrees)
@@ -832,8 +857,7 @@ class Orient:
         at = Vector(*at) if isinstance(at, tuple) else at
         angles = Angles(*angles) if isinstance(angles, tuple) else angles
         rel = rel or Orient()
-        # this multiplication may look backwards, but we are rotating the coordinates not axes
-        pos = OrientParts((TranslationPart(v=rel.position() + rel.rotation() * at),))
+        pos = OrientParts((TranslationPart(v=rel.position() + rel.rotation('coordinates') * at),))
         rot = OrientParts.from_dependent_chain(rot and rot.rotation_parts(), rotated=angles, degrees=degrees, copy=copy)
         return cls(pos, rot, degrees)
 
@@ -843,7 +867,7 @@ class Orient:
         dep = dep or Orient()
         at = Vector(*at) if isinstance(at, tuple) else at
         angles = Angles(*angles) if isinstance(angles, tuple) else angles
-        pos = OrientParts((TranslationPart(v=dep.position() + dep.rotation() * at),))
+        pos = OrientParts((TranslationPart(v=dep.position() + dep.rotation('coordinates') * at),))
         rot = OrientParts.from_dependent_chain(dep.rotation_parts(), rotated=angles, degrees=degrees, copy=copy)
         return cls(pos, rot, degrees)
 

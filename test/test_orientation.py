@@ -106,6 +106,56 @@ class TestOrientation(TestCase):
         for i in range(9):
             self.assertEqual(zero[i], Expr.float(0))
 
+    def test_rotation_mccode_style(self):
+        from mccode.instr.orientation import Rotation, Angles, Matrix
+        from mccode.common import Expr
+        o, z, p, m = [Expr.float(x) for x in (1, 0, 90, -90)]
+        angles = {'zpz': Rotation.from_angles(Angles(z, p, z)),
+                  'pzp': Rotation.from_angles(Angles(p, z, p)),
+                  'zzp': Rotation.from_angles(Angles(z, z, p)),
+                  'ppz': Rotation.from_angles(Angles(p, p, z)),
+                  'mzp': Rotation.from_angles(Angles(m, z, p)),
+                  'pzm': Rotation.from_angles(Angles(p, z, m)),
+                  'mzm': Rotation.from_angles(Angles(m, z, m)),
+                  'zpp': Rotation.from_angles(Angles(z, p, p)),
+                  'zpm': Rotation.from_angles(Angles(z, p, m)),
+                  'zmp': Rotation.from_angles(Angles(z, m, p)),
+                  'zmm': Rotation.from_angles(Angles(z, m, m)),
+                  'ppp': Rotation.from_angles(Angles(p, p, p)),
+                  'ppm': Rotation.from_angles(Angles(p, p, m)),
+                  'pmp': Rotation.from_angles(Angles(p, m, p)),
+                  'pmm': Rotation.from_angles(Angles(p, m, m)),
+                  'mpp': Rotation.from_angles(Angles(m, p, p)),
+                  'mpm': Rotation.from_angles(Angles(m, p, m)),
+                  'mmp': Rotation.from_angles(Angles(m, m, p)),
+                  'mmm': Rotation.from_angles(Angles(m, m, m))}
+
+        # Verified from McStas compile instrument _*_var.rotation_absolute via --trace output:
+        mc = {'zpz': Rotation(z, z, -o, z, o, z, o, z, z),
+              'pzz': Rotation(o, z, z, z, z, o, z, -o, z),
+              'zzp': Rotation(z, o, z, -o, z, z, z, z, o),
+              'pzp': Rotation(z, z, o, -o, z, z, z, -o, z),
+              'mzp': Rotation(z, z, -o, -o, z, z, z, o, z),
+              'pzm': Rotation(z, z, -o, o, z, z, z, -o, z),
+              'mzm': Rotation(z, z, o, o, z, z, z, o, z),
+              'zpp': Rotation(z, o, z, z, z, o, o, z, z),
+              'zmp': Rotation(z, o, z, z, z, -o, -o, z, z),
+              'zmm': Rotation(z, -o, z, z, z, o, -o, z, z),
+              'zpm': Rotation(z, -o, z, z, z, -o, o, z, z),
+              'ppz': Rotation(z, o, z, z, z, o, o, z, z),
+              'ppp': Rotation(z, z, o, z, -o, z, o, z, z),
+              'mpp': Rotation(z, z, -o, z, o, z, o, z, z),
+              'pmp': Rotation(z, z, o, z, o, z, -o, z, z),
+              'ppm': Rotation(z, z, -o, z, o, z, o, z, z),
+              'mmp': Rotation(z, z, -o, z, -o, z, -o, z, z),
+              'mpm': Rotation(z, z, o, z, -o, z, o, z, z),
+              'pmm': Rotation(z, z, -o, z, -o, z, -o, z, z),
+              'mmm': Rotation(z, z, o, z, o, z, -o, z, z)}
+
+        # constructing the Rotation matrix may have small numerical errors, so we round to 14 decimal places
+        # and compare to the zero Matrix
+        for key in angles:
+            self.assertEqual(round(abs(angles[key] - mc[key]), 14), Matrix())
 
     def test_seitz_multiply_identity(self):
         from numpy import random
@@ -157,6 +207,9 @@ class TestOrientation(TestCase):
         # solver, which we are not testing here.
 
         tx, ty, tz = _random_angles_degrees()
+        while tx.is_zero or ty.is_zero or tz.is_zero:
+            print(f'{tx=} {ty=} {tz=} must all be finite')
+            tx, ty, tz = _random_angles_degrees()
         rx, ry, rz = _make_seitz_list(tx, ty, tz, degrees=True)
 
         # for individual rotations, it's easy to prove that axes and coordinates rotate opposite each other:
@@ -228,6 +281,23 @@ class TestOrientation(TestCase):
         self.assertEqual(rpz.rotation_axis, Vector(Expr.float(0), Expr.float(0), Expr.float(1)))
         self.assertEqual(rpz.angles(), Angles(Expr.float(0), Expr.float(0), tz))
         self.assertTrue((rpz * rpz.inverse()).is_identity)
+
+    def test_RotationPart_subclass_post_init_is_called(self):
+        from mccode.instr.orientation import Rotation, RotationX, RotationY, RotationZ
+        tx, ty, tz = _random_angles_degrees()
+        while tx.is_zero or ty.is_zero or tz.is_zero:
+            print(f'{tx=} {ty=} {tz=} must all be finite')
+            tx, ty, tz = _random_angles_degrees()
+
+        rpx = RotationX(v=tx, degrees=True)
+        self.assertFalse(rpx.is_identity)
+        self.assertNotEqual(rpx.rotation(), Rotation())
+        rpy = RotationY(v=ty, degrees=True)
+        self.assertFalse(rpy.is_identity)
+        self.assertNotEqual(rpy.rotation(), Rotation())
+        rpz = RotationZ(v=tz, degrees=True)
+        self.assertFalse(rpz.is_identity)
+        self.assertNotEqual(rpz.rotation(), Rotation())
 
     def test_Vector(self):
         from mccode.instr.orientation import Vector
@@ -471,18 +541,19 @@ class TestOrientation(TestCase):
         sa = [unary_expr(sin, 'sin', a) for a in ai]
         ca = [unary_expr(cos, 'cos', a) for a in ai]
         sample_position = Vector(sa[2], Expr.float(0.0), Expr.float(1) + ca[2])
-        sample_analyzer_vector = Vector(ca[4] * sa[2] + sa[4] * ca[2], Expr.float(0), - sa[4] * sa[2] + ca[4] * ca[2])
+        sample_analyzer_vector = Vector(ca[2] * sa[4] + sa[2] * ca[4], Expr.float(0), - sa[2] * sa[4] + ca[4] * ca[2])
 
         self.assertEqual(sample.position(), sample_position)
         # Matching up expression trees is hard -- so use this special hand-checked equivalent matrix
-        er = Rotation(ca[3] * ca[2] + sa[3] * -sa[2], Expr.float(0), ca[3] * sa[2] + ca[2] * sa[3],
+        er = Rotation(ca[3] * ca[2] + -sa[3] * sa[2], Expr.float(0), ca[3] * -sa[2] + -sa[3] * ca[2],
                       Expr.float(0), Expr.float(1), Expr.float(0),
-                      -sa[3] * ca[2] + ca[3] * -sa[2], Expr.float(0), -sa[3] * sa[2] + ca[3] * ca[2])
+                      sa[3] * ca[2] + ca[3] * sa[2], Expr.float(0), sa[3] * -sa[2] + ca[3] * ca[2])
         self.assertEqual(sample.rotation(), er)
+
         self.assertEqual(sample_arm.position(), sample_position)
-        er = Rotation(ca[4] * ca[2] + sa[4] * -sa[2], Expr.float(0), ca[4] * sa[2] + ca[2] * sa[4],
+        er = Rotation(ca[4] * ca[2] + -sa[4] * sa[2], Expr.float(0), ca[4] * -sa[2] + -sa[4] * ca[2],
                       Expr.float(0), Expr.float(1), Expr.float(0),
-                      -sa[4] * ca[2] + ca[4] * -sa[2], Expr.float(0), -sa[4] * sa[2] + ca[4] * ca[2])
+                      sa[4] * ca[2] + ca[4] * sa[2], Expr.float(0), sa[4] * -sa[2] + ca[4] * ca[2])
         self.assertEqual(sample_arm.rotation(), er)
 
         self.assertEqual(analyzer.position(), sample_position + sample_analyzer_vector)
