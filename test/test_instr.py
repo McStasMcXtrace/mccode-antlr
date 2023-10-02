@@ -299,9 +299,18 @@ class TestInstr(TestCase):
         END """
         self._positioning_evaluator(parse_instr_string(instr_source))
 
-    def test_simple_positioning(self):
+    def _simple_position_tests(self, instr, positions: dict):
         from mccode.common import Expr
         from mccode.instr.orientation import Vector
+        positions = {k: Vector(*[Expr.float(x) for x in v]) for k, v in positions.items()}
+        for instance in instr.components:
+            self.assertEqual(positions[instance.name], instance.orientation.position())
+            self.assertEqual(positions[instance.name], instance.orientation.position('axes'))
+            self.assertEqual(positions[instance.name], instance.orientation.position('coordinates'))
+
+    def test_simple_positioning(self):
+
+        from math import pi, cos, sin
         instr_source = """DEFINE INSTRUMENT simple_test() TRACE
         COMPONENT origin = Arm() AT (0, 0, 0) ABSOLUTE
         COMPONENT slit = Arm() at (0, 0, 10) RELATIVE origin
@@ -309,8 +318,25 @@ class TestInstr(TestCase):
         END"""
         instr = parse_instr_string(instr_source)
         positions = {'origin': (0, 0, 0), 'slit': (0, 0, 10), 'sample': (0, 0, 20)}
-        positions = {k: Vector(*[Expr.float(x) for x in v]) for k, v in positions.items()}
-        for instance in instr.components:
-            self.assertEqual(positions[instance.name], instance.orientation.position())
-            self.assertEqual(positions[instance.name], instance.orientation.position('axes'))
-            self.assertEqual(positions[instance.name], instance.orientation.position('coordinates'))
+        self._simple_position_tests(instr, positions)
+
+        instr_source = """DEFINE INSTRUMENT slightly_more_complex() TRACE
+        COMPONENT origin = Arm() AT (0, 0, 0) ABSOLUTE
+        COMPONENT guide_start = Arm() AT (0.01277, 0, 1.930338) RELATIVE origin ROTATED (0, -0.56, 0) RELATIVE origin
+        COMPONENT guide = Arm() AT (0, 0, 0) RELATIVE guide_start
+        COMPONENT guide_end = Arm() AT (0, 0, 4.33) RELATIVE guide
+        END
+        """
+        instr = parse_instr_string(instr_source)
+        positions = {'origin': (0, 0, 0), 'guide_start': (0.01277, 0, 1.930338), 'guide': (0.01277, 0, 1.930338),
+                     'guide_end': (0.01277 - 4.33*sin(pi/180*0.56), 0, 1.930338 + 4.33*cos(pi/180*0.56))}
+        self._simple_position_tests(instr, positions)
+        print(positions)
+        pos_hat = (0.006615, 0, 0.999978)
+        pos = instr.components[2].orientation.position()
+        distance = pos.length()
+        vector = pos / distance
+        self.assertAlmostEqual(vector.x, pos_hat[0], 6)
+        self.assertAlmostEqual(vector.y, pos_hat[1], 6)
+        self.assertAlmostEqual(vector.z, pos_hat[2], 6)
+        self.assertAlmostEqual(distance, 1.930380239005777, 6)
