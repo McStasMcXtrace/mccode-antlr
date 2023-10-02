@@ -423,7 +423,6 @@ OrientationPartType = TypeVar('OrientationPartType', bound='OrientationPart')
 class Part:
     """The Seitz matrix part of any arbitrary projective affine transformation"""
     _axes: Seitz = field(default_factory=Seitz)
-    _coordinates: Seitz = field(default_factory=Seitz)
 
     def __post_init__(self):
         """If this is not defined, the subclass' __post_init__ may not be called"""
@@ -453,7 +452,7 @@ class Part:
         # If flat is _axes, then R = 1 - A sin(angle) + A^2 (1-cos(angle))
         #  if _coordinates, then R = 1 + A sin(angle) + A^2 (1-cos(angle))
         # where the difference in sign is due to _coordinates rotating points and _axes rotating the axes instead.
-        flat = self._coordinates.rotation()
+        flat = self.rotation('coordinates')
         matrix = [[flat.xx.value, flat.xy.value, flat.xz.value],
                   [flat.yx.value, flat.yy.value, flat.yz.value],
                   [flat.zx.value, flat.zy.value, flat.zz.value]]
@@ -492,7 +491,7 @@ class Part:
 
     @property
     def coordinates(self) -> Seitz:
-        return self._coordinates
+        return self._axes.inverse()
 
     def seitz(self, which=None) -> Seitz:
         return self.axes if which is None or 'axes' in which else self.coordinates
@@ -508,19 +507,19 @@ class Part:
 
     @property
     def all_values(self) -> bool:
-        return all(x.has_value for x in self._axes) and all(x.has_value for x in self._coordinates)
+        return all(x.has_value for x in self._axes)
 
     @property
     def is_constant(self) -> bool:
-        return all(x.is_constant for x in self._axes) and all(x.is_constant for x in self._coordinates)
+        return all(x.is_constant for x in self._axes)
 
     def inverse(self: OrientationPartType) -> OrientationPartType:
-        return Part(self._axes.inverse(), self._coordinates.inverse())
+        return Part(self._axes.inverse())
 
     def __mul__(self: OrientationPartType, other: OrientationPartType) -> OrientationPartType:
         if not isinstance(other, Part):
             raise RuntimeError('Multiplication only defined for two orientation parts')
-        return Part(self.axes * other.axes, other.coordinates * self.coordinates)
+        return Part(self.axes * other.axes)
 
     def specialization(self):
         if not self.is_rotation:
@@ -536,8 +535,8 @@ class Part:
         return self
 
     def __eq__(self, other: OrientationPartType):
-        # Two orientation part objects are equal if and only if their axes and coordinates are equal
-        return self.axes == other.axes and self.coordinates == other.coordinates
+        # Two orientation part objects are equal if and only if their axes are equal
+        return self.axes == other.axes
 
 
 @dataclass
@@ -570,7 +569,6 @@ class TranslationPart(Part):
     def __post_init__(self):
         z, o = Expr.float(0), Expr.float(1)
         self._axes = Seitz(o, z, z, self.v[0], z, o, z, self.v[1], z, z, o, self.v[2])
-        self._coords = self._axes
 
     def inverse(self):
         return TranslationPart(v=Vector(-self.v[0], -self.v[1], -self.v[2]))
@@ -634,7 +632,6 @@ class RotationX(RotationPart):
     def __post_init__(self):
         c, s, o, z = self._cos_sin_one_zero()
         self._axes = Seitz(o, z, z, z, z, c, s, z, z, -s, c, z)
-        self._coordinates = Seitz(o, z, z, z, z, c, -s, z, z, s, c, z)
 
     def inverse(self):
         return RotationX(v=-self.v, degrees=self.degrees)
@@ -656,7 +653,6 @@ class RotationY(RotationPart):
     def __post_init__(self):
         c, s, o, z = self._cos_sin_one_zero()
         self._axes = Seitz(c, z, -s, z, z, o, z, z, s, z, c, z)
-        self._coordinates = Seitz(c, z, s, z, z, o, z, z, -s, z, c, z)
 
     def inverse(self):
         return RotationY(v=-self.v, degrees=self.degrees)
@@ -678,7 +674,6 @@ class RotationZ(RotationPart):
     def __post_init__(self):
         c, s, o, z = self._cos_sin_one_zero()
         self._axes = Seitz(c, s, z, z, -s, c, z, z, z, z, o, z)
-        self._coordinates = Seitz(c, -s, z, z, s, c, z, z, z, z, o, z)
 
     def inverse(self):
         return RotationZ(v=-self.v, degrees=self.degrees)

@@ -1,14 +1,10 @@
 from unittest import TestCase
 from zenlog import log
 
+
 def parse_instr_string(instr_source: str):
-    from antlr4 import CommonTokenStream, InputStream
-    from mccode.grammar import McInstrParser, McInstrLexer
-    from mccode.instr import InstrVisitor
-    from mccode.reader import MCSTAS_REGISTRY, Reader
-    parser = McInstrParser(CommonTokenStream(McInstrLexer(InputStream(instr_source))))
-    visitor = InstrVisitor(Reader(registries=[MCSTAS_REGISTRY]), None)
-    return visitor.visitProg(parser.prog())
+    from mccode.loader import parse_mcstas_instr
+    return parse_mcstas_instr(instr_source)
 
 
 def make_mcstas_assembler(name: str):
@@ -331,7 +327,6 @@ class TestInstr(TestCase):
         positions = {'origin': (0, 0, 0), 'guide_start': (0.01277, 0, 1.930338), 'guide': (0.01277, 0, 1.930338),
                      'guide_end': (0.01277 - 4.33*sin(pi/180*0.56), 0, 1.930338 + 4.33*cos(pi/180*0.56))}
         self._simple_position_tests(instr, positions)
-        print(positions)
         pos_hat = (0.006615, 0, 0.999978)
         pos = instr.components[2].orientation.position()
         distance = pos.length()

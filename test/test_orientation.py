@@ -213,9 +213,9 @@ class TestOrientation(TestCase):
         rx, ry, rz = _make_seitz_list(tx, ty, tz, degrees=True)
 
         # for individual rotations, it's easy to prove that axes and coordinates rotate opposite each other:
-        opx = Part(rx, rx.inverse())
-        opy = Part(ry, ry.inverse())
-        opz = Part(rz, rz.inverse())
+        opx = Part(rx)
+        opy = Part(ry)
+        opz = Part(rz)
 
         for o in (opx, opy, opz):
             self.assertTrue(o.is_rotation)
