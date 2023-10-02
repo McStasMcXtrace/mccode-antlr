@@ -311,11 +311,11 @@ def acos_degree(v):
 def acos_value(v: Expr, degrees=True):
     from math import acos
     pi = Expr.float(180) if degrees else Expr.id('PI')
-    if v.is_value(1):
+    if v.is_value(1) or v > Expr.float(1):
         return Expr.float(0)
     if v.is_value(0):
         return pi / Expr.float(2)
-    if v.is_value(-1):
+    if v.is_value(-1) or v < Expr.float(-1):
         return pi
     return unary_expr(acos_degree if degrees else acos, 'acos', v)
 
@@ -436,7 +436,10 @@ class Part:
     @property
     def is_rotation(self):
         # The first condition _should_ always be true -- the second is only true if this is not the identity matrix
-        return (self._axes.inverse() * self._axes).trace() == Expr.float(3.) and self._axes.trace() != Expr.float(3.)
+        if round((self._axes.inverse() * self._axes).trace(), 12) == Expr.float(3.):
+            return round(self._axes.trace(), 12) != Expr.float(3.)
+        log.info(f'Not a rotation matrix: {self._axes}')
+        return False
 
     @property
     def is_identity(self):
@@ -465,6 +468,7 @@ class Part:
         cos_angle = (matrix[0][0] + matrix[1][1] + matrix[2][2] - 1) / 2
         if abs(cos_angle) > 1:
             log.warn(f'Invalid cos(angle) {cos_angle} for {self}')
+            cos_angle = 1 if cos_angle > 0 else -1
         angle = Expr.float(acos_degree(cos_angle))
         axis = Vector(Expr.float(axis[0]), Expr.float(axis[1]), Expr.float(axis[2]))
 
@@ -728,6 +732,16 @@ class Parts:
             raise ValueError(f'__add__ undefined for {type(self)} and {type(other)}')
         return Parts(out)
 
+    def __sub__(self, other) -> PartsType:
+        out = self._copy()
+        if isinstance(other, Parts):
+            out += tuple(reversed([x.inverse() for x in other.stack()]))
+        elif isinstance(other, Part):
+            out += (other.inverse(),)
+        else:
+            raise ValueError(f'__sub__ undefined for {type(self)} and {type(other)}')
+        return Parts(out)
+
     @classmethod
     def from_at_rotated(cls, at: Vector, rotated: Angles, degrees=True):
         """Emulate the McCode ordered-4-part-transformation:
@@ -878,6 +892,9 @@ class Orient:
     def rotation(self, which=None) -> Rotation:
         return self._rotation.rotation(which=which)
 
+    def position_parts(self) -> Parts:
+        return self._position.reduce()
+
     def rotation_parts(self, which=None) -> Parts:
         return self._rotation.reduce()
 
@@ -888,10 +905,11 @@ class Orient:
         return Orient(self._position.reduce(), self._rotation.reduce())
 
     def combine(self) -> Parts:
-        # The full positioning & orienting stack goes through all positioning operations
-        # and only then goes through the orienting operations
-        comb = self._position.copy().stack()
-        comb += self._rotation.stack()
+        # The position represents a coordinate and the rotation represents the axes of that coordinate system
+        # So even though we apply the translation first, the rotation operations need to appear first in the
+        # combined set of operations:
+        comb = self._rotation.copy().stack()
+        comb += self._position.copy().stack()
         return Parts(comb)
 
     def __add__(self, other):
@@ -902,5 +920,11 @@ class Orient:
         else:
             raise ValueError(f"__add__ undefined for DependentOrientation and {type(other)}")
 
-
-
+    def __sub__(self, other):
+        if isinstance(other, Orient):
+            pos = self._position - other._position
+            return Orient(other._rotation + pos, self._rotation - other._rotation)
+        elif isinstance(other, (Part, Parts)):
+            return Orient(self._position - other, self._rotation - other)
+        else:
+            raise ValueError(f"__sub__ undefined for DependentOrientation and {type(other)}")

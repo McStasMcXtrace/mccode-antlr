@@ -1,6 +1,3 @@
-from textwrap import TextWrapper as PyTextWrapper
-
-
 def pre_mid_post(string, open_token, close_token):
     io = string.find(open_token)
     ic = string.rfind(close_token)
@@ -9,7 +6,108 @@ def pre_mid_post(string, open_token, close_token):
     return None, string, None
 
 
-class TextWrapper(PyTextWrapper):
+class BaseWrapper:
+
+    def __init__(self, hider: str = None, hidden: str = None, width: int = 80):
+        self.hider = hider or 'hider'
+        self.hidden = hidden or 'hidden'
+        self.width = width
+
+    @staticmethod
+    def wrap(text: str, pad: str = None) -> list[str]:
+        raise NotImplementedError
+
+    @staticmethod
+    def comment(name: str, content: str) -> str:
+        raise NotImplementedError
+
+    @staticmethod
+    def start_block_comment(name: str) -> str:
+        raise NotImplementedError
+
+    @staticmethod
+    def end_block_comment() -> str:
+        raise NotImplementedError
+
+    def block(self, name: str, content: str) -> str:
+        raise NotImplementedError
+
+    def line(self, name: str, items: list[str], sep: str = ' ') -> str:
+        raise NotImplementedError
+
+    def lines(self, items: list[str]) -> str:
+        raise NotImplementedError
+
+    @staticmethod
+    def metadata_group(name: str, mimetype: str, item: str, value: str) -> str:
+        raise NotImplementedError
+
+    @staticmethod
+    def datatype(data_type: str) -> str:
+        raise NotImplementedError
+
+    @staticmethod
+    def parameter(parameter: str) -> str:
+        raise NotImplementedError
+
+    @staticmethod
+    def unit(unit: str) -> str:
+        raise NotImplementedError
+
+    @staticmethod
+    def value(value: str) -> str:
+        raise NotImplementedError
+
+    @staticmethod
+    def start_list(name: str) -> str:
+        raise NotImplementedError
+
+    @staticmethod
+    def end_list(name: str) -> str:
+        raise NotImplementedError
+
+    @staticmethod
+    def start_list_item() -> str:
+        raise NotImplementedError
+
+    @staticmethod
+    def end_list_item() -> str:
+        raise NotImplementedError
+
+    @staticmethod
+    def list_item(content: str) -> str:
+        raise NotImplementedError
+
+    @staticmethod
+    def list_items(items: list[str]) -> str:
+        raise NotImplementedError
+
+    @staticmethod
+    def escape(content: str) -> str:
+        raise NotImplementedError
+
+    @staticmethod
+    def url(content: str) -> str:
+        raise NotImplementedError
+
+    @staticmethod
+    def bold(content: str) -> str:
+        raise NotImplementedError
+
+    @staticmethod
+    def emph(content: str) -> str:
+        raise NotImplementedError
+
+    @staticmethod
+    def br() -> str:
+        raise NotImplementedError
+
+    @staticmethod
+    def hide(content: str) -> str:
+        raise NotImplementedError
+
+
+class TextWrapper(BaseWrapper):
 
     def wrap(self, text: str, pad: str = None) -> list[str]:
         if pad is None:
@@ -113,39 +211,9 @@ class TextWrapper(PyTextWrapper):
         # This is not good enough. TODO Use a combined McCode _and_ C parser to identify reasonable line break points
         return line
 
-        # from math import ceil
-        # if len(line) <= width:
-        #     return line
-        #
-        # if not any(',' == x for x in line):
-        #     for o, c in (('{', '}'), ('(', ')'), ('[', ']')):
-        #         pre, line, post = pre_mid_post(line, o, c)
-        #         if pre:
-        #             return (pad + self._wrap_line(pre, width, pad) + f'{o}\n'
-        #                     + self._wrap_line(line, width, pad + '  ')
-        #                     + f'\n{pad}{c}' + self._wrap_line(post, width, pad))
-        #
-        # if width == self.width:
-        #     width = min(width, int(len(line) / ceil(len(line) / width)))
-        # elif len(line) <= self.width:
-        #     return pad + line
-        #
-        # first = line[:width]
-        # for d in (',', ' ', '\t'):
-        #     x = first.rfind(d)
-        #     if x > 0:
-        #         return pad + line[:x+1] + f'\n' + self._wrap_line(line[x+1:], width, pad)
-        # for d in ('-', '+', '*', '/'):
-        #     x = first.rfind(d)
-        #     if x > 0:
-        #         return pad + line[:x] + f'\n' + self._wrap_line(line[x:], width, pad)
-        # return pad + line
 
+class HTMLWrapper(BaseWrapper):
 
-class HTMLWrapper:
-    def __init__(self, hider: str, hidden: str):
-        self.hider = hider
-        self.hidden = hidden
 
     @staticmethod
     def wrap(text: str, pad: str = None) -> list[str]:

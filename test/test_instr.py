@@ -335,3 +335,7 @@ class TestInstr(TestCase):
         self.assertAlmostEqual(vector.y, pos_hat[1], 6)
         self.assertAlmostEqual(vector.z, pos_hat[2], 6)
         self.assertAlmostEqual(distance, 1.930380239005777, 6)
+
+        # Combining the position and rotation (reduced) operations should yield the same position
+        comb = instr.components[2].orientation.combine().reduce()
+        self.assertEqual(pos, comb.position())

@@ -41,7 +41,7 @@ class Instance:
         line = wrapper.bold('COMPONENT') + f' {self.name} = {self.type.name}({instance_parameters}) '
 
         if self.when is not None:
-            line += wrapper.bold('WHEN') + ' ' + wrapper.code(str(self.when)) + ' '
+            line += wrapper.bold('WHEN') + ' ' + wrapper.escape(str(self.when)) + ' '
 
         def rf(which, x):
             return _triplet_ref_str(wrapper.bold(which), x, wrapper.bold('ABSOLUTE'), wrapper.bold('RELATIVE'))

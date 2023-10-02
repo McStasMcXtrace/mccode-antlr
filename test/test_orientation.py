@@ -218,6 +218,8 @@ class TestOrientation(TestCase):
         opz = Part(rz)
 
         for o in (opx, opy, opz):
+            if not o.is_rotation:
+                print(f'This test fails despite finite {tx}, {ty} and {tz}? Why is {o} not a rotation?')
             self.assertTrue(o.is_rotation)
             self.assertFalse(o.is_translation)
             self.assertFalse(o.is_identity)
