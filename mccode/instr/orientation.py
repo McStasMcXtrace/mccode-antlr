@@ -99,6 +99,9 @@ class Vector(NamedTuple):
                       self.x * other.xy + self.y * other.yy + self.z * other.zy,
                       self.x * other.xz + self.y * other.yz + self.z * other.zz)
 
+    def __truediv__(self, other: Expr) -> VectorType:
+        return Vector(self.x / other, self.y / other, self.z / other)
+
     def __add__(self, other: VectorType) -> VectorType:
         return Vector(self.x + other.x, self.y + other.y, self.z + other.z)
 
