@@ -98,6 +98,7 @@ class InstrVisitor(McInstrVisitor):
 
     def visitComponent_instance(self, ctx: McInstrParser.Component_instanceContext):
         from ..comp import Comp
+        from ..instr.orientation import Angles
         name = self.visit(ctx.instance_name())
         self.current_instance_name = name
         comp = self.visit(ctx.component_type())
@@ -111,7 +112,7 @@ class InstrVisitor(McInstrVisitor):
         else:
             # In the case of "AT (x, y, z) ABSOLUTE" or "AT (x, y, z) RELATIVE identifier"
             # We must use *the same* relative information for the rotation -- at[1] is None or a valid instance:
-            rotate = ((Expr.int(0), Expr.int(0), Expr.int(0)), at[1])
+            rotate = (Angles(Expr.int(0), Expr.int(0), Expr.int(0)), at[1])
         # Construct a new instance, possibly copying values from an existing instance:
         instance = Instance.from_instance(name, comp, at, rotate) if is_ref else Instance(name, comp, at, rotate)
         if ctx.instance_parameters() is not None:

@@ -298,3 +298,19 @@ class TestInstr(TestCase):
         COMPONENT last = Arm() AT (0, 0, 1) RELATIVE up
         END """
         self._positioning_evaluator(parse_instr_string(instr_source))
+
+    def test_simple_positioning(self):
+        from mccode.common import Expr
+        from mccode.instr.orientation import Vector
+        instr_source = """DEFINE INSTRUMENT simple_test() TRACE
+        COMPONENT origin = Arm() AT (0, 0, 0) ABSOLUTE
+        COMPONENT slit = Arm() at (0, 0, 10) RELATIVE origin
+        COMPONENT sample = Arm() at (0, 0, 10) RELATIVE slit
+        END"""
+        instr = parse_instr_string(instr_source)
+        positions = {'origin': (0, 0, 0), 'slit': (0, 0, 10), 'sample': (0, 0, 20)}
+        positions = {k: Vector(*[Expr.float(x) for x in v]) for k, v in positions.items()}
+        for instance in instr.components:
+            self.assertEqual(positions[instance.name], instance.orientation.position())
+            self.assertEqual(positions[instance.name], instance.orientation.position('axes'))
+            self.assertEqual(positions[instance.name], instance.orientation.position('coordinates'))
