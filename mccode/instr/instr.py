@@ -38,8 +38,8 @@ class Instr:
             from mccode.common import TextWrapper
             wrapper = TextWrapper(width=120)
         print(wrapper.start_block_comment(f'Instrument {self.name}'), file=output)
-        print(wrapper.line('Instrument:', [self.name]), file=output)
-        print(wrapper.line('Source:', [self.source]), file=output)
+        print(wrapper.line('Instrument:', [self.name or 'None']), file=output)
+        print(wrapper.line('Source:', [self.source or 'None']), file=output)
         print(wrapper.line('Contains:', [f'"%include {include}"' for include in self.included]), file=output)
         print(wrapper.line('Registries:', [registry.name for registry in self.registries]), file=output)
         for registry in self.registries:

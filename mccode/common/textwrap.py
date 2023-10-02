@@ -34,6 +34,7 @@ class TextWrapper(PyTextWrapper):
         return '\n'.join([name + ' %{', content + '}% '])
 
     def line(self, name: str, items: list[str], sep: str = ' ') -> str:
+        items = [item or 'None' for item in items]
         return '\n'.join(self.wrap(f'{name} {sep.join(items)}'))
 
     def lines(self, items: list[str]) -> str:
