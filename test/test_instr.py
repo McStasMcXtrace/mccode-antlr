@@ -7,6 +7,11 @@ def parse_instr_string(instr_source: str):
     return parse_mcstas_instr(instr_source)
 
 
+def pseudo_parse_instr_string(instr_source: str):
+    from mccode.loader.loader import pseudo_parse_mccode_instr
+    return pseudo_parse_mccode_instr(instr_source)
+
+
 def make_mcstas_assembler(name: str):
     from mccode.assembler import Assembler
     from mccode.reader import MCSTAS_REGISTRY
@@ -312,7 +317,7 @@ class TestInstr(TestCase):
         COMPONENT slit = Arm() at (0, 0, 10) RELATIVE origin
         COMPONENT sample = Arm() at (0, 0, 10) RELATIVE slit
         END"""
-        instr = parse_instr_string(instr_source)
+        instr = pseudo_parse_instr_string(instr_source)
         positions = {'origin': (0, 0, 0), 'slit': (0, 0, 10), 'sample': (0, 0, 20)}
         self._simple_position_tests(instr, positions)
 
@@ -323,7 +328,7 @@ class TestInstr(TestCase):
         COMPONENT guide_end = Arm() AT (0, 0, 4.33) RELATIVE guide
         END
         """
-        instr = parse_instr_string(instr_source)
+        instr = pseudo_parse_instr_string(instr_source)
         positions = {'origin': (0, 0, 0), 'guide_start': (0.01277, 0, 1.930338), 'guide': (0.01277, 0, 1.930338),
                      'guide_end': (0.01277 - 4.33*sin(pi/180*0.56), 0, 1.930338 + 4.33*cos(pi/180*0.56))}
         self._simple_position_tests(instr, positions)
