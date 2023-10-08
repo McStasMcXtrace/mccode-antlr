@@ -319,6 +319,59 @@ class Instr:
         # Then use the above decoder method to replace any instances of CMD, ENV, or GETPATH
         return [self._replace_env_getpath_cmd(flag) for flag in replaced_flags]
 
+    def copy(self, first=0, last=-1):
+        """Return a copy of this instrument, optionally with only a subset of components"""
+        copy = Instr(self.name, self.source)
+        copy.parameters = (x for x in self.parameters)
+        copy.metadata = (x for x in self.metadata)
+        copy.components = (x for x in self.components[first:last])
+        copy.included = (x for x in self.included)
+        copy.user = (x for x in self.user)
+        copy.declare = (x for x in self.declare)
+        copy.initialize = (x for x in self.initialize)
+        copy.save = (x for x in self.save)
+        copy.final = (x for x in self.final)
+        copy.flags = (x for x in self.flags)
+        copy.registries = (x for x in self.registries)
+        return copy
+
+    def split(self, after):
+        index = [i for i, x in enumerate(self.components) if x.name == after]
+        if len(index) != 1:
+            raise RuntimeError('Can only split an instrument after a single component')
+        first = self.copy(last=index[0] + 1)
+        first.name = self.name + '_first'
+        second = self.copy(first=index[0] + 1)
+        second.name = self.name + '_second'
+        return first, second
+
+    def mcpl_split(self, after, filename=None):
+        from ..common import ComponentParameter
+        from ..common import Expr
+        from ..reader import Reader
+        if filename is None:
+            filename = self.name + '.mcpl'
+        first, second = self.split(after)
+        first.parameters += (InstrumentParameter('mcpl_filename', 'string', filename),)
+        fc = first.components[-1]
+        if fc.type != 'Arm':
+            log.warn(f'Component {after} is not an Arm -- using MCPL file may cause problems')
+        reader = Reader(registries=list(*self.registries))
+        mcpl_output_parameters = (ComponentParameter('filename', Expr.id('mcpl_filename')),)
+        mcpl_output_comp = reader.get_component('MCPL_output')
+        mcpl_output = Instance(fc.name, mcpl_output_comp, fc.at_relative, fc.rotate_relative,
+                               fc.orientation, mcpl_output_parameters)
+        first.components = first.components[:-1] + (mcpl_output,)
+
+        second.parameters += (InstrumentParameter('mcpl_filename', 'string', filename),)
+        mcpl_input_parameters = (ComponentParameter('filename', Expr.id('mcpl_filename')), )
+        mcpl_input_comp = reader.get_component('MCPL_input')
+        mcpl_input = Instance(fc.name, mcpl_input_comp, fc.at_relative, fc.rotate_relative,
+                              fc.orientation, mcpl_input_parameters)
+        second.components = (mcpl_input,) + second.components
+        return first, second
+
+
 
 def _join_rawc_tuple(rawc_tuple: tuple[RawC]):
     return '\n'.join([str(rc) for rc in rawc_tuple])
