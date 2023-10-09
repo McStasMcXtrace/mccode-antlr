@@ -64,9 +64,11 @@ def declarations_pre_libraries(source, typedefs: list, component_declared_parame
 
     def instrument_parameters_table():
         def one_line(name, typename, value, unit):
-            u = '' if unit is None else unit
+            u = '""' if unit is None else unit
+            if u[0] != '"' or u[-1] != '"':
+                u = f'"{u}"'
             v = f'{value}' if value.is_str else f'"{value}"'  # protect against double quotes from string literals
-            return f'  "{name}", &(_instrument_var._parameters.{name}), {typename}, {v}, "{u}",'
+            return f'  "{name}", &(_instrument_var._parameters.{name}), {typename}, {v}, {u},'
         lines = [f'int numipar = {len(source.parameters)};', 'struct mcinputtable_struct mcinputtable[] = {']
         lines.extend([one_line(p.name, p.value.mccode_c_type_name, p.value, p.unit) for p in source.parameters])
         lines.extend(['  NULL, NULL, instr_type_double, "", ""'])

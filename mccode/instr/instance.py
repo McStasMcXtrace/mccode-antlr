@@ -43,10 +43,13 @@ class Instance:
         if self.when is not None:
             line += wrapper.bold('WHEN') + ' ' + wrapper.escape(str(self.when)) + ' '
 
-        def rf(which, x):
-            return _triplet_ref_str(wrapper.bold(which), x, wrapper.bold('ABSOLUTE'), wrapper.bold('RELATIVE'))
+        def rf(which, x, required=False):
+            absolute = wrapper.bold('ABSOLUTE')
+            relative = wrapper.bold('RELATIVE')
+            return _triplet_ref_str(wrapper.bold(which), x, absolute, relative, required)
 
-        line += rf('AT', self.at_relative) + ' '
+        # The "AT ..." statement is required even when it is "AT (0, 0, 0) ABSOLUTE"
+        line += rf('AT', self.at_relative, required=True) + ' '
         line += rf('ROTATED', self.rotate_relative) + wrapper.br()
         print(line, file=output)
 
@@ -191,10 +194,10 @@ class Instance:
                         group=self.group, extend=self.extend, jump=self.jump, metadata=self.metadata)
 
 
-def _triplet_ref_str(which, tr: Union[VectorReference, AnglesReference], absolute, relative):
+def _triplet_ref_str(which, tr: Union[VectorReference, AnglesReference], absolute, relative, required=False):
     pos, ref = tr
     if isinstance(pos, tuple):
         pos = Vector(*pos)
-    if pos.is_null() and ref is None:
+    if pos.is_null() and ref is None and not required:
         return ''
     return f'{which} {pos} {absolute if ref is None else f"{relative} {ref.name}"}'

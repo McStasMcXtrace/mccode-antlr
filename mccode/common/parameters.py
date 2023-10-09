@@ -18,8 +18,8 @@ class InstrumentParameter:
             line = 'vector '
         elif self.value.data_type == DataType.int:
             line = 'int '
-        line = wrapper.datatype(line)+wrapper.parameter(self.name)
-        if not self.unit is None:
+        line = wrapper.datatype(line) + wrapper.parameter(self.name)
+        if self.unit is not None:
             line += wrapper.unit(self.unit)
         if self.value.has_value:
             line += "=" + wrapper.value(self.value)

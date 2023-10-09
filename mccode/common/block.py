@@ -32,8 +32,8 @@ class RawC:
         # return f'#line {self.line} "{self.filename}"\n{self.source}'
         if self.translated is None:
             from zenlog import log
-            log.warn('RawC.to_c() called before translation')
-        return self.translated or self.source
+            log.error('RawC.to_c() called before translation')
+        return self.translated
 
     @property
     def fn(self):

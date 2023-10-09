@@ -53,7 +53,7 @@ class Instr:
         for metadata in self.metadata:
             metadata.to_file(output=output, wrapper=wrapper)
         if self.flags:
-            print(wrapper.line('DEPENDENCY ', list(self.flags)), file=output)
+            print(wrapper.quoted_line('DEPENDENCY ', list(self.flags)), file=output)
 
         if self.declare:
             print(wrapper.block('DECLARE', _join_rawc_tuple(self.declare)), file=output)

@@ -35,6 +35,9 @@ class BaseWrapper:
     def line(self, name: str, items: list[str], sep: str = ' ') -> str:
         raise NotImplementedError
 
+    def quoted_line(self, name: str, items: list[str], sep: str = ' ') -> str:
+        raise NotImplementedError
+
     def lines(self, items: list[str]) -> str:
         raise NotImplementedError
 
@@ -134,6 +137,10 @@ class TextWrapper(BaseWrapper):
     def line(self, name: str, items: list[str], sep: str = ' ') -> str:
         items = [item or 'None' for item in items]
         return '\n'.join(self.wrap(f'{name} {sep.join(items)}'))
+
+    def quoted_line(self, name: str, items: list[str], sep: str = ' ') -> str:
+        items = [item or 'None' for item in items]
+        return '\n'.join(self.wrap(f'{name} "{sep.join(items)}"'))
 
     def lines(self, items: list[str]) -> str:
         return '\n'.join('\n'.join(self.wrap(line)) for line in items)
@@ -236,6 +243,9 @@ class HTMLWrapper(BaseWrapper):
 
     def line(self, name: str, items: list[str], sep: str = ' ') -> str:
         return ''.join(self.wrap(f'<b>{name}</b> {sep.join(items)}')) + '<br>'
+
+    def quoted_line(self, name: str, items: list[str], sep: str = ' ') -> str:
+        return ''.join(self.wrap(f'<b>{name}</b> "{sep.join(items)}"')) + '<br>'
 
     def lines(self, items: list[str]) -> str:
         return '<br>'.join('<br>'.join(self.wrap(line)) for line in items)

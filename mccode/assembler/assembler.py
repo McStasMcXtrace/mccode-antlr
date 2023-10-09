@@ -48,6 +48,10 @@ class Assembler:
 
     def component(self, name: str, type_name: str, at=None, rotate=None, parameters=None):
         comp_type = self.reader.get_component(type_name)
+        if self.reader.c_flags:
+            unique_flags = list(self.instrument.flags)
+            unique_flags.extend(self.reader.c_flags)
+            self.instrument.flags = tuple(dict.fromkeys(unique_flags))
         at, ref = self._handle_at(at)
         instance = Instance(name, comp_type, at_relative=(at, ref), rotate_relative=self._handle_rotate(rotate, ref))
         self.instrument.add_component(instance)
