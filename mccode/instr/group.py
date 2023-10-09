@@ -32,3 +32,6 @@ class Group:
     def last(self):
         lid = self.last_id
         return [m for i, m in zip(self.ids, self.members) if i == lid][0]
+
+    def copy(self):
+        return Group(self.name, self.index, self.ids.copy(), self.members.copy())

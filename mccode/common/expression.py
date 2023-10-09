@@ -333,6 +333,9 @@ class TrinaryOp(Op):
     def depends_on(self, name: str):
         return any(any(x.depends_on(name) for x in y) for y in (self.first, self.second, self.third))
 
+    def copy(self):
+        return TrinaryOp(self.op, self.first, self.second, self.third)
+
 
 class BinaryOp(Op):
     def __init__(self, op, left, right):
@@ -463,6 +466,9 @@ class BinaryOp(Op):
     def depends_on(self, name: str):
         return any(any(x.depends_on(name) for x in y) for y in (self.left, self.right))
 
+    def copy(self):
+        return BinaryOp(self.op, self.left.copy(), self.right.copy())
+
 
 class UnaryOp(Op):
     def __init__(self, op, value):
@@ -549,6 +555,9 @@ class UnaryOp(Op):
 
     def depends_on(self, name: str):
         return any(x.depends_on(name) for x in self.value)
+
+    def copy(self):
+        return UnaryOp(self.op, self.value.copy())
 
 
 class Value:
@@ -895,6 +904,9 @@ class Value:
     def depends_on(self, name: str):
         return not self.is_constant and self.value == name
 
+    def copy(self):
+        return Value(self.value, self.data_type, self.object_type, self.shape_type)
+
 
 class Expr:
     def __init__(self, expr: Union[Value, UnaryOp, BinaryOp, list[Union[Value, UnaryOp, BinaryOp]]]):
@@ -1192,6 +1204,9 @@ class Expr:
 
     def depends_on(self, name: str):
         return any(x.depends_on(name) for x in self.expr)
+
+    def copy(self):
+        return Expr([x.copy() for x in self.expr])
 
 
 def unary_expr(func, name, v):

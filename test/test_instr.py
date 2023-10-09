@@ -371,3 +371,131 @@ class TestInstr(TestCase):
 
         instr_copy.add_parameter(InstrumentParameter('par8', '', Expr.float(1.6189)))
         self.assertEqual(len(instr.parameters), len(instr_copy.parameters) - 1)
+
+    def test_mcpl_split(self):
+        from mccode.instr import Instr
+        instr_source = """
+        DEFINE INSTRUMENT test_copy(par0=3.14159, double par1 = 49, int par2 =     1010110
+            , string par3="this is a long string with spaces", 
+
+            string par4, int par5, double par6, par7)
+        TRACE
+        COMPONENT first = Arm() AT (0, 0, 0) ABSOLUTE
+        COMPONENT second = Arm() AT (0, 0, 1) RELATIVE first ROTATED (0, 90, 0) RELATIVE first
+        END
+        """
+        instr = parse_instr_string(instr_source)
+        before, after = instr.mcpl_split('first', filename='test_mcpl_split')
+        self.assertTrue(isinstance(before, Instr))
+        self.assertTrue(isinstance(after, Instr))
+        self.assertEqual(len(before.components), 1)
+        self.assertEqual(len(after.components), 2)
+        self.assertEqual(before.components[0].name, 'first')
+        self.assertEqual(after.components[0].name, 'first')
+        self.assertEqual(after.components[1].name, 'second')
+        self.assertEqual(before.components[0].type.name, 'MCPL_output')
+        self.assertEqual(after.components[0].type.name, 'MCPL_input')
+
+    def test_mcpl_split_run(self):
+        # Adapted from Test_MCPL_*.instr in ${MCCODE}/mcstas-comps/examples
+        from mccode.instr import Instr
+        from mccode.common import ComponentParameter, Expr
+        from mccode.compiler.c import compile_instrument, run_compiled_instrument, CBinaryTarget
+        from mccode.translators.target import MCSTAS_GENERATOR
+        from mccode.loader import read_mccode_dat
+        from tempfile import TemporaryDirectory
+        from os import R_OK, access
+        from pathlib import Path
+        from random import randint
+        from numpy import allclose
+
+        instr_source = """
+        DEFINE INSTRUMENT Test_MCPL_output()
+        USERVARS %{ double flag; %}
+        TRACE
+        COMPONENT Origin = Progress_bar() AT (0, 0, 0) ABSOLUTE
+        COMPONENT sa = Source_Maxwell_3( /* flux in n/s/cm2/st/AA */
+                                        Lmin=1, Lmax=11, dist=1, focus_xw=0.1, focus_yh=0.1, xwidth=0.01, yheight=0.01,
+                                        T1=216.8,I1=1.24e+13,T2=33.9,I2=1.02e+13, T3=16.7 ,I3=3.0423e+12)
+        AT (0,0,0) ABSOLUTE
+        EXTEND %{
+            t=1e-3*rand01();
+            flag=(double)mcget_run_num();
+        %}
+        COMPONENT split_point = Arm() AT(0,0,0) RELATIVE PREVIOUS
+        COMPONENT m1 = Monitor_nD(filename="o1", xwidth=0.2, yheight=0.2,
+                                  options="lambda limits=[1 11] bins=100 parallel", bins=40)
+        AT (0,0,0) ABSOLUTE
+        COMPONENT m2 = Monitor_nD(filename="o2", xwidth=0.2, yheight=0.2, options="x y, parallel", bins=40)
+        AT (0,0,0) ABSOLUTE
+        COMPONENT m3 = Monitor_nD(filename="o3", xwidth=0.2, yheight=0.2, options="t limits=[0 1e-3]parallel", bins=40)
+        AT (0,0,0) ABSOLUTE
+        COMPONENT m4 = Monitor_nD(filename="o4", xwidth=0.2, yheight=0.2, options="E limits=[0 82] parallel", bins=40)
+        AT (0,0,0) ABSOLUTE
+        END
+        """
+        instr = parse_instr_string(instr_source)
+        self.assertEqual(instr.name, 'Test_MCPL_output')
+
+        flag_params = tuple(ComponentParameter(k, Expr.str(v)) for k, v in [
+            ('userflag', '"flag"'), ('userflagcomment', '"Neutron Id"')])
+        before, after = instr.mcpl_split('split_point', filename='test_mcpl_split', output_parameters=flag_params)
+        self.assertEqual(before.name, 'Test_MCPL_output_first')
+        self.assertEqual(after.name, 'Test_MCPL_output_second')
+        self.assertTrue(isinstance(before, Instr))
+        self.assertTrue(isinstance(after, Instr))
+        self.assertEqual(len(before.components), 3)
+        self.assertEqual(len(after.components), 5)
+        for i, name in enumerate(('Origin', 'sa', 'split_point')):
+            self.assertEqual(before.components[i].name, name)
+        for i, name in enumerate(('split_point', 'm1', 'm2', 'm3', 'm4')):
+            self.assertEqual(after.components[i].name, name)
+
+        # If we compile and run the parsed instrument, or the split instrument parts, we should get the same results
+        target = CBinaryTarget(mpi=False, acc=False, count=1, nexus=False)
+        config = dict(default_main=True, enable_trace=False, portable=False, include_runtime=True,
+                      embed_instrument_file=False, verbose=False)
+        with TemporaryDirectory() as directory:
+            expected_binaries = [Path(directory).joinpath(f'{x.name}.out') for x in (instr, before, after)]
+            for obj in (instr, before, after):
+                try:
+                    compile_instrument(obj, target, directory, generator=MCSTAS_GENERATOR, config=config)
+                except RuntimeError as e:
+                    log.error(f'Failed to compile instrument: {e}')
+                    raise e
+
+            for binary in expected_binaries:
+                self.assertTrue(binary.exists())
+                self.assertTrue(binary.is_file())
+                self.assertTrue(access(binary, R_OK))
+
+            # Run the instrument and check that the output is the same
+            seed = randint(1000, 2**32 - 1)
+            common = f'--seed {seed} -n 10000'
+            run_compiled_instrument(expected_binaries[0], target, f"--dir {directory}/instr {common}")
+            mcpl_file = Path(directory).joinpath('instr.mcpl')
+            run_compiled_instrument(expected_binaries[1], target, f"--dir {directory}/before {common} mcpl_filename={mcpl_file}")
+            # Depending on how MCPL was built, it might have gzipped the output file
+            if not mcpl_file.exists():
+                mcpl_file = Path(directory).joinpath('instr.mcpl.gz')
+            self.assertTrue(mcpl_file.exists())
+            run_compiled_instrument(expected_binaries[2], target,
+                                    f"--dir {directory}/after {common} mcpl_filename={mcpl_file}")
+
+            # Now check that the instr and after outputs are the same
+            instr_files = list(Path(directory).joinpath('instr').glob('o*'))
+            after_files = list(Path(directory).joinpath('after').glob('o*'))
+            self.assertEqual(len(instr_files), len(after_files))
+            for file in instr_files:
+                self.assertEqual(len([x for x in after_files if x.name == file.name]), 1)
+            for file in after_files:
+                self.assertEqual(len([x for x in instr_files if x.name == file.name]), 1)
+            instr_files = [[x for x in instr_files if x.name == file.name][0] for file in after_files]
+            for instr_file, after_file in zip(instr_files, after_files):
+                # The files must be the same except for any header information:
+                instr_data = read_mccode_dat(instr_file)
+                after_data = read_mccode_dat(after_file)
+                self.assertTrue(allclose(instr_data.data, after_data.data))
+
+
+

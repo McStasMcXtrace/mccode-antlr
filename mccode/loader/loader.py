@@ -10,8 +10,13 @@ def parse_mccode_instr(contents: str, registry: Registry, source: str = None) ->
     from mccode.instr import InstrVisitor
     from mccode.reader import Reader
     parser = McInstrParser(CommonTokenStream(McInstrLexer(InputStream(contents))))
-    visitor = InstrVisitor(Reader(registries=[registry]), source or '<string>')
-    return visitor.visitProg(parser.prog())
+    registries = [registry]
+    reader = Reader(registries=registries)
+    visitor = InstrVisitor(reader, source or '<string>')
+    instr = visitor.visitProg(parser.prog())
+    instr.flags = tuple(reader.c_flags)
+    instr.registries = tuple(registries)
+    return instr
 
 
 def pseudo_parse_mccode_instr(contents: str, source: str = None) -> Instr:

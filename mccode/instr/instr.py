@@ -132,6 +132,9 @@ class Instr:
                     return parameter
         return default
 
+    def has_parameter(self, name):
+        return parameter_name_present(self.parameters, name)
+
     def last_component(self, count: int = 1, removable_ok: bool = True):
         if len(self.components) < count:
             raise RuntimeError(f"Only {len(self.components)} components defined -- can not go back {count}.")
@@ -321,58 +324,95 @@ class Instr:
 
     def copy(self, first=0, last=-1):
         """Return a copy of this instrument, optionally with only a subset of components"""
+        from copy import deepcopy
         copy = Instr(self.name, self.source)
         copy.parameters = tuple(x for x in self.parameters)
-        copy.metadata = tuple(x for x in self.metadata)
+        copy.metadata = tuple(x.copy() for x in self.metadata)
         if last < 0:
             last += 1 + len(self.components)
-        copy.components = tuple(x for x in self.components[first:last])
+        copy.components = tuple(x.copy() for x in self.components[first:last])
         copy.included = tuple(x for x in self.included)
-        copy.user = tuple(x for x in self.user)
-        copy.declare = tuple(x for x in self.declare)
-        copy.initialize = tuple(x for x in self.initialize)
-        copy.save = tuple(x for x in self.save)
-        copy.final = tuple(x for x in self.final)
+        copy.user = tuple(x.copy() for x in self.user)
+        copy.declare = tuple(x.copy() for x in self.declare)
+        copy.initialize = tuple(x.copy() for x in self.initialize)
+        copy.save = tuple(x.copy() for x in self.save)
+        copy.final = tuple(x.copy() for x in self.final)
+        copy.groups = {k: v.copy() for k, v in self.groups.items()}
         copy.flags = tuple(x for x in self.flags)
         copy.registries = tuple(x for x in self.registries)
         return copy
 
     def split(self, after):
-        index = [i for i, x in enumerate(self.components) if x.name == after]
-        if len(index) != 1:
-            raise RuntimeError('Can only split an instrument after a single component')
-        first = self.copy(last=index[0] + 1)
+        if isinstance(after, Instance):
+            index = self.components.index(after)
+        elif isinstance(after, str):
+            index = [i for i, x in enumerate(self.components) if x.name == after]
+            if len(index) != 1:
+                raise RuntimeError(f'Can only split an instrument after a single component, "{after}" matches {index}')
+            index = index[0]
+        else:
+            raise RuntimeError('Can only split an instrument after a component or component name')
+        first = self.copy(last=index + 1)
         first.name = self.name + '_first'
-        second = self.copy(first=index[0] + 1)
+        second = self.copy(first=index + 1)
         second.name = self.name + '_second'
         return first, second
 
-    def mcpl_split(self, after, filename=None):
+    def make_instance(self, name, component, at_relative=None, rotate_relative=None, orientation=None,
+                      parameters=None, group=None, removable=False):
+        if parameters is None:
+            parameters = tuple()
+        if any(x.name == name for x in self.components):
+            raise RuntimeError(f"An instance named {name} is already present in the instrument")
+        if isinstance(component, str):
+            from ..reader import Reader
+            reader = Reader(registries=list(self.registries))
+            component = reader.get_component(component)
+            self.flags += tuple(reader.c_flags)
+        self.components += (Instance(name, component, at_relative, rotate_relative, orientation,
+                                     parameters, group, removable),)
+
+    def mcpl_split(self, after, filename=None, output_parameters=None, input_parameters=None):
         from ..common import ComponentParameter
         from ..common import Expr
         from ..reader import Reader
+        from .orientation import Vector, Angles
         if filename is None:
             filename = self.name + '.mcpl'
+        if filename[0] != '"' or filename[-1] != '"':
+            filename = '"' + filename + '"'
+
+        filename_parameter = ComponentParameter('filename', Expr.id('mcpl_filename'))
         first, second = self.split(after)
-        first.add_parameter(InstrumentParameter('mcpl_filename', 'string', filename))
+        mcpl_filename = InstrumentParameter.parse(f'string mcpl_filename = {filename}')
+        first.add_parameter(mcpl_filename)
+        second.add_parameter(mcpl_filename)
+
         fc = first.components[-1]
-        if fc.type != 'Arm':
-            log.warn(f'Component {after} is not an Arm -- using MCPL file may cause problems')
-        reader = Reader(registries=list(*self.registries))
-        mcpl_output_parameters = (ComponentParameter('filename', Expr.id('mcpl_filename')),)
-        mcpl_output_comp = reader.get_component('MCPL_output')
-        mcpl_output = Instance(fc.name, mcpl_output_comp, fc.at_relative, fc.rotate_relative,
-                               fc.orientation, mcpl_output_parameters)
-        first.components = first.components[:-1] + (mcpl_output,)
+        if fc.type.name != 'Arm':
+            log.warn(f'Component {after} is a {fc.type.name} instead of an Arm -- using MCPL file may cause problems')
 
-        second.add_parameter(InstrumentParameter('mcpl_filename', 'string', filename))
-        mcpl_input_parameters = (ComponentParameter('filename', Expr.id('mcpl_filename')), )
-        mcpl_input_comp = reader.get_component('MCPL_input')
-        mcpl_input = Instance(fc.name, mcpl_input_comp, fc.at_relative, fc.rotate_relative,
-                              fc.orientation, mcpl_input_parameters)
-        second.components = (mcpl_input,) + second.components
+        if output_parameters is None:
+            output_parameters = (filename_parameter,)
+        elif not any(p.name == 'filename' for p in output_parameters):
+            output_parameters = (filename_parameter,) + output_parameters
+        # remove the last component, since we're going to re-use its name:
+        first.components = first.components[:-1]
+        # automatically adds the component at the end of the list:
+        first.make_instance(fc.name, 'MCPL_output', fc.at_relative, fc.rotate_relative, fc.orientation,
+                            output_parameters)
+
+        if input_parameters is None:
+            input_parameters = (filename_parameter,)
+        elif not any(p.name == 'filename' for p in input_parameters):
+            input_parameters = (filename_parameter,) + input_parameters
+        # the MCPL input component _is_ the origin of its simulation
+        second.make_instance(fc.name, 'MCPL_input', (Vector(), None), (Angles(), None),
+                             parameters=input_parameters)
+        # move the newly added component to the front of the list:
+        second.components = (second.components[-1],) + second.components[:-1]
+
         return first, second
-
 
 
 def _join_rawc_tuple(rawc_tuple: tuple[RawC]):

@@ -129,7 +129,7 @@ class TextWrapper(BaseWrapper):
         return '*/'
 
     def block(self, name: str, content: str) -> str:
-        return '\n'.join([name + ' %{', content + '}% '])
+        return '\n'.join([name + ' %{', content + '\n%} '])
 
     def line(self, name: str, items: list[str], sep: str = ' ') -> str:
         items = [item or 'None' for item in items]
@@ -232,7 +232,7 @@ class HTMLWrapper(BaseWrapper):
         return '</details>'
 
     def block(self, name: str, content: str) -> str:
-        return '<br>'.join([self.bold(name) + ' %{' + self.hide(f'<pre>{content}</pre>') + '}% '])
+        return '<br>'.join([self.bold(name) + ' %{' + self.hide(f'<pre>{content}</pre><br>') + '%} '])
 
     def line(self, name: str, items: list[str], sep: str = ' ') -> str:
         return ''.join(self.wrap(f'<b>{name}</b> {sep.join(items)}')) + '<br>'

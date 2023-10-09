@@ -184,6 +184,12 @@ class Instance:
         md.update({m.name: m for m in self.metadata})
         return tuple(md.values())
 
+    def copy(self):
+        return Instance(self.name, self.type, self.at_relative, self.rotate_relative,
+                        orientation=self.orientation, parameters=self.parameters,
+                        removable=self.removable, cpu=self.cpu, split=self.split, when=self.when,
+                        group=self.group, extend=self.extend, jump=self.jump, metadata=self.metadata)
+
 
 def _triplet_ref_str(which, tr: Union[VectorReference, AnglesReference], absolute, relative):
     pos, ref = tr

@@ -251,6 +251,10 @@ def header_post_runtime(source, runtime: dict, config: dict, include_path):
     def source_file_contents():
         from pathlib import Path
         from os import access, R_OK
+        if source.source is None and config.get('embed_instrument_file'):
+            raise RuntimeError('Requested source embedding, but no source file provided!')
+        elif source.source is None:
+            return 'Instrument source code is not embedded in this executable.'
         path = Path(source.source)
         if config.get('embed_instrument_file') and path.exists() and access(path, R_OK):
             with path.open('r') as file:

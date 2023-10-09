@@ -172,7 +172,8 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
             # log.debug(f'{include.name} done')
         # types can also be defined in component 'SHARE' blocks:
         for block in [share for comp in self.source.component_types() if len(comp.share) for share in comp.share]:
-            declares, defined_types = parse(block.source, user_types=list(typedefs))
+            # TODO decide if this should be block.translated or block.source
+            declares, defined_types = parse(block.to_c(), user_types=list(typedefs))
             typedefs = typedefs.union(set(defined_types))
         self.typedefs = list(typedefs)
 
@@ -193,7 +194,8 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
         Extracted values are stored in namedtuple `CDeclaration` objects for easier interaction.
         """
         def extract_declares(name, raw_c_obj):
-            c_decs = extracted_declares(extract_c_declared_variables(raw_c_obj.source, user_types=self.typedefs))
+            # TODO decide if this should be raw_c_obj.translated or raw_c_obj.source
+            c_decs = extracted_declares(extract_c_declared_variables(raw_c_obj.to_c(), user_types=self.typedefs))
             if any(d.init is not None for d in c_decs):
                 log.critical(f'Warning USERVARS block from {name} contains assignment(s) (= sign).')
                 log.critical('        Move them to an EXTEND section. May fail at compile')
@@ -250,18 +252,18 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
         inst = self.source
         for grp in (inst.user, inst.declare, inst.initialize, inst.save, inst.final):
             for block in grp:
-                incs, block.source = self._handle_raw_c_include(inst.name, block.source)
+                incs, block.translated = self._handle_raw_c_include(inst.name, block.source)
                 includes.extend(incs)
                 includes = list(dict.fromkeys(includes))
         for typ in inst.component_types():
             for grp in (typ.share, typ.user, typ.declare, typ.initialize, typ.trace, typ.save, typ.final, typ.display):
                 for block in grp:
-                    incs, block.source = self._handle_raw_c_include(typ.name, block.source)
+                    incs, block.translated = self._handle_raw_c_include(typ.name, block.source)
                     includes.extend(incs)
                     includes = list(dict.fromkeys(includes))
         for instance in inst.components:
             for block in instance.extend:
-                incs, block.source = self._handle_raw_c_include(instance.name, block.source)
+                incs, block.translated = self._handle_raw_c_include(instance.name, block.source)
                 includes.extend(incs)
                 includes = list(dict.fromkeys(includes))
         self.includes = sort_include_hierarchy(includes)
@@ -275,7 +277,8 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
         for typ in inst.component_types():
             dp = []
             for block in typ.declare:
-                dp.extend(extracted_declares(extract_c_declared_variables(block.source, user_types=self.typedefs)))
+                # TODO decide if this should be block.translated or block.source
+                dp.extend(extracted_declares(extract_c_declared_variables(block.to_c(), user_types=self.typedefs)))
                 dp = list(dict.fromkeys(dp))
             self.component_declared_parameters[typ.name] = dp
         self._determine_uservars()

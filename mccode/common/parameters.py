@@ -47,6 +47,9 @@ class InstrumentParameter:
         visitor = InstrVisitor(None, None)
         return visitor.getInstrument_parameter(parser.instrument_parameter())
 
+    def copy(self):
+        return InstrumentParameter(self.name, self.unit, self.value.copy())
+
 
 @dataclass
 class ComponentParameter:

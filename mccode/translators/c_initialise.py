@@ -98,33 +98,39 @@ def cogen_comp_init_position(index, comp, last, instr):
 def cogen_comp_setpos(index, comp, last, instr, component_declared_parameters):
     from ..common import Expr
 
-    def parameter_line(p):
+    def parameter_line(default):
         # cogen_comp_init_par skipped any parameters which had "val" which evaluates False
         # For 'out_par' (DECLARE extracted parameters) any non-'->isoptional' values were skipped.
         # For 'set_par' any `exp_tostring(entry->val)` parameters returning NULL (which was none of them?)
+        p = comp.get_parameter(default.name)
         if p is None:
             return ''
         pl = []
         fullname = f'_{comp.name}_var._parameters.{p.name}'
-        if p.value.is_str:
-            if p.value.has_value and p.value.value != '0' and p.value.value != 'NULL':
+        if p.value.is_id and instr.has_parameter(f'{p.value}'):
+            value = f'_instrument_var._parameters.{p.value}'
+        else:
+            value = p.value
+        if default.value.is_str or p.value.is_str:
+            # p might be an identifier, or a string literal, in either case we need to copy it instead of assigning
+            if p.value.is_id or p.value.has_value and p.value.value != '0' and p.value.value != 'NULL':
                 pl.extend([
-                    f'  if ({p.value} && strlen({p.value}))',
-                    f'    stracpy({fullname}, {p.value} ? {p.value} : "", 16384);',
+                    f'  if ({value} && strlen({value}))',
+                    f'    stracpy({fullname}, {value} ? {value} : "", 16384);',
                     '  else'
                 ])
             pl.append(f"  {fullname}[0] = '\\0';")
-        elif p.value.is_id or p.value.is_op:
-            pl.append(f"  {fullname} = {p.value if p.value is not None else 0};")
-        elif p.value.is_vector:
+        elif default.value.is_vector or p.value.is_vector:
             if p.value.vector_known:
                 for i, v in enumerate(p.value.value):
                     pl.append(f'  {fullname}[{i}] = {v};')
             else:
                 # it's a string (if not None), and should be an identifier that is a pointer to the data
-                pl.append(f'  {fullname} = {p.value if p.value.has_value else "NULL"};')
+                pl.append(f'  {fullname} = {value if p.value.has_value else "NULL"};')
         # elif p.value.is_a(Value.Type.symbol):
         #   symbol is not handled (yet) but should be initialized to zero
+        elif p.value.is_id or p.value.is_op:
+            pl.append(f"  {fullname} = {value if p.value is not None else 0};")
         else:
             pl.append(f'  {fullname} = {p.value if p.value.has_value else 0};')
         return '\n'.join(pl)
@@ -147,7 +153,7 @@ def cogen_comp_setpos(index, comp, last, instr, component_declared_parameters):
     # With `section == "SETTING"` the first call picks out `comp->def->set_par`
     for par in comp.type.setting:
         # For each component definition SETTING PARAMETER the same-named instance parameter is retrieved
-        lines.append(parameter_line(comp.get_parameter(par.name)))  # use instance parameter if it exists, otherwise par
+        lines.append(parameter_line(par))
     # >>> End of first call to `cogen_comp_init_par`
     # <<< Start of second call to `cogen_comp_init_par`: `cogen_comp_init_par(comp, instr, "PRIVATE")`
     for c_dec in component_declared_parameters[comp.type.name]:

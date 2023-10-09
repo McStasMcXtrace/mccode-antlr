@@ -62,3 +62,5 @@ class MetaData:
         from .utilities import escape_str_for_c as c
         return ','.join(c(x) for x in (self.source.name, self.name, self.mimetype, self.value))
 
+    def copy(self):
+        return MetaData(self.source, self.name, self.mimetype, self.value)

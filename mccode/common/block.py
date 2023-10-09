@@ -6,6 +6,7 @@ class RawC:
     filename: str
     line: int
     source: str
+    translated: str = None
 
     def __str__(self):
         return self.source
@@ -29,11 +30,17 @@ class RawC:
     def to_c(self):
         """Use the preprocessor #line directive to aid in debugging produced C source code."""
         # return f'#line {self.line} "{self.filename}"\n{self.source}'
-        return self.source
+        if self.translated is None:
+            from zenlog import log
+            log.warn('RawC.to_c() called before translation')
+        return self.translated or self.source
 
     @property
     def fn(self):
         return escape_str_for_c(self.filename), self.line
+
+    def copy(self):
+        return RawC(self.filename, self.line, self.source)
 
 
 def blocks_to_raw_c(*args):
