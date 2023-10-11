@@ -129,6 +129,9 @@ class Vector(NamedTuple):
     def __str__(self):
         return f'({self.x}, {self.y}, {self.z})'
 
+    def __contains__(self, value):
+        return value in (self.x, self.y, self.z)
+
 
 class Angles(NamedTuple):
     x: Expr = Expr.float(0)
@@ -149,6 +152,9 @@ class Angles(NamedTuple):
 
     def __str__(self):
         return f'({self.x}, {self.y}, {self.z})'
+
+    def __contains__(self, value):
+        return value in (self.x, self.y, self.z)
 
 
 class Rotation(NamedTuple):
@@ -214,6 +220,9 @@ class Rotation(NamedTuple):
         rz = Rotation() if angles.z.is_zero else Rotation(c[2], s[2], z, -s[2], c[2], z, z, z, o)
         # Return the McCode convention of applying the rotations in the order x, y, z
         return rz * (ry * rx)
+
+    def __contains__(self, value):
+        return value in (self.xx, self.xy, self.xz, self.yx, self.yy, self.yz, self.zx, self.zy, self.zz)
 
 
 class Seitz(NamedTuple):
@@ -287,6 +296,8 @@ class Seitz(NamedTuple):
                      so.yx, so.yy, so.yz, st.y + s.y,
                      so.zx, so.zy, so.zz, st.z + s.z)
 
+    def __contains__(self, value):
+        return value in (self.xx, self.xy, self.xz, self.xt, self.yx, self.yy, self.yz, self.yt, self.zx, self.zy, self.zz, self.zt)
 
 def cos_degree(theta_degree):
     from math import pi, cos
@@ -542,6 +553,9 @@ class Part:
         # Two orientation part objects are equal if and only if their axes are equal
         return self.axes == other.axes
 
+    def __contains__(self, value):
+        return value in self._axes
+
 
 @dataclass
 class TranslationPart(Part):
@@ -583,6 +597,9 @@ class TranslationPart(Part):
     def angles(self, which=None, degrees=True) -> Angles:
         z = Expr.float(0)
         return Angles(z, z, z)
+
+    def __contains__(self, value):
+        return value in self.v
 
 
 @dataclass
@@ -629,6 +646,9 @@ class RotationPart(Part):
 
     def __repr__(self):
         return f'{self.__class__.__name__}({self.v})'
+
+    def __contains__(self, value):
+        return value in self.v
 
 
 class RotationX(RotationPart):
@@ -841,6 +861,9 @@ class Parts:
     def rotation(self, which=None):
         return self.resolve().rotation(which=which)
 
+    def __contains__(self, value):
+        return value in self._stack
+
 
 OrientType = TypeVar('OrientType', bound='Orient')
 
@@ -928,3 +951,6 @@ class Orient:
             return Orient(self._position - other, self._rotation - other)
         else:
             raise ValueError(f"__sub__ undefined for DependentOrientation and {type(other)}")
+
+    def __contains__(self, value):
+        return value in self._position or value in self._rotation

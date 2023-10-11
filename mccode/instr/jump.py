@@ -20,3 +20,6 @@ class Jump:
             jump_name += f' ({abs(self.relative_target)})'
         when_iter = 'ITERATE' if self.iterate else 'WHEN'
         print(wrapper.line('JUMP', [jump_name, when_iter, str(self.condition)]), file=output)
+
+    def __contains__(self, value):
+        return value in self.condition

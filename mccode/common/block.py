@@ -42,6 +42,9 @@ class RawC:
     def copy(self):
         return RawC(self.filename, self.line, self.source)
 
+    def __contains__(self, value):
+        return value in self.source
+
 
 def blocks_to_raw_c(*args):
     raw_c = [x if isinstance(x, RawC) else RawC.from_tuple(x) for x in args]

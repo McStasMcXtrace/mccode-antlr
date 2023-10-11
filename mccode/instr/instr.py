@@ -342,7 +342,7 @@ class Instr:
         copy.registries = tuple(x for x in self.registries)
         return copy
 
-    def split(self, after):
+    def split(self, after, remove_unused_parameters=False):
         if isinstance(after, Instance):
             index = self.components.index(after)
         elif isinstance(after, str):
@@ -354,8 +354,12 @@ class Instr:
             raise RuntimeError('Can only split an instrument after a component or component name')
         first = self.copy(last=index + 1)
         first.name = self.name + '_first'
+        if first.check_instrument_parameters(remove=remove_unused_parameters) and not remove_unused_parameters:
+            log.warn(f'Instrument {first.name} has unused instrument parameters')
         second = self.copy(first=index + 1)
         second.name = self.name + '_second'
+        if second.check_instrument_parameters(remove=remove_unused_parameters) and not remove_unused_parameters:
+            log.warn(f'Instrument {second.name} has unused instrument parameters')
         return first, second
 
     def make_instance(self, name, component, at_relative=None, rotate_relative=None, orientation=None,
@@ -372,7 +376,7 @@ class Instr:
         self.components += (Instance(name, component, at_relative, rotate_relative, orientation,
                                      parameters, group, removable),)
 
-    def mcpl_split(self, after, filename=None, output_parameters=None, input_parameters=None):
+    def mcpl_split(self, after, filename=None, output_parameters=None, input_parameters=None, remove_unused_parameters=False):
         from ..common import ComponentParameter
         from ..common import Expr
         from ..reader import Reader
@@ -383,7 +387,7 @@ class Instr:
             filename = '"' + filename + '"'
 
         filename_parameter = ComponentParameter('filename', Expr.id('mcpl_filename'))
-        first, second = self.split(after)
+        first, second = self.split(after, remove_unused_parameters=remove_unused_parameters)
         mcpl_filename = InstrumentParameter.parse(f'string mcpl_filename = {filename}')
         first.add_parameter(mcpl_filename)
         second.add_parameter(mcpl_filename)
@@ -413,6 +417,37 @@ class Instr:
         second.components = (second.components[-1],) + second.components[:-1]
 
         return first, second
+
+    def parameter_used(self, name: str):
+        """Check that an instrument parameter is used in the instrument"""
+        for instance in self.components:
+            if instance.parameter_used(name):
+                return True
+        for section in (self.declare, self.initialize, self.save, self.final):
+            for block in section:
+                # A more complex check would see if the use itself leads to a parameter being used, but
+                # that would be language dependent and probably not worth the effort.
+                if name in block:
+                    return True
+        return False
+
+    def check_instrument_parameters(self, remove=False):
+        """Check that all instrument parameters are used in the instrument, and optionally remove any that are not
+
+        Returns
+        -------
+        int
+            The number of unused instrument parameters
+        """
+        names = [p.name for p in self.parameters]
+        used = [self.parameter_used(p.name) for p in self.parameters]
+        if not all(used):
+            log.warn(f'The following instrument parameters are not used in the instrument: '
+                     f'{", ".join([n for n, u in zip(names, used) if not u])}')
+            if remove:
+                self.parameters = tuple(p for i, p in enumerate(self.parameters) if used[i])
+                log.warn(f'Removed unused instrument parameters; {len(self.parameters)} remain')
+        return len(used) - sum(used)
 
 
 def _join_rawc_tuple(rawc_tuple: tuple[RawC]):

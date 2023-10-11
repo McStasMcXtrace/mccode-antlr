@@ -193,6 +193,21 @@ class Instance:
                         removable=self.removable, cpu=self.cpu, split=self.split, when=self.when,
                         group=self.group, extend=self.extend, jump=self.jump, metadata=self.metadata)
 
+    def parameter_used(self, name: str):
+        if any([name in par.value for par in self.parameters]):
+            return True
+        if name in self.at_relative[0] or name in self.rotate_relative[0] or name in self.orientation:
+            return True
+        if name in self.split or name in self.when:
+            return True
+        for block in self.extend:
+            if name in block:
+                return True
+        for jump in self.jump:
+            if name in jump:
+                return True
+        return False
+
 
 def _triplet_ref_str(which, tr: Union[VectorReference, AnglesReference], absolute, relative, required=False):
     pos, ref = tr

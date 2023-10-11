@@ -336,6 +336,9 @@ class TrinaryOp(Op):
     def copy(self):
         return TrinaryOp(self.op, self.first, self.second, self.third)
 
+    def __contains__(self, value):
+        return value in self.first or value in self.second or value in self.third
+
 
 class BinaryOp(Op):
     def __init__(self, op, left, right):
@@ -469,6 +472,9 @@ class BinaryOp(Op):
     def copy(self):
         return BinaryOp(self.op, self.left.copy(), self.right.copy())
 
+    def __contains__(self, value):
+        return value in self.left or value in self.right
+
 
 class UnaryOp(Op):
     def __init__(self, op, value):
@@ -558,6 +564,9 @@ class UnaryOp(Op):
 
     def copy(self):
         return UnaryOp(self.op, self.value.copy())
+
+    def __contains__(self, value):
+        return value in self.value
 
 
 class Value:
@@ -907,6 +916,13 @@ class Value:
     def copy(self):
         return Value(self.value, self.data_type, self.object_type, self.shape_type)
 
+    def __contains__(self, value):
+        if self.is_id and isinstance(value, (str, Value)):
+            return self.value == value
+        if self.is_vector:
+            return value in self.value
+        return self.value == value
+
 
 class Expr:
     def __init__(self, expr: Union[Value, UnaryOp, BinaryOp, list[Union[Value, UnaryOp, BinaryOp]]]):
@@ -920,6 +936,9 @@ class Expr:
 
     def __hash__(self):
         return hash(str(self))
+
+    def __contains__(self, value):
+        return any(x == value for x in self.expr)
 
     @staticmethod
     def parse(s: str):
