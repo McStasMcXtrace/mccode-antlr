@@ -155,6 +155,9 @@ class Instr:
                 return comp
         raise RuntimeError(f"No component instance named {name} defined.")
 
+    def has_component_named(self, name: str):
+        return any(comp.name == name for comp in self.components)
+
     def add_included(self, name: str):
         self.included += (name,)
 

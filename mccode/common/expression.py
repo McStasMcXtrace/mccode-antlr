@@ -719,6 +719,14 @@ class Value:
         return self.object_type == ObjectType.value and self.data_type.is_str
 
     @property
+    def is_float(self):
+        return self.data_type == DataType.float
+
+    @property
+    def is_int(self):
+        return self.data_type == DataType.int
+
+    @property
     def is_op(self):
         return False
 
@@ -1057,6 +1065,14 @@ class Expr:
         if not self.is_constant:
             raise NotImplementedError("No conversion from expressions to constants ... yet")
         return self.expr[0].value
+
+    @property
+    def first(self):
+        return self.expr[0]
+
+    @property
+    def last(self):
+        return self.expr[-1]
 
     def compatible(self, other, id_ok=False):
         other_expr = other.expr[0] if (isinstance(other, Expr) and len(other.expr) == 1) else other
