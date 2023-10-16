@@ -258,9 +258,14 @@ class InstrVisitor(McInstrVisitor):
             log.error(f'Unknown component reference for instance named {name}')
 
     def visitCoords(self, ctx: McInstrParser.CoordsContext):
+        # FIXME 2023-10-16 previously Cooridnate parsing forced all returned Expression objects to be floats
+        #   while this is 'correct', it broke the ability to use instrument parameters in component placement
+        #   and orientation expressions. I think expression parsing is now implemented correctly for all variants
+        #   So _hopefully_ the explicit cast-to-float is not required any longer.
         # A coordinate is _always_ a float, even when represented by an expression or identifier
         # Actually implement the visitExpr variants correctly?
-        return tuple([Expr.float(self.visit(x)) for x in ctx.expr()])
+        # return tuple([Expr.float(self.visit(x)) for x in ctx.expr()])
+        return tuple([self.visit(x) for x in ctx.expr()])
 
     def visitReference(self, ctx: McInstrParser.ReferenceContext):
         # ABSOLUTE or RELATIVE ABSOLUTE -> None

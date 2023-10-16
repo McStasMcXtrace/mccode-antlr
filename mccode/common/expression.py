@@ -704,7 +704,8 @@ class Value:
 
     @property
     def is_id(self):
-        return self.object_type == ObjectType.identifier
+        # FIXME 2023-10-16 Should instrument parameters not also be identifiers?
+        return self.object_type == ObjectType.identifier or self.object_type == ObjectType.parameter
 
     @property
     def is_constant(self):

@@ -30,6 +30,13 @@ double checked_setpos_getdistance(int current_index, char* first_component, char
 """
 
 
+def value_or_instr_struct_entry(instr, *parameters):
+    def check(par):
+        return (par.is_id and instr.has_parameter(f'{par}')) or par.is_parameter
+
+    return tuple(f'_instrument_var._parameters.{p}' if check(p) else p for p in parameters)
+
+
 def cogen_comp_init_position(index, comp, last, instr):
     ref = None if index == 0 else instr.components[last]
     var = f'_{comp.name}_var'
@@ -43,7 +50,7 @@ def cogen_comp_init_position(index, comp, last, instr):
         '    rot_set_rotation(tr1,0,0,0);'
     ]
     # Rotation first
-    x, y, z = comp.rotate_relative[0]
+    x, y, z = value_or_instr_struct_entry(instr, *comp.rotate_relative[0])
     rel = comp.rotate_relative[1]
     if rel is None:
         # log.debug(f'{comp.name} has absolute orientation with rotation ({x}, {y}, {z})')
@@ -67,7 +74,7 @@ def cogen_comp_init_position(index, comp, last, instr):
     lines.append(f'    {var}._rotation_is_identity = rot_test_identity({var}._rotation_relative);')
 
     # Then translation
-    x, y, z = comp.at_relative[0]
+    x, y, z = value_or_instr_struct_entry(instr, *comp.at_relative[0])
     rel = comp.at_relative[1]
     if rel is None:
         # log.debug(f'{comp.name} has absolute positioning with rotation ({x}, {y}, {z})')
@@ -107,10 +114,11 @@ def cogen_comp_setpos(index, comp, last, instr, component_declared_parameters):
             return ''
         pl = []
         fullname = f'_{comp.name}_var._parameters.{p.name}'
-        if p.value.is_id and instr.has_parameter(f'{p.value}'):
-            value = f'_instrument_var._parameters.{p.value}'
-        else:
-            value = p.value
+        value = value_or_instr_struct_entry(instr, p.value)[0]
+        # if p.value.is_id and instr.has_parameter(f'{p.value}'):
+        #     value = f'_instrument_var._parameters.{p.value}'
+        # else:
+        #     value = p.value
         if default.value.is_str or p.value.is_str:
             # p might be an identifier, or a string literal, in either case we need to copy it instead of assigning
             if p.value.is_id or p.value.has_value and p.value.value != '0' and p.value.value != 'NULL':

@@ -198,7 +198,7 @@ class Instance:
             return True
         if name in self.at_relative[0] or name in self.rotate_relative[0] or name in self.orientation:
             return True
-        if name in self.split or name in self.when:
+        if name in (self.split or []) or name in (self.when or []):
             return True
         for block in self.extend:
             if name in block:

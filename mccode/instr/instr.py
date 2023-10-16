@@ -413,6 +413,8 @@ class Instr:
             input_parameters = (filename_parameter,)
         elif not any(p.name == 'filename' for p in input_parameters):
             input_parameters = (filename_parameter,) + input_parameters
+        if not any(p.name == 'verbose' for p in input_parameters):
+            input_parameters = (ComponentParameter('verbose', Expr.float(0)),) + input_parameters
         # the MCPL input component _is_ the origin of its simulation
         second.make_instance(fc.name, 'MCPL_input', (Vector(), None), (Angles(), None),
                              parameters=input_parameters)

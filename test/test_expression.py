@@ -222,7 +222,7 @@ class TestExpression(TestCase):
         from mccode.common.expression import Value, ObjectType
         par = Value('instrument_parameter', object_type=ObjectType.parameter)
         self.assertFalse(par.is_str)
-        self.assertFalse(par.is_id)
+        # self.assertFalse(par.is_id)  # changed as of 2023-10-16 -- a parameter is an identifier
         self.assertTrue(par.is_parameter)
         # Verify that the whole reason for this object type existing works (inserting its name into macros)
         # self.assertEqual(str(par), "_instrument_var._parameters.instrument_parameter")
