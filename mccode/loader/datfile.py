@@ -177,11 +177,9 @@ class DatFile2D(DatFileCommon):
             return False
         if self.metadata['xlabel'] != other.metadata['xlabel']:
             return False
-        if self.metadata['xlimits'] != other.metadata['xlimits']:
-            return False
         if self.metadata['ylabel'] != other.metadata['ylabel']:
             return False
-        if self.metadata['ylimits'] != other.metadata['ylimits']:
+        if self.metadata['xylimits'] != other.metadata['xylimits']:
             return False
         if self.data.shape != other.data.shape:
             return False
