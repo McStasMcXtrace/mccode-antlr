@@ -166,7 +166,7 @@ class DatFile2D(DatFileCommon):
 
     def print_data(self, file):
         for i, n in enumerate(self.variables):
-            print(f'# Data [{self.metadata["component"]/self.metadata["filename"]}] {n}:', file=file)
+            print(f'# Data [{self.metadata["component"]}/{self.metadata["filename"]}] {n}:', file=file)
             for row in self.data[i, ...]:
                 print(' '.join(str(x) for x in row), file=file)
 
