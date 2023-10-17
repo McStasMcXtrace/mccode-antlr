@@ -206,7 +206,7 @@ def combine_scan_dicts(a: dict, b: dict):
     c = deepcopy(a)
     special_add = 'Ncount',
     special_concatenate = 'Directory', 'filename', 'Date', 'Seed'
-    special_ignore = 'signal', 'values'
+    special_ignore = 'signal', 'statistics', 'values'
     for k, v in b.items():
         if any(s in k for s in special_add):
             c[k] = int(c[k]) + int(v)
