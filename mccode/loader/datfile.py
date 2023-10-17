@@ -31,6 +31,27 @@ class DatFileCommon:
         data = array([[float(x) for x in line.strip().split()] for line in filter(lambda x: x[0] != '#', lines)])
         return cls(source, meta, parm, var, data)
 
+    @staticmethod
+    def parts():
+        return [], []
+
+    def print_data(self, file):
+        pass
+
+    def to_filename(self, filename: str):
+        sink = Path(filename).resolve()
+        if sink.exists():
+            raise RuntimeError(f'{filename} already exists')
+        first, second = self.parts()
+        with sink.open('w') as file:
+            for item in first:
+                print(f'# {item}: {self.metadata[item]}', file=file)
+            for param in self.parameters:
+                print(f'# Param: {param}={self.parameters[param]}', file=file)
+            for item in second:
+                print(f'# {item}: {self.metadata[item]}', file=file)
+            self.print_data(file)
+
     def __getitem__(self, item):
         if item in self.variables:
             index = [i for i, x in enumerate(self.variables) if x == item]
@@ -46,6 +67,19 @@ class DatFileCommon:
 
     def dim_metadata(self) -> list[dict]:
         pass
+
+    @staticmethod
+    def safe_to_combine(other):
+        return False
+
+    def __add__(self, other):
+        if not self.safe_to_combine(other):
+            raise RuntimeError('Cannot combine these two dat files')
+        metadata = combine_scan_dicts(self.metadata, other.metadata)
+        parameters = combine_scan_dicts(self.parameters, other.parameters)
+        variables = combine_scan_lists(self.variables, other.variables)
+        data = combine_scan_data(self.data, other.data)
+        return DatFileCommon(Path(), metadata, parameters, variables, data)
 
 
 def dim_metadata(length, label_unit, lower_limit, upper_limit) -> dict:
@@ -64,6 +98,9 @@ class DatFile1D(DatFileCommon):
     def __post_init__(self):
         nx = int(self.metadata['type'].split('(', 1)[1].strip(')'))
         nv = len(self.variables)
+        if self.data.shape == (nv, nx):
+            # shortcut in case we're already in the right shape (e.g., from __add__)
+            return
         if self.data.shape[0] != nx or self.data.shape[1] != nv:
             raise RuntimeError(f'Unexpected data shape {self.data.shape} for metadata specifying {nx=} and {nv=}')
         # we always want the variables along the first dimension:
@@ -73,13 +110,44 @@ class DatFile1D(DatFileCommon):
         lower_limit, upper_limit = [float(x) for x in self['xlimits'].split()]
         return [dim_metadata(self.data.shape[1], self['xlabel'], lower_limit, upper_limit), ]
 
+    def print_data(self, file):
+        for row in self.data.transpose((1, 0)):
+            print(' '.join(str(x) for x in row), file=file)
+
+    @staticmethod
+    def parts():
+        # Yes, Ncount shows up twice ...
+        first = ('Format', 'URL', 'Creator', 'Instrument', 'Ncount', 'Trace', 'Gravitation', 'Seed', 'Directory')
+        second = ('Date', 'type', 'Source', 'component', 'position', 'title', 'Ncount', 'filename', 'statistics',
+                  'signal', 'values', 'xvar', 'yvar', 'xlabel', 'ylabel', 'xlimits', 'variables')
+        return first, second
+
+    def safe_to_combine(self, other):
+        if not isinstance(other, DatFile1D):
+            return False
+        if self.variables != other.variables:
+            return False
+        if self.metadata['xlabel'] != other.metadata['xlabel']:
+            return False
+        if self.metadata['xlimits'] != other.metadata['xlimits']:
+            return False
+        if self.data.shape != other.data.shape:
+            return False
+        return True
+
+    def __add__(self, other):
+        both = super().__add__(other)
+        return DatFile1D(both.source, both.metadata, both.parameters, both.variables, both.data)
+
 
 @dataclass
 class DatFile2D(DatFileCommon):
     def __post_init__(self):
         nx, ny = [int(x) for x in self.metadata['type'].split('(', 1)[1].strip(')').split(',')]
         nv = len(self.variables)
-        # FIXME Sort out whether this is right or not
+        if self.data.shape == (nv, ny, nx):
+            # shortcut in case we're already in the right shape (e.g., from __add__)
+            return
         if self.data.shape[0] != ny * nv or self.data.shape[1] != nx:
             raise RuntimeError(f'Expected {ny*nv =} by {nx =} but have {self.data.shape}')
         self.data = self.data.reshape((nv, ny, nx))
@@ -88,6 +156,40 @@ class DatFile2D(DatFileCommon):
         lower_x, upper_x, lower_y, upper_y = [float(x) for x in self['xylimits'].split()]
         return [dim_metadata(self.data.shape[2], self['xlabel'], lower_x, upper_x),
                 dim_metadata(self.data.shape[1], self['ylabel'], lower_y, upper_y)]
+
+    @staticmethod
+    def parts():
+        first = ('Format', 'URL', 'Creator', 'Instrument', 'Ncount', 'Trace', 'Gravitation', 'Seed', 'Directory')
+        second = ('Date', 'type', 'Source', 'component', 'position', 'title', 'Ncount', 'filename', 'statistics',
+                  'signal', 'values', 'xvar', 'yvar', 'xlabel', 'ylabel', 'zvar', 'xylimits', 'variables')
+        return first, second
+
+    def print_data(self, file):
+        for i, n in enumerate(self.variables):
+            print(f'# Data [{self.metadata["component"]/self.metadata["filename"]}] {n}:', file=file)
+            for row in self.data[i, ...]:
+                print(' '.join(str(x) for x in row), file=file)
+
+    def safe_to_combine(self, other):
+        if not isinstance(other, DatFile2D):
+            return False
+        if self.variables != other.variables:
+            return False
+        if self.metadata['xlabel'] != other.metadata['xlabel']:
+            return False
+        if self.metadata['xlimits'] != other.metadata['xlimits']:
+            return False
+        if self.metadata['ylabel'] != other.metadata['ylabel']:
+            return False
+        if self.metadata['ylimits'] != other.metadata['ylimits']:
+            return False
+        if self.data.shape != other.data.shape:
+            return False
+        return True
+
+    def __add__(self, other):
+        both = super().__add__(other)
+        return DatFile2D(both.source, both.metadata, both.parameters, both.variables, both.data)
 
 
 def read_mccode_dat(filename: str):
@@ -98,3 +200,57 @@ def read_mccode_dat(filename: str):
     dat_type = DatFile1D if ndim == 1 else DatFile2D
     return dat_type(common.source, common.metadata, common.parameters, common.variables, common.data)
 
+
+def combine_scan_dicts(a: dict, b: dict):
+    from copy import deepcopy
+    c = deepcopy(a)
+    special_add = 'Ncount',
+    special_concatenate = 'Directory', 'filename', 'Date', 'Seed'
+    special_ignore = 'signal', 'values'
+    for k, v in b.items():
+        if any(s in k for s in special_add):
+            c[k] = int(c[k]) + int(v)
+        elif any(s in k for s in special_concatenate):
+            c[k] = f'{c[k]} {v}'
+        elif any(s in k for s in special_ignore):
+            pass
+        elif k in c:
+            if c[k] != v:
+                raise RuntimeError(f'Incompatible values for {k}: {c[k]} and {v}')
+        else:
+            raise RuntimeError(f'Unexpected key {k} in {b}')
+    return c
+
+
+def combine_scan_lists(a: list, b: list):
+    if a != b:
+        raise RuntimeError(f'Incompatible lists {a} and {b}')
+    return a
+
+
+def combine_scan_data(a: ndarray, b: ndarray):
+    if a.shape != b.shape:
+        raise RuntimeError(f'Incompatible shapes {a.shape} and {b.shape}')
+    if a.ndim == 2:
+        from copy import deepcopy
+        # variables are _always_ (?) (..., I, I_err, N)
+        c = deepcopy(a)
+        c[-3:, :] = a[-3:, :] + b[-3:, :]
+        return c
+    elif a.ndim == 3:
+        # but 3-D _only_ contains (I, I_err, N)
+        return a + b
+    else:
+        raise RuntimeError(f'Unexpected number of dimensions: {a.ndim}')
+
+
+def combine_mccode_dats(dats: list):
+    one = dats[0]
+    for other in dats[1:]:
+        one = one + other
+    return one
+
+
+def write_combined_mccode_dats(files: list[str], output: str):
+    dats = combine_mccode_dats([read_mccode_dat(f) for f in files])
+    dats.to_filename(output)
