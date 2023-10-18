@@ -252,7 +252,7 @@ class SimFileData:
             raise RuntimeError(f"Expected 17 or 19 lines in data, got {len(lines)}")
         values = list(read_keywords(lines, keywords))
         (date, type_str, source, component, position, title, ncount, filename,
-         statistics, signal, values, xvar, yvar, xlabel, ylabel) = values[:n_common]
+         statistics, signal, values_str, xvar, yvar, xlabel, ylabel) = values[:n_common]
         ncount = int(ncount)
         if len(values) == 17:
             xlimits, variables = values[n_common:]
@@ -264,7 +264,7 @@ class SimFileData:
             raise RuntimeError(f"Expected 17 or 19 lines in data, got {len(lines)}")
         return SimFileData(Date=date, type=type_str, Source=source, component=component, position=position,
                            title=title, Ncount=ncount, filename=filename, statistics=statistics, signal=signal,
-                           values=values, xvar=xvar, yvar=yvar, xlabel=xlabel, ylabel=ylabel, variables=variables,
+                           values=values_str, xvar=xvar, yvar=yvar, xlabel=xlabel, ylabel=ylabel, variables=variables,
                            xlimits=xlimits, zvar=zvar, zlabel=zlabel, xylimits=xylimits)
 
     def to_file(self, file):
