@@ -158,6 +158,17 @@ class Instr:
     def has_component_named(self, name: str):
         return any(comp.name == name for comp in self.components)
 
+    def get_component_names_by_category(self, category: str):
+        """Find all component instance names for a given category.
+
+        Note:
+            The category of an instance is determined by its type, and is either
+            - set inside the .comp file by a 'CATEGORY <category>' directive, or
+            - *guessed* by the reader based on the path to the .comp file.
+            The second behaviour is to match McStasScript/McCode-3, which does not work for user-defined components.
+        """
+        return [inst.name for inst in self.components if category in inst.type.category]
+
     def add_included(self, name: str):
         self.included += (name,)
 
