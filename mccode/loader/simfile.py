@@ -351,7 +351,8 @@ class SimFile:
         while rest:
             datum, _, rest = rest.partition('end data')
             _, _, datum = datum.partition('begin data')
-            data.append(datum.strip())
+            if len(datum.strip()):
+                data.append(datum.strip())
 
         # convert sub-strings into objects:
         header = SimFileHeader.parse(header)
