@@ -231,7 +231,7 @@ class SimFileData:
     yvar: str
     xlabel: str
     ylabel: str
-    variable: str
+    variables: str
     xlimits: str = None  # only defined for 1-D data entries
     zvar: str = None  # only defined for 2-D data entries
     zlabel: str = None  # only defined for 2-D data entries
@@ -245,9 +245,9 @@ class SimFileData:
                     'signal', 'values', 'xvar', 'yvar', 'xlabel', 'ylabel']
         n_common = len(keywords)
         if len(lines) == 17:
-            keywords.extend(['xlimits', 'variable'])
+            keywords.extend(['xlimits', 'variables'])
         elif len(lines) == 19:
-            keywords.extend(['zvar', 'zlabel', 'xylimits', 'variable'])
+            keywords.extend(['zvar', 'zlabel', 'xylimits', 'variables'])
         else:
             raise RuntimeError(f"Expected 17 or 19 lines in data, got {len(lines)}")
         values = list(read_keywords(lines, keywords))
@@ -255,16 +255,16 @@ class SimFileData:
          statistics, signal, values, xvar, yvar, xlabel, ylabel) = values[:n_common]
         ncount = int(ncount)
         if len(values) == 17:
-            xlimits, variable = values[n_common:]
+            xlimits, variables = values[n_common:]
             zvar, zlabel, xylimits = None, None, None
         elif len(values) == 19:
-            zvar, zlabel, xylimits, variable = values[n_common:]
+            zvar, zlabel, xylimits, variables = values[n_common:]
             xlimits = None
         else:
             raise RuntimeError(f"Expected 17 or 19 lines in data, got {len(lines)}")
         return SimFileData(Date=date, type=type, Source=source, component=component, position=position, Ncount=ncount,
                            filename=filename, statistics=statistics, signal=signal, values=values, xvar=xvar,
-                           yvar=yvar, xlabel=xlabel, ylabel=ylabel, variable=variable, xlimits=xlimits, zvar=zvar,
+                           yvar=yvar, xlabel=xlabel, ylabel=ylabel, variables=variables, xlimits=xlimits, zvar=zvar,
                            zlabel=zlabel, xylimits=xylimits)
 
     def to_file(self, file):
@@ -291,7 +291,7 @@ class SimFileData:
             print(f"  zlabel: {self.zlabel}", file=file)
         if self.xylimits is not None:
             print(f"  xylimits: {self.xylimits}", file=file)
-        print(f"  variable: {self.variable}", file=file)
+        print(f"  variables: {self.variables}", file=file)
         print(f'end data', file=file)
 
     def __eq__(self, other):
@@ -300,7 +300,7 @@ class SimFileData:
         return (other.Date == self.Date and other.type == self.type and other.Source == self.Source and
                 other.component == self.component and other.position == self.position and
                 other.filename == self.filename and other.xvar == self.xvar and other.yvar == self.yvar and
-                other.xlabel == self.xlabel and other.ylabel == self.ylabel and other.variable == self.variable and
+                other.xlabel == self.xlabel and other.ylabel == self.ylabel and other.variables == self.variables and
                 other.xlimits == self.xlimits and other.zvar == self.zvar and other.zlabel == self.zlabel and
                 other.xylimits == self.xylimits)
 
