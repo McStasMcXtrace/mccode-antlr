@@ -107,7 +107,7 @@ class SimFileInstrument:
         # parameters are a bit different in that we want their ordered union:
         self_pars = [p.strip() for p in self.Parameters.split(' ')]
         other_pars = [p.strip() for p in other.Parameters.split(' ')]
-        parameters = ' '.join(list(dict.fromkeys(self_pars).extend(dict.fromkeys(other_pars))))
+        parameters = ' '.join(list(dict.fromkeys(self_pars).update(dict.fromkeys(other_pars))))
         trace = self.Trace_enabled and other.Trace_enabled
         default = self.Default_main and other.Default_main
         embed = self.Embedded_runtime and other.Embedded_runtime
@@ -208,7 +208,7 @@ class SimFileSimulation:
         gravitation = self.Gravitation and other.Gravitation
         seed = self.Seed if self.Seed == other.Seed else -1
         directory = self.Directory if other.Directory in self.Directory else f"{self.Directory} + {other.Directory}"
-        params = list(dict.fromkeys(self.Params).extend(dict.fromkeys(other.Params)))
+        params = list(dict.fromkeys(self.Params).update(dict.fromkeys(other.Params)))
         return SimFileSimulation(name=name, Format=format, URL=url, Creator=creator, Instrument=instrument,
                                  Ncount=ncount, Trace=trace, Gravitation=gravitation, Seed=seed, Directory=directory,
                                  Params=params)
