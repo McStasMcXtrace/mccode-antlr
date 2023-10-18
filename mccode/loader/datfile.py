@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from typing import Union
 from pathlib import Path
 from numpy import ndarray
 
@@ -249,6 +250,8 @@ def combine_mccode_dats(dats: list):
     return one
 
 
-def write_combined_mccode_dats(files: list[str], output: str):
+def write_combined_mccode_dats(files: list[Union[Path, str]], output: Union[Path, str]):
     dats = combine_mccode_dats([read_mccode_dat(f) for f in files])
     dats.to_filename(output)
+
+
