@@ -221,6 +221,7 @@ class SimFileData:
     Source: str
     component: str
     position: str
+    title: str
     Ncount: int
     filename: str
     statistics: str
@@ -240,8 +241,8 @@ class SimFileData:
     def parse(contents: str):
         contents = contents.strip()
         lines = contents.split('\n')
-        keywords = ['Date', 'type', 'Source', 'component', 'position', 'Ncount', 'filename', 'statistics', 'signal',
-                    'values', 'xvar', 'yvar', 'xlabel', 'ylabel']
+        keywords = ['Date', 'type', 'Source', 'component', 'position', 'title', 'Ncount', 'filename', 'statistics',
+                    'signal', 'values', 'xvar', 'yvar', 'xlabel', 'ylabel']
         n_common = len(keywords)
         if len(lines) == 17:
             keywords.extend(['xlimits', 'variable'])
