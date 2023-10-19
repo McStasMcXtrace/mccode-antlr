@@ -162,12 +162,13 @@ class DatFile2D(DatFileCommon):
     def parts():
         first = ('Format', 'URL', 'Creator', 'Instrument', 'Ncount', 'Trace', 'Gravitation', 'Seed', 'Directory')
         second = ('Date', 'type', 'Source', 'component', 'position', 'title', 'Ncount', 'filename', 'statistics',
-                  'signal', 'values', 'xvar', 'yvar', 'xlabel', 'ylabel', 'zvar', 'xylimits', 'variables')
+                  'signal', 'values', 'xvar', 'yvar', 'xlabel', 'ylabel', 'zvar', 'zlabel', 'xylimits', 'variables')
         return first, second
 
     def print_data(self, file):
+        labels = 'Data', 'Errors', 'Events'  # McPlot looks at only these labels to determine what is the data
         for i, n in enumerate(self.variables):
-            print(f'# Data [{self.metadata["component"]}/{self.metadata["filename"]}] {n}:', file=file)
+            print(f'# {labels[i]} [{self.metadata["component"]}/{self.metadata["filename"]}] {n}:', file=file)
             for row in self.data[i, ...]:
                 print(' '.join(str(x) for x in row), file=file)
 
@@ -209,7 +210,7 @@ def combine_scan_dicts(a: dict, b: dict):
     for k, v in b.items():
         if any(s in k for s in special_add):
             c[k] = int(c[k]) + int(v)
-        elif any(s in k for s in special_concatenate):
+        elif any(s in k for s in special_concatenate) and v not in c[k]:
             c[k] = f'{c[k]} {v}'
         elif any(s in k for s in special_ignore):
             pass
