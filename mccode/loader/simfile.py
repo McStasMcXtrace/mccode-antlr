@@ -276,6 +276,7 @@ class SimFileData:
         print(f"  Source: {self.Source}", file=file)
         print(f"  component: {self.component}", file=file)
         print(f"  position: {self.position}", file=file)
+        print(f"  title: {self.title}", file=file)
         print(f"  Ncount: {self.Ncount}", file=file)
         print(f"  filename: {self.filename}", file=file)
         print(f"  statistics: {self.statistics}", file=file)
@@ -307,15 +308,50 @@ class SimFileData:
                 other.xylimits == self.xylimits)
 
     def combine(self, other):
+        from math import sqrt
         # this should only happen if the simulations are repeats of each other
         if other != self:
             raise RuntimeError(f"Cannot combine data with {other}")
         from copy import deepcopy
         out = deepcopy(self)
         out.Ncount += other.Ncount
-        out.statistics = f"{self.statistics} + {other.statistics}"
-        out.signal = f"{self.signal} + {other.signal}"
-        out.values = f"{self.values} + {other.values}"
+
+        def split_statistics(s: str):
+            # Statistics are either "X0={float}; dX={float};" or "X0={float}; dX={float}; Y0={float}; dY={float};"
+            # we can combine the values under the assumption that the distribution is Gaussian, but only if we know
+            # the overall intensity as well.
+            return {k: float(v) for k, v in [z.strip(';').split('=', 1) for z in s.split()]}
+
+        def split_signal(s: str):
+            # The signal line is always? "Min={float}; Max={float}; Mean={float};"
+            # we can combine min and max, but not mean (without knowing the number of points)
+            return [float(x.split('=')[1].split(';')[0]) for x in s.split(' ')]
+
+        def split_values(v: str):
+            # The values line is always "{float} {float} {int}" which _I think_ is <intensity>, <error>, and event count
+            return [float(x) if '.' in x else int(x) for x in v.split()]
+
+        s_intensity, s_error, s_counts = split_values(self.values)
+        o_intensity, o_error, o_counts = split_values(other.values)
+        out.values = f"{s_intensity + o_intensity} {sqrt(s_error * s_error + o_error + o_error)} {s_counts + o_counts}"
+
+        s_min, s_max, s_mean = split_signal(self.signal)
+        o_min, o_max, o_mean = split_signal(other.signal)
+        mean_estimate = (s_mean * s_counts + o_mean * o_counts)/(s_counts + o_counts)
+        out.signal = f"Min={min(s_min, o_min)}; Max={max(s_max, o_max)}; Mean={mean_estimate};"
+
+        s_stats = split_statistics(self.statistics)
+        o_stats = split_statistics(other.statistics)
+        stats = {}
+        for d in ('X', 'Y'):
+            d0, dd = f'{d}0', f'd{d}'
+            if d0 in s_stats and d0 in o_stats:
+                stats[d0] = (s_stats[d0] * s_counts + o_stats[d0] * o_counts)/(s_counts + o_counts)
+            if dd in s_stats and dd in o_stats:
+                sd = s_stats[dd] * s_counts
+                od = o_stats[dd] * o_counts
+                stats[dd] = sqrt(sd * sd + od * od) / (s_counts + o_counts)
+        out.statistics = ' '.join([f"{k}={stats[k]};" for k in ['X0', 'dX', 'Y0', 'dY'] if k in stats])
         return out
 
 
