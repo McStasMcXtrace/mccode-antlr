@@ -218,6 +218,7 @@ class SimFileSimulation:
 
 @dataclass
 class SimFileData:
+    keywords: list[str]
     Date: str
     type: str
     Source: str
@@ -225,15 +226,15 @@ class SimFileData:
     position: str
     title: str
     Ncount: int
-    filename: str
     statistics: str
     signal: str
     values: str
-    xvar: str
-    yvar: str
-    xlabel: str
-    ylabel: str
-    variables: str
+    filename: str = None  # Not defined for 0-D data entries
+    xvar: str = None  # Not defined for 0-D data entries
+    yvar: str = None  # Not defined for 0-D data entries
+    xlabel: str = None  # Not defined for 0-D data entries
+    ylabel: str = None  # Not defined for 0-D data entries
+    variables: str = None  # Not defined for 0-D data entries
     xlimits: str = None  # only defined for 1-D data entries
     zvar: str = None  # only defined for 2-D data entries
     zlabel: str = None  # only defined for 2-D data entries
@@ -243,69 +244,38 @@ class SimFileData:
     def parse(contents: str):
         contents = contents.strip()
         lines = contents.split('\n')
-        keywords = ['Date', 'type', 'Source', 'component', 'position', 'title', 'Ncount', 'filename', 'statistics',
-                    'signal', 'values', 'xvar', 'yvar', 'xlabel', 'ylabel']
-        n_common = len(keywords)
-        if len(lines) == 17:
-            keywords.extend(['xlimits', 'variables'])
+        first_keywords = ['Date', 'type', 'Source', 'component', 'position', 'title', 'Ncount']
+        second_keywords = ['statistics', 'signal', 'values']
+        file_keyword = []
+        if len(lines) == len(first_keywords) + len(second_keywords) + 2:
+            nd = 0
+            last_keywords = ['xylimits', 'variables']
+        elif len(lines) == 17:
+            nd = 1
+            file_keyword = ['filename']
+            last_keywords = ['xvar', 'yvar', 'xlabel', 'ylabel', 'xlimits', 'variables']
         elif len(lines) == 19:
-            keywords.extend(['zvar', 'zlabel', 'xylimits', 'variables'])
+            nd = 2
+            file_keyword = ['filename']
+            last_keywords = ['xvar', 'yvar', 'xlabel', 'ylabel', 'zvar', 'zlabel', 'xylimits', 'variables']
         else:
-            raise RuntimeError(f"Expected 17 or 19 lines in data, got {len(lines)}")
+            raise RuntimeError(f"Expected 12, 17 or 19 lines in data, got {len(lines)}")
+        keywords = first_keywords + file_keyword + second_keywords + last_keywords
         values = list(read_keywords(lines, keywords))
-        (date, type_str, source, component, position, title, ncount, filename,
-         statistics, signal, values_str, xvar, yvar, xlabel, ylabel) = values[:n_common]
-        ncount = int(ncount)
-        if len(values) == 17:
-            xlimits, variables = values[n_common:]
-            zvar, zlabel, xylimits = None, None, None
-        elif len(values) == 19:
-            zvar, zlabel, xylimits, variables = values[n_common:]
-            xlimits = None
-        else:
-            raise RuntimeError(f"Expected 17 or 19 lines in data, got {len(lines)}")
-        return SimFileData(Date=date, type=type_str, Source=source, component=component, position=position,
-                           title=title, Ncount=ncount, filename=filename, statistics=statistics, signal=signal,
-                           values=values_str, xvar=xvar, yvar=yvar, xlabel=xlabel, ylabel=ylabel, variables=variables,
-                           xlimits=xlimits, zvar=zvar, zlabel=zlabel, xylimits=xylimits)
+        collected = {k: v for k, v in zip(keywords, values)}
+        return SimFileData(keywords=keywords, **collected)
 
     def to_file(self, file):
         print(f'begin data', file=file)
-        print(f"  Date: {self.Date}", file=file)
-        print(f"  type: {self.type}", file=file)
-        print(f"  Source: {self.Source}", file=file)
-        print(f"  component: {self.component}", file=file)
-        print(f"  position: {self.position}", file=file)
-        print(f"  title: {self.title}", file=file)
-        print(f"  Ncount: {self.Ncount}", file=file)
-        print(f"  filename: {self.filename}", file=file)
-        print(f"  statistics: {self.statistics}", file=file)
-        print(f"  signal: {self.signal}", file=file)
-        print(f"  values: {self.values}", file=file)
-        print(f"  xvar: {self.xvar}", file=file)
-        print(f"  yvar: {self.yvar}", file=file)
-        print(f"  xlabel: {self.xlabel}", file=file)
-        print(f"  ylabel: {self.ylabel}", file=file)
-        if self.xlimits is not None:
-            print(f"  xlimits: {self.xlimits}", file=file)
-        if self.zvar is not None:
-            print(f"  zvar: {self.zvar}", file=file)
-        if self.zlabel is not None:
-            print(f"  zlabel: {self.zlabel}", file=file)
-        if self.xylimits is not None:
-            print(f"  xylimits: {self.xylimits}", file=file)
-        print(f"  variables: {self.variables}", file=file)
+        for key in self.keywords:
+            if getattr(self, key) is not None:
+                print(f'  {key}: {getattr(self, key)}', file=file)
         print(f'end data', file=file)
 
     def __eq__(self, other):
         if not isinstance(other, SimFileData):
             raise RuntimeError(f"Cannot compare data with {other}")
-        return (other.Date == self.Date and other.type == self.type and other.Source == self.Source and
-                other.component == self.component and other.position == self.position and
-                other.filename == self.filename and other.xvar == self.xvar and other.yvar == self.yvar and
-                other.xlabel == self.xlabel and other.ylabel == self.ylabel and other.variables == self.variables and
-                other.xlimits == self.xlimits and other.zvar == self.zvar and other.zlabel == self.zlabel and
-                other.xylimits == self.xylimits)
+        return all(getattr(self, k) == getattr(other, k) for k in self.keywords)
 
     def combine(self, other):
         from math import sqrt
@@ -317,41 +287,47 @@ class SimFileData:
         out.Ncount += other.Ncount
 
         def split_statistics(s: str):
-            # Statistics are either "X0={float}; dX={float};" or "X0={float}; dX={float}; Y0={float}; dY={float};"
-            # we can combine the values under the assumption that the distribution is Gaussian, but only if we know
-            # the overall intensity as well.
             return {k: float(v) for k, v in [z.strip(';').split('=', 1) for z in s.split()]}
 
         def split_signal(s: str):
-            # The signal line is always? "Min={float}; Max={float}; Mean={float};"
-            # we can combine min and max, but not mean (without knowing the number of points)
             return [float(x.split('=')[1].split(';')[0]) for x in s.split(' ')]
 
         def split_values(v: str):
-            # The values line is always "{float} {float} {int}" which _I think_ is <intensity>, <error>, and event count
             return [float(x) if '.' in x else int(x) for x in v.split()]
 
+        # The values line is always "{float} {float} {int}" which _I think_ is <intensity>, <error>, and event count
         s_intensity, s_error, s_counts = split_values(self.values)
         o_intensity, o_error, o_counts = split_values(other.values)
         out.values = f"{s_intensity + o_intensity} {sqrt(s_error * s_error + o_error + o_error)} {s_counts + o_counts}"
 
-        s_min, s_max, s_mean = split_signal(self.signal)
-        o_min, o_max, o_mean = split_signal(other.signal)
-        mean_estimate = (s_mean * s_counts + o_mean * o_counts)/(s_counts + o_counts)
-        out.signal = f"Min={min(s_min, o_min)}; Max={max(s_max, o_max)}; Mean={mean_estimate};"
+        # The signal line is always? "None" or "Min={float}; Max={float}; Mean={float};"
+        # we can combine min and max, but not mean (without knowing the number of points)
+        if 'None' in self.signal or 'None' in other.signal:
+            out.signal = 'None'
+        else:
+            s_min, s_max, s_mean = split_signal(self.signal)
+            o_min, o_max, o_mean = split_signal(other.signal)
+            mean_estimate = (s_mean * s_counts + o_mean * o_counts)/(s_counts + o_counts)
+            out.signal = f"Min={min(s_min, o_min)}; Max={max(s_max, o_max)}; Mean={mean_estimate};"
 
-        s_stats = split_statistics(self.statistics)
-        o_stats = split_statistics(other.statistics)
-        stats = {}
-        for d in ('X', 'Y'):
-            d0, dd = f'{d}0', f'd{d}'
-            if d0 in s_stats and d0 in o_stats:
-                stats[d0] = (s_stats[d0] * s_counts + o_stats[d0] * o_counts)/(s_counts + o_counts)
-            if dd in s_stats and dd in o_stats:
-                sd = s_stats[dd] * s_counts
-                od = o_stats[dd] * o_counts
-                stats[dd] = sqrt(sd * sd + od * od) / (s_counts + o_counts)
-        out.statistics = ' '.join([f"{k}={stats[k]};" for k in ['X0', 'dX', 'Y0', 'dY'] if k in stats])
+        # Statistics: one of "None", "X0={float}; dX={float};" or "X0={float}; dX={float}; Y0={float}; dY={float};"
+        # we can combine the values under the assumption that the distribution is Gaussian, but only if we know
+        # the overall intensity as well.
+        if 'None' in self.statistics or 'None' in other.statistics:
+            out.statistics = 'None'
+        else:
+            s_stats = split_statistics(self.statistics)
+            o_stats = split_statistics(other.statistics)
+            stats = {}
+            for d in ('X', 'Y'):
+                d0, dd = f'{d}0', f'd{d}'
+                if d0 in s_stats and d0 in o_stats:
+                    stats[d0] = (s_stats[d0] * s_counts + o_stats[d0] * o_counts)/(s_counts + o_counts)
+                if dd in s_stats and dd in o_stats:
+                    sd = s_stats[dd] * s_counts
+                    od = o_stats[dd] * o_counts
+                    stats[dd] = sqrt(sd * sd + od * od) / (s_counts + o_counts)
+            out.statistics = ' '.join([f"{k}={stats[k]};" for k in ['X0', 'dX', 'Y0', 'dY'] if k in stats])
         return out
 
 
