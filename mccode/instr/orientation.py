@@ -130,7 +130,7 @@ class Vector(NamedTuple):
         return f'({self.x}, {self.y}, {self.z})'
 
     def __contains__(self, value):
-        return value in (self.x, self.y, self.z)
+        return any(value in x for x in (self.x, self.y, self.z))
 
 
 class Angles(NamedTuple):
@@ -154,7 +154,7 @@ class Angles(NamedTuple):
         return f'({self.x}, {self.y}, {self.z})'
 
     def __contains__(self, value):
-        return value in (self.x, self.y, self.z)
+        return any(value in x for x in (self.x, self.y, self.z))
 
 
 class Rotation(NamedTuple):
@@ -222,7 +222,7 @@ class Rotation(NamedTuple):
         return rz * (ry * rx)
 
     def __contains__(self, value):
-        return value in (self.xx, self.xy, self.xz, self.yx, self.yy, self.yz, self.zx, self.zy, self.zz)
+        return any(value in x for x in (self.xx, self.xy, self.xz, self.yx, self.yy, self.yz, self.zx, self.zy, self.zz))
 
 
 class Seitz(NamedTuple):
@@ -297,7 +297,7 @@ class Seitz(NamedTuple):
                      so.zx, so.zy, so.zz, st.z + s.z)
 
     def __contains__(self, value):
-        return value in (self.xx, self.xy, self.xz, self.xt, self.yx, self.yy, self.yz, self.yt, self.zx, self.zy, self.zz, self.zt)
+        return value in self.rotation() or value in self.vector()
 
 def cos_degree(theta_degree):
     from math import pi, cos
@@ -861,8 +861,8 @@ class Parts:
     def rotation(self, which=None):
         return self.resolve().rotation(which=which)
 
-    def __contains__(self, value):
-        return value in self._stack
+    def __contains__(self, value_name):
+        return any(value_name in element for element in self._stack)
 
 
 OrientType = TypeVar('OrientType', bound='Orient')
@@ -952,5 +952,5 @@ class Orient:
         else:
             raise ValueError(f"__sub__ undefined for DependentOrientation and {type(other)}")
 
-    def __contains__(self, value):
-        return value in self._position or value in self._rotation
+    def __contains__(self, value_name):
+        return value_name in self._position or value_name in self._rotation

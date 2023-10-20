@@ -930,6 +930,9 @@ class Value:
             return self.value == value
         if self.is_vector:
             return value in self.value
+        if self.is_str and isinstance(value, str) and (value[0] != '"' or value[-1] != '"'):
+            # string Values are always wrapped in double quotes
+            return self.value.strip('"') == value.strip('"')
         return self.value == value
 
 
@@ -947,7 +950,7 @@ class Expr:
         return hash(str(self))
 
     def __contains__(self, value):
-        return any(x == value for x in self.expr)
+        return any(value in x for x in self.expr)
 
     @staticmethod
     def parse(s: str):
