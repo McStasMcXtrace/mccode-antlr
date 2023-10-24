@@ -131,7 +131,7 @@ def compile_instrument(instrument: Instr, target: CBinaryTarget, output: Union[s
     return output
 
 
-def run_compiled_instrument(binary: Path, target: CBinaryTarget, options: str, capture=False):
+def run_compiled_instrument(binary: Path, target: CBinaryTarget, options: str, capture=False, dry_run: bool = False):
     from subprocess import run, CalledProcessError
     from platform import system
     from mccode.config import config
@@ -167,6 +167,9 @@ def run_compiled_instrument(binary: Path, target: CBinaryTarget, options: str, c
     # In normal operation, the binary is provided with options
     command.extend([str(binary), *options.split()])
     # which we then execute:
+    if dry_run:
+        log.info(f'Would execute {command}')
+        return ""
     result = run(command, capture_output=capture)
     if result.returncode and capture:
         raise RuntimeError(f'Execution of {command} failed with output\n{result.stdout}\n and error\n{result.stderr}')

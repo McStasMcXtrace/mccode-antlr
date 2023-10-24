@@ -277,11 +277,21 @@ class SimFileData:
             raise RuntimeError(f"Cannot compare data with {other}")
         return all(getattr(self, k) == getattr(other, k) for k in self.keywords)
 
+    def is_repeat(self, other):
+        # Everything must match except Date, Ncount, statistics, signal, values.
+        # The Date is the date the simulation was run, so it will be different.
+        # The Ncount is the number of particles used in the simulation, so it can be different.
+        # The statistics, signal, and values are the results of the simulation, so they will be different.
+        if not isinstance(other, SimFileData):
+            raise RuntimeError(f"Cannot compare data with {other}")
+        skip = ['Date', 'Ncount', 'statistics', 'signal', 'values']
+        return all(getattr(self, k) == getattr(other, k) for k in self.keywords if k not in skip)
+
     def combine(self, other):
         from math import sqrt
         # this should only happen if the simulations are repeats of each other
-        if other != self:
-            raise RuntimeError(f"Cannot combine data with {other}")
+        if not self.is_repeat(other):
+            raise RuntimeError(f"Cannot combine non-repeated {self} with {other}")
         from copy import deepcopy
         out = deepcopy(self)
         out.Ncount += other.Ncount
@@ -293,7 +303,7 @@ class SimFileData:
             return [float(x.split('=')[1].split(';')[0]) for x in s.split(' ')]
 
         def split_values(v: str):
-            return [float(x) if '.' in x else int(x) for x in v.split()]
+            return [int(x) if x.is_integer() else x for x in [float(x) for x in v.split(' ')]]
 
         # The values line is always "{float} {float} {int}" which _I think_ is <intensity>, <error>, and event count
         s_intensity, s_error, s_counts = split_values(self.values)

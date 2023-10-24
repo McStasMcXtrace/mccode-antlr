@@ -261,9 +261,15 @@ def registry_from_specification(spec: str):
     if len(parts) == 0:
         return None
     elif len(parts) == 1:
-        p1, p2, p3 = parts, parts, None
+        p1, p2, p3 = parts[0], parts[0], None
     else:
         p1, p2, p3 = parts[0], parts[1], None if len(parts) < 3 else parts[2]
+    print(f"Constructing registry from {p1=} {p2=} {p3=}  [{type(p1)=} {type(p2)=} {type(p3)=}]")
+    # convert string literals to strings:
+    p1 = p1[1:-1] if p1.startswith('"') and p1.endswith('"') else p1
+    p2 = p2[1:-1] if p2.startswith('"') and p2.endswith('"') else p2
+    p3 = p3[1:-1] if p3 is not None and p3.startswith('"') and p3.endswith('"') else p3
+
     if Path(p2).exists() and Path(p2).is_dir():
         return LocalRegistry(p1, str(Path(p2).resolve()))
 

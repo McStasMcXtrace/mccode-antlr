@@ -210,13 +210,14 @@ def combine_scan_dicts(a: dict, b: dict):
     for k, v in b.items():
         if any(s in k for s in special_add):
             c[k] = int(c[k]) + int(v)
-        elif any(s in k for s in special_concatenate) and v not in c[k]:
-            c[k] = f'{c[k]} {v}'
+        elif any(s in k for s in special_concatenate):
+            if v not in c[k]:
+                c[k] = f'{c[k]} {v}'
         elif any(s in k for s in special_ignore):
             pass
         elif k in c:
             if c[k] != v:
-                raise RuntimeError(f'Incompatible values for {k}: {c[k]} and {v}')
+                raise RuntimeError(f'Incompatible values for "{k}": {c[k]} and {v}')
         else:
             raise RuntimeError(f'Unexpected key {k} in {b}')
     return c
