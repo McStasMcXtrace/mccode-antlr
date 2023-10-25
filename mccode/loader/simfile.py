@@ -263,6 +263,7 @@ class SimFileData:
         keywords = first_keywords + file_keyword + second_keywords + last_keywords
         values = list(read_keywords(lines, keywords))
         collected = {k: v for k, v in zip(keywords, values)}
+        collected['Ncount'] = int(collected['Ncount'])
         return SimFileData(keywords=keywords, **collected)
 
     def to_file(self, file):
