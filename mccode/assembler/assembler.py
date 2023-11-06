@@ -46,14 +46,40 @@ class Assembler:
         rot_tuple, ref = self._handle_at_rotate(a)
         return Angles(*rot_tuple), ref or at_ref
 
-    def component(self, name: str, type_name: str, at=None, rotate=None, parameters=None):
+    def component(self, name: str, type_name: str, at=None, rotate=None, parameters=None, **kwargs):
+        """Add a component to the underlying Instr.
+
+        Parameters
+        ----------
+        name : str
+            The name of the component instance.
+        type_name : str
+            The name of the component type.
+        at : tuple, optional
+            The position and orientation of the component instance.
+            If not provided, the component will be placed at the origin.
+        rotate : tuple, optional
+            The rotation of the component instance.
+            If not provided, the component will be rotated to match the at argument.
+        parameters : dict, optional
+            A dictionary of parameter names and values to set for the component instance.
+        kwargs : dict, optional
+            Properties for the constructed component Instance object. Useful keyword values include
+            `when` and `group`.
+
+        Note
+        ----
+        See `Assembler._handle_at` and `Assembler._handle_rotate` for details on the at and rotate arguments.
+        """
         comp_type = self.reader.get_component(type_name)
         if self.reader.c_flags:
             unique_flags = list(self.instrument.flags)
             unique_flags.extend(self.reader.c_flags)
             self.instrument.flags = tuple(dict.fromkeys(unique_flags))
         at, ref = self._handle_at(at)
-        instance = Instance(name, comp_type, at_relative=(at, ref), rotate_relative=self._handle_rotate(rotate, ref))
+        instance = Instance(name, comp_type,
+                            at_relative=(at, ref), rotate_relative=self._handle_rotate(rotate, ref),
+                            **kwargs)
         self.instrument.add_component(instance)
         if isinstance(parameters, dict):
             instance.set_parameters(**parameters)

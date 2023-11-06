@@ -149,12 +149,3 @@ class Reader:
         res.flags = tuple(self.c_flags)
         res.registries = tuple(self.registries)
         return res
-
-
-@dataclass
-class PseudoReader(Reader):
-    def add_component(self, name: str, current_instance_name=None):
-        from ..comp import Comp
-        if name in self.components:
-            raise RuntimeError("The named component is already known.")
-        self.components[name] = Comp()

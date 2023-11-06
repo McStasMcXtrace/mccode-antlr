@@ -3,7 +3,7 @@ from .instance import Instance
 from .orientation import Orient, Parts, Part, TranslationPart, RotationPart
 from .jump import Jump
 from .group import Group
-from .visitor import InstrVisitor
+from .visitor import InstrVisitor, InstrParametersVisitor
 
 
 __all__ = [
@@ -17,4 +17,5 @@ __all__ = [
     'Jump',
     'Group',
     'InstrVisitor',
+    'InstrParametersVisitor',
 ]

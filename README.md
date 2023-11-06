@@ -7,7 +7,7 @@ The traditional `McCode` `lex|flex` tokenizer and `yacc|bison` parser
 included in-rule code to implement some language features and called
 the code-generator to construct the intermediate instrument source file.
 The mixture of language parsing and multiple layers of generated functionality
-made understanding the program operation and debugging introduced errors
+made understanding the program operation, and debugging introduced errors,
 difficult.
 Worst of all, there is no easy-to-use tooling available to help the programmer
 identify syntax errors on-the-fly.
@@ -24,11 +24,13 @@ IDE integration can identify syntax mistakes in the language grammar files,
 plus help to understand and debug language parsing.
 
 ## McCode languages
+
 Traditionally, `McCode` identifies as a single language able to read, parse, and construct
 programs to perform single particle statistical ray tracing.
 While `McCode-3` used a single `language.l` and `language.y` file pair for lexing and parsing, 
-it actually implemented _two_ related languages: one for component definitions in `.comp` files,
-and one for instrument definitions in `.instr` files.
+it actually implemented _at least two_ related languages: one for component definitions in `.comp` files,
+one for instrument definitions in `.instr` files,
+plus arguably more for other specialised tasks.
 
 This project makes use of `ANTLR`'s language dependency feature to separate the languages
 into `McComp` for components and `McInstr` for instruments, with common language features

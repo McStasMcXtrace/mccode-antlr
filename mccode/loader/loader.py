@@ -4,6 +4,15 @@ from mccode.instr import Instr
 from mccode.reader import Registry
 
 
+def parse_mccode_instr_parameters(contents: str):
+    from antlr4 import CommonTokenStream, InputStream
+    from mccode.grammar import McInstrParser, McInstrLexer
+    from mccode.instr import InstrParametersVisitor
+    parser = McInstrParser(CommonTokenStream(McInstrLexer(InputStream(contents))))
+    visitor = InstrParametersVisitor()
+    return visitor.visitProg(parser.prog())
+
+
 def parse_mccode_instr(contents: str, registry: Registry, source: str = None) -> Instr:
     from antlr4 import CommonTokenStream, InputStream
     from mccode.grammar import McInstrParser, McInstrLexer
@@ -17,16 +26,6 @@ def parse_mccode_instr(contents: str, registry: Registry, source: str = None) ->
     instr.flags = tuple(reader.c_flags)
     instr.registries = tuple(registries)
     return instr
-
-
-def pseudo_parse_mccode_instr(contents: str, source: str = None) -> Instr:
-    from mccode.reader import PseudoReader
-    from mccode.instr import InstrVisitor
-    from mccode.grammar import McInstrParser, McInstrLexer
-    from antlr4 import CommonTokenStream, InputStream
-    parser = McInstrParser(CommonTokenStream(McInstrLexer(InputStream(contents))))
-    visitor = InstrVisitor(PseudoReader(), source or '<string>')
-    return visitor.visitProg(parser.prog())
 
 
 def parse_mcstas_instr(contents: str) -> Instr:
