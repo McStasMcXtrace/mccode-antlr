@@ -18,6 +18,9 @@ dynamic = ["version"]
 [project.optional-dependencies]
 test = ["gputil==1.4.0"]
 
+[project.urls]
+"Homepage" = "https://github.com/McStasMcXtrace/mccode-antlr"
+
 [project.scripts]
 mcstas-antlr = "mccode_antlr.commands:mcstas"
 mcxtrace-antlr = "mccode_antlr.commands:mcxtrace"
