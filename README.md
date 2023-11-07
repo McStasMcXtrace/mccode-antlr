@@ -1,6 +1,6 @@
-# Monte Carlo Particle Ray Tracing compiler, volume 4
+# Monte Carlo Particle Ray Tracing compiler via ANTLR4
 
-Implementing the `mccode-3` language and targeting the `mcstas` runtime.
+Implementing the `mccode-3` language and targeting the `mcstas` and `mcxtrace` runtimes.
 
 ## Language parsing with ANTLR4
 The traditional `McCode` `lex|flex` tokenizer and `yacc|bison` parser
@@ -27,7 +27,7 @@ plus help to understand and debug language parsing.
 
 Traditionally, `McCode` identifies as a single language able to read, parse, and construct
 programs to perform single particle statistical ray tracing.
-While `McCode-3` used a single `language.l` and `language.y` file pair for lexing and parsing, 
+While `McCode-3` uses a single `language.l` and `language.y` file pair for lexing and parsing, 
 it actually implemented _at least two_ related languages: one for component definitions in `.comp` files,
 one for instrument definitions in `.instr` files,
 plus arguably more for other specialised tasks.
@@ -44,12 +44,35 @@ workflow produced programs written in `C`.
 The `C` programming language is a very good choice where execution speed is important,
 as in the `McCode` runtimes, but less so if speed is not the main goal and memory safety
 or cross-platform development is important.
-The `McCode-3` translators did not always deallocate memory used in their runtime,
-and newly developed features were likely to introduce unallocated, out-of-bounds, or double-free
-memory errors which were then difficult to track down.
+The `McCode-3` translators do not always deallocate memory used in their runtime,
+and newly developed features are likely to introduce unallocated, out-of-bounds, or double-free
+memory errors which are then difficult to track down.
 
 `ANTLR4` is a `Java` program, but produces parse-trees in multiple languages.
 This project uses the `Python` target so that language-translation can proceed in a language
 which is well suited to new-feature development, while removing memory handling issues and
 making cross-platform development significantly easier.
 
+
+# Installation
+Install the latest development version from GitHub with
+```Bash
+$ python -m pip install git+https://github.com/McStasMcXtrace/mccode-antlr.git
+```
+or the latest release from PyPI with
+```Bash
+$ python -p pip install mccode_antlr-antlr
+```
+
+# Use
+The `mccode-antlr` package provides a command-line interface to the `McCode` language parsers
+and translators. To avoid shadowing the `McCode-3` translators, the command-line interface
+are suffixed with `-antlr`.
+
+```Bash
+$ mcstas-antlr --help
+```
+
+```Bash
+$ mcxtrace-antlr --help
+```

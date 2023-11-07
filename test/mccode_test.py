@@ -6,7 +6,7 @@ from zenlog import log
 
 from numpy import nan
 
-from mccode.reader import Registry
+from mccode_antlr.reader import Registry
 
 TestInstrExampleType = TypeVar('TestInstrExampleType', bound='TestInstrExample')
 
@@ -149,7 +149,7 @@ def get_username():
 def _monitor_name_file_name_match(folder, monitor_name):
     import re
     look_for_filename = False
-    with open(folder.joinpath('mccode.sim'), 'r') as file:
+    with open(folder.joinpath('mccode_antlr.sim'), 'r') as file:
         lines = file.readlines()
     for line in lines:
         if re.match(rf"\s*component:\s*{monitor_name}$", line):
@@ -171,8 +171,8 @@ def _monitor_name_file_name_match(folder, monitor_name):
 
 def mccode_test_compiler(work_dir, file_path, target, registry, generator, dump, **kwargs):
     from pathlib import Path
-    from mccode.reader import Reader
-    from mccode.compiler.c import compile_instrument
+    from mccode_antlr.reader import Reader
+    from mccode_antlr.compiler.c import compile_instrument
     # only the provided (remote) registry should be necessary for test instruments
     reader = Reader(registries=[registry])
     inst = reader.get_instrument(file_path)
@@ -189,21 +189,21 @@ def mccode_test_compiler(work_dir, file_path, target, registry, generator, dump,
 
 
 def mcstas_test_compiler(target, work_dir, file_path, dump, **kwargs):
-    from mccode.reader import MCSTAS_REGISTRY
-    from mccode.translators.target import MCSTAS_GENERATOR
+    from mccode_antlr.reader import MCSTAS_REGISTRY
+    from mccode_antlr.translators.target import MCSTAS_GENERATOR
     return mccode_test_compiler(work_dir, file_path, target, MCSTAS_REGISTRY, MCSTAS_GENERATOR, dump, **kwargs)
 
 
 def mcxtrace_test_compiler(target, work_dir, file_path, dump, **kwargs):
-    from mccode.reader import MCXTRACE_REGISTRY
-    from mccode.translators.target import MCXTRACE_GENERATOR
+    from mccode_antlr.reader import MCXTRACE_REGISTRY
+    from mccode_antlr.translators.target import MCXTRACE_GENERATOR
     return mccode_test_compiler(work_dir, file_path, target, MCXTRACE_REGISTRY, MCXTRACE_GENERATOR, dump, **kwargs)
 
 
 def mccode_test_runner(target, binary_path, test_parameters: str, n_particles: int):
     import shutil
     from tempfile import mkdtemp
-    from mccode.compiler.c import run_compiled_instrument
+    from mccode_antlr.compiler.c import run_compiled_instrument
 
     output_path = Path(mkdtemp(prefix=binary_path.stem, dir=binary_path.parent.resolve()))
     # The McCode C runtime won't use an existing directory ...
@@ -232,7 +232,7 @@ def mcxtrace_test_runner(target, binary_path, test_parameters: str, n_particles:
 def mccode_test(compiler, runner, mpi: int = None, acc: bool = False, nexus: bool = False, **kwargs):
     """Specialize the compiler and runner based on requested number of processors and use of OpenACC, then test"""
     from functools import partial
-    from mccode.compiler.c import CBinaryTarget
+    from mccode_antlr.compiler.c import CBinaryTarget
     target = CBinaryTarget(mpi=mpi is not None, acc=acc, count=1 if mpi is None else mpi, nexus=nexus)
     return _mccode_test(partial(compiler, target), partial(runner, target), **kwargs)
 
@@ -240,7 +240,7 @@ def mccode_test(compiler, runner, mpi: int = None, acc: bool = False, nexus: boo
 def mcstas_test(search_pattern=None, instr_count=None, skip_non_test: bool = False,
                 mpi: int = None, acc: bool = False, nexus: bool = False, n_particles: int = 1000,
                 dump: bool = False, workdir: Path = None):
-    from mccode.reader import MCSTAS_REGISTRY as REGISTRY
+    from mccode_antlr.reader import MCSTAS_REGISTRY as REGISTRY
     return mccode_test(mcstas_test_compiler, mcstas_test_runner, mpi, acc, nexus, registry=REGISTRY,
                        search_pattern=search_pattern, instr_count=instr_count, skip_non_test=skip_non_test,
                        n_particles=n_particles, dump=dump, workdir=workdir)
@@ -249,7 +249,7 @@ def mcstas_test(search_pattern=None, instr_count=None, skip_non_test: bool = Fal
 def mcxtrace_test(search_pattern=None, instr_count=None, skip_non_test: bool = False,
                   mpi: int = None, acc: bool = False, nexus: bool = False, n_particles: int = 1000,
                   dump: bool = False, workdir: Path = None):
-    from mccode.reader import MCXTRACE_REGISTRY as REGISTRY
+    from mccode_antlr.reader import MCXTRACE_REGISTRY as REGISTRY
     return mccode_test(mcxtrace_test_compiler, mcxtrace_test_runner, mpi, acc, nexus, registry=REGISTRY,
                        search_pattern=search_pattern, instr_count=instr_count, skip_non_test=skip_non_test,
                        n_particles=n_particles, dump=dump, workdir=workdir)

@@ -3,7 +3,7 @@ requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "mccode"
+name = "mccode-antlr"
 dependencies = [
     'antlr4-tools==0.2',
     'antlr4-python3-runtime==4.13.0',
@@ -19,11 +19,11 @@ dynamic = ["version"]
 test = ["gputil"]
 
 [project.scripts]
-mcstas4 = "mccode.commands:mcstas"
-mcxtrace4 = "mccode.commands:mcxtrace"
+mcstas-antlr = "mccode_antlr.commands:mcstas"
+mcxtrace-antlr = "mccode_antlr.commands:mcxtrace"
 
 [tool.setuptools_scm]
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["mccode*"]
+include = ["mccode_antlr*"]

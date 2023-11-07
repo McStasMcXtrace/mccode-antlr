@@ -3,20 +3,20 @@ from zenlog import log
 
 
 def parse_instr_string(instr_source: str):
-    from mccode.loader import parse_mcstas_instr
+    from mccode_antlr.loader import parse_mcstas_instr
     return parse_mcstas_instr(instr_source)
 
 
 def make_mcstas_assembler(name: str):
-    from mccode.assembler import Assembler
-    from mccode.reader import MCSTAS_REGISTRY
+    from mccode_antlr.assembler import Assembler
+    from mccode_antlr.reader import MCSTAS_REGISTRY
     return Assembler(name, registries=[MCSTAS_REGISTRY])
 
 
 class TestInstr(TestCase):
     def test_parse_empty_trace(self):
-        from mccode.instr import Instr
-        from mccode.common import InstrumentParameter, Expr, Value, DataType
+        from mccode_antlr.instr import Instr
+        from mccode_antlr.common import InstrumentParameter, Expr, Value, DataType
         instr_source = """
         DEFINE INSTRUMENT test_parse(par0=3.14159, double par1 = 49, int par2 =     1010110
             , string par3="this is a long string with spaces", 
@@ -40,8 +40,8 @@ class TestInstr(TestCase):
             self.assertEqual(p.value, Value(val, data_type=DataType.from_name(d_type)))
 
     def test_assemble_empty_trace(self):
-        from mccode.instr import Instr
-        from mccode.common import InstrumentParameter, Expr, Value, DataType
+        from mccode_antlr.instr import Instr
+        from mccode_antlr.common import InstrumentParameter, Expr, Value, DataType
 
         assembler = make_mcstas_assembler('test_assemble')
 
@@ -213,7 +213,7 @@ class TestInstr(TestCase):
         self.assertFalse(phase.simplify().is_constant)
 
         # But we can attempt to parse the declarations and instantiation blocks from the instrument
-        from mccode.translators.c_listener import extract_c_declared_expressions, evaluate_c_defined_expressions
+        from mccode_antlr.translators.c_listener import extract_c_declared_expressions, evaluate_c_defined_expressions
         variables = {x.name:  x.value for x in assembler.instrument.parameters}
         for dec in assembler.instrument.declare:
             variables.update(extract_c_declared_expressions(dec.source))
@@ -244,7 +244,7 @@ class TestInstr(TestCase):
             self.assertFalse(any(par.depends_on(inst_par.name) for inst_par in assembler.instrument.parameters))
 
     def assertRotationsEqual(self, r1, r2):
-        from mccode.instr.orientation import Rotation, Matrix
+        from mccode_antlr.instr.orientation import Rotation, Matrix
         self.assertTrue(isinstance(r1, Rotation))
         self.assertTrue(isinstance(r2, Rotation))
         d = r1 - r2
@@ -253,8 +253,8 @@ class TestInstr(TestCase):
 
     def _positioning_evaluator(self, instr):
         """Common positioning checks for `test_read_positioning` and `test_assemble_positioning`"""
-        from mccode.common import Expr
-        from mccode.instr.orientation import Vector, Rotation
+        from mccode_antlr.common import Expr
+        from mccode_antlr.instr.orientation import Vector, Rotation
         z, o = Expr.float(0), Expr.float(1)
 
         left = instr.get_component('left')
@@ -296,8 +296,8 @@ class TestInstr(TestCase):
         self._positioning_evaluator(parse_instr_string(instr_source))
 
     def _simple_position_tests(self, instr, positions: dict):
-        from mccode.common import Expr
-        from mccode.instr.orientation import Vector
+        from mccode_antlr.common import Expr
+        from mccode_antlr.instr.orientation import Vector
         positions = {k: Vector(*[Expr.float(x) for x in v]) for k, v in positions.items()}
         for instance in instr.components:
             self.assertEqual(positions[instance.name], instance.orientation.position())
@@ -341,8 +341,8 @@ class TestInstr(TestCase):
         self.assertEqual(pos, comb.position())
 
     def test_copy(self):
-        from mccode.instr import Instr
-        from mccode.common import InstrumentParameter, Expr, Value, DataType
+        from mccode_antlr.instr import Instr
+        from mccode_antlr.common import InstrumentParameter, Expr, Value, DataType
         instr_source = """
         DEFINE INSTRUMENT test_copy(par0=3.14159, double par1 = 49, int par2 =     1010110
             , string par3="this is a long string with spaces", 
@@ -368,7 +368,7 @@ class TestInstr(TestCase):
         self.assertEqual(len(instr.parameters), len(instr_copy.parameters) - 1)
 
     def test_mcpl_split(self):
-        from mccode.instr import Instr
+        from mccode_antlr.instr import Instr
         instr_source = """
         DEFINE INSTRUMENT test_copy(par0=3.14159, double par1 = 49, int par2 =     1010110
             , string par3="this is a long string with spaces", 
@@ -393,11 +393,11 @@ class TestInstr(TestCase):
 
     def test_mcpl_split_run(self):
         # Adapted from Test_MCPL_*.instr in ${MCCODE}/mcstas-comps/examples
-        from mccode.instr import Instr
-        from mccode.common import ComponentParameter, Expr
-        from mccode.compiler.c import compile_instrument, run_compiled_instrument, CBinaryTarget
-        from mccode.translators.target import MCSTAS_GENERATOR
-        from mccode.loader import read_mccode_dat
+        from mccode_antlr.instr import Instr
+        from mccode_antlr.common import ComponentParameter, Expr
+        from mccode_antlr.compiler.c import compile_instrument, run_compiled_instrument, CBinaryTarget
+        from mccode_antlr.translators.target import MCSTAS_GENERATOR
+        from mccode_antlr.loader import read_mccode_dat
         from tempfile import TemporaryDirectory
         from os import R_OK, access
         from pathlib import Path
@@ -494,11 +494,11 @@ class TestInstr(TestCase):
 
 
     def test_one_axis(self):
-        from mccode.instr import Instr
-        from mccode.common import ComponentParameter, Expr
-        from mccode.compiler.c import compile_instrument, run_compiled_instrument, CBinaryTarget
-        from mccode.translators.target import MCSTAS_GENERATOR
-        from mccode.loader import read_mccode_dat
+        from mccode_antlr.instr import Instr
+        from mccode_antlr.common import ComponentParameter, Expr
+        from mccode_antlr.compiler.c import compile_instrument, run_compiled_instrument, CBinaryTarget
+        from mccode_antlr.translators.target import MCSTAS_GENERATOR
+        from mccode_antlr.loader import read_mccode_dat
         from tempfile import TemporaryDirectory
         from os import R_OK, access
         from pathlib import Path
@@ -506,7 +506,7 @@ class TestInstr(TestCase):
         from numpy import allclose
 
         from math import pi, asin, sqrt
-        from mccode.loader import parse_mcstas_instr
+        from mccode_antlr.loader import parse_mcstas_instr
         d_spacing = 3.355  # (002) for Highly-ordered Pyrolytic Graphite
         mean_energy = 5.0
         energy_width = 0.1
@@ -553,7 +553,7 @@ class TestInstr(TestCase):
             print(instr_files)
 
     def test_tas1_c1(self):
-        from mccode.loader.loader import parse_mccode_instr_parameters
+        from mccode_antlr.loader.loader import parse_mccode_instr_parameters
         contents = """ DEFINE INSTRUMENT tas(PHM=-37.077,TTM=-74,C1=30) TRACE END"""
         instr_parameters = parse_mccode_instr_parameters(contents)
         self.assertEqual(len(instr_parameters), 3)

@@ -3,7 +3,7 @@ from unittest import TestCase
 
 class TestExpression(TestCase):
     def test_ObjectType(self):
-        from mccode.common.expression import ObjectType as OT
+        from mccode_antlr.common.expression import ObjectType as OT
 
         for ot in (OT.value, OT.initializer_list):
             self.assertFalse(ot.is_id)
@@ -35,7 +35,7 @@ class TestExpression(TestCase):
                     self.assertNotEqual(types[i], types[j])
 
     def test_ShapeType(self):
-        from mccode.common.expression import ShapeType as ST
+        from mccode_antlr.common.expression import ShapeType as ST
         ut = ST.unknown
         st = ST.scalar
         vt = ST.vector
@@ -56,7 +56,7 @@ class TestExpression(TestCase):
         self.assertEqual(vt.mccode_c_type, '*')
 
     def test_DataType(self):
-        from mccode.common.expression import DataType as DT
+        from mccode_antlr.common.expression import DataType as DT
         u, f, i, s = DT.undefined, DT.float, DT.int, DT.str
         for x in (u, f, i, s):
             self.assertTrue(x.compatible(x))
@@ -107,7 +107,7 @@ class TestExpression(TestCase):
         self.assertEqual(s.mccode_c_type, 'char *')
 
     def test_Value(self):
-        from mccode.common.expression import Value, ObjectType, ShapeType
+        from mccode_antlr.common.expression import Value, ObjectType, ShapeType
         float_value = Value.float(1)
         int_value = Value.int(1)
         str_value = Value.str('1')
@@ -148,7 +148,7 @@ class TestExpression(TestCase):
         self.assertTrue(array_value.is_vector)
 
     def test_null_vector_Value(self):
-        from mccode.common.expression import Value, ObjectType, ShapeType
+        from mccode_antlr.common.expression import Value, ObjectType, ShapeType
         from zenlog import log
         array = Value.array("NULL")
         # an Array is compatible with a raw string (nor a Value.best(str) which produces an identifier)
@@ -170,7 +170,7 @@ class TestExpression(TestCase):
         self.assertTrue(two >= one)
 
     def test_float_Value(self):
-        from mccode.common.expression import Value
+        from mccode_antlr.common.expression import Value
         one = Value.float(1)
         two = Value.float(2)
         self._numeric_Value_checks(one, two)
@@ -178,7 +178,7 @@ class TestExpression(TestCase):
         self.assertEqual(one.mccode_c_type_name, 'instr_type_double')
 
     def test_int_Value(self):
-        from mccode.common.expression import Value
+        from mccode_antlr.common.expression import Value
         one = Value.int(1)
         two = Value.int(2)
         self._numeric_Value_checks(one, two)
@@ -186,7 +186,7 @@ class TestExpression(TestCase):
         self.assertEqual(one.mccode_c_type_name, 'instr_type_int')
 
     def test_str_Value(self):
-        from mccode.common.expression import Value, BinaryOp
+        from mccode_antlr.common.expression import Value, BinaryOp
         one = Value.str('one')
         two = Value.str('two')
         self.assertEqual(one, one)
@@ -199,7 +199,7 @@ class TestExpression(TestCase):
         self.assertEqual(one.mccode_c_type_name, 'instr_type_string')
 
     def test_vector_Value(self):
-        from mccode.common.expression import Value, DataType
+        from mccode_antlr.common.expression import Value, DataType
         first = Value.array([1, 2, 3], DataType.float)
         second = Value.array([4, 5, 6], DataType.int)
 
@@ -211,7 +211,7 @@ class TestExpression(TestCase):
         self.assertEqual(first + second, Value.array([1, 2, 3, 4, 5, 6], DataType.float))
 
     def test_id_Value(self):
-        from mccode.common.expression import Value, BinaryOp
+        from mccode_antlr.common.expression import Value, BinaryOp
         id = Value.id('some_parameter')
 
         self.assertFalse(id.is_str)
@@ -219,7 +219,7 @@ class TestExpression(TestCase):
         self.assertEqual(id + Value.int(1), BinaryOp('+', id, Value.int(1)))
 
     def test_parameter_Value(self):
-        from mccode.common.expression import Value, ObjectType
+        from mccode_antlr.common.expression import Value, ObjectType
         par = Value('instrument_parameter', object_type=ObjectType.parameter)
         self.assertFalse(par.is_str)
         # self.assertFalse(par.is_id)  # changed as of 2023-10-16 -- a parameter is an identifier
@@ -230,7 +230,7 @@ class TestExpression(TestCase):
         self.assertEqual(str(par), "instrument_parameter")
 
     def test_UnaryOp(self):
-        from mccode.common.expression import Value, UnaryOp
+        from mccode_antlr.common.expression import Value, UnaryOp
         val = Value.int(1)
         # This one is not equal because the unary minus on a numeric value is pushed inside directly
         self.assertNotEqual(-val, UnaryOp('-', val))
@@ -272,7 +272,7 @@ class TestExpression(TestCase):
         self.assertEqual(str(not_val), 'not val')
 
     def test_numeric_BinaryOp(self):
-        from mccode.common.expression import Value, BinaryOp
+        from mccode_antlr.common.expression import Value, BinaryOp
         f = [Value.float(x) for x in range(3)]
         i = [Value.float(x) for x in range(3)]
         # simple operations on numeric values are applied directly, which does not produce a BinaryOp object
@@ -313,7 +313,7 @@ class TestExpression(TestCase):
         self.assertEqual(str(op), python_style)
 
     def test_identifier_BinaryOp(self):
-        from mccode.common.expression import Value, BinaryOp
+        from mccode_antlr.common.expression import Value, BinaryOp
         one, two = [Value.id(x) for x in ('one', 'two')]
         # BinaryOp allows '__call__' with any value types, but 'left' _should_ have a object_type of ObjectType.function
         self.assertEqual(str(BinaryOp('__call__', one, two)), 'one(two)')
@@ -328,7 +328,7 @@ class TestExpression(TestCase):
         self.assertEqual(str(BinaryOp('any_function', one, two)), 'any_function(one, two)')
 
     def test_identifier_TrinaryOp(self):
-        from mccode.common.expression import Value, TrinaryOp
+        from mccode_antlr.common.expression import Value, TrinaryOp
         test, one, two = [Value.id(x) for x in ('test', 'one', 'two')]
         self._style_tests(TrinaryOp('__trinary__', test, one, two), 'test ? one : two', 'one if test else two')
 
@@ -336,7 +336,7 @@ class TestExpression(TestCase):
         pass
 
     def test_parse_Expr(self):
-        from mccode.common.expression import Expr, UnaryOp, BinaryOp, TrinaryOp, Value, ObjectType
+        from mccode_antlr.common.expression import Expr, UnaryOp, BinaryOp, TrinaryOp, Value, ObjectType
 
         self.assertEqual(Expr.parse('1'), Value.int(1))
         self.assertEqual(Expr.parse('1.'), Value.float(1))
@@ -390,10 +390,10 @@ class TestExpression(TestCase):
 
     def test_instrument_parameter(self):
         from antlr4 import CommonTokenStream, InputStream
-        from mccode.grammar import McInstrParser, McInstrLexer
-        from mccode.instr import InstrVisitor
-        from mccode.reader import MCSTAS_REGISTRY, Reader
-        from mccode.common.expression import Value, ObjectType
+        from mccode_antlr.grammar import McInstrParser, McInstrLexer
+        from mccode_antlr.instr import InstrVisitor
+        from mccode_antlr.reader import MCSTAS_REGISTRY, Reader
+        from mccode_antlr.common.expression import Value, ObjectType
         instr_source = """
         DEFINE INSTRUMENT blah(int par=0)
         TRACE
@@ -413,7 +413,7 @@ class TestExpression(TestCase):
         self.assertEqual(nx.value, Value('par', object_type=ObjectType.parameter))
 
     def test_simplify(self):
-        from mccode.common.expression import Expr, Value
+        from mccode_antlr.common.expression import Expr, Value
         is_two = Expr.parse('(2+4)/(1+2)')
         self.assertTrue(isinstance(is_two, Expr))
         is_two = is_two.simplify()
@@ -431,7 +431,7 @@ class TestExpression(TestCase):
         self.assertTrue(is_two.is_constant)
 
     def test_evaluate(self):
-        from mccode.common.expression import Expr, Value
+        from mccode_antlr.common.expression import Expr, Value
         known = {'bw1phase': Expr.float(0)}
         phase = Expr.parse('bw1phase / 2')
         self.assertTrue(isinstance(phase, Expr))
@@ -450,7 +450,7 @@ class TestExpression(TestCase):
         self.assertTrue(phase.is_constant)
 
     def test_depends_on(self):
-        from mccode.common.expression import Expr
+        from mccode_antlr.common.expression import Expr
         phase = Expr.parse('bw1phase / 2')
         self.assertTrue(phase.depends_on('bw1phase'))
 
@@ -463,7 +463,7 @@ class TestExpression(TestCase):
             self.assertFalse(expr.depends_on(not_name))
 
     def test_numeric_operations(self):
-        from mccode.common.expression import Expr, DataType
+        from mccode_antlr.common.expression import Expr, DataType
         x = Expr.float(1.)
         for res in (1 + x, x + 1, 2 * x, x / 0.5, 2 / x):
             self.assertTrue(isinstance(res, Expr))
@@ -472,7 +472,7 @@ class TestExpression(TestCase):
             self.assertEqual(res, 2)
 
     def test_numeric_expressions(self):
-        from mccode.common.expression import Expr
+        from mccode_antlr.common.expression import Expr
         for n_slits in (2, Expr.int(2)):
             for theta_0 in (Expr.float(100), Expr.id('variable')):
                 delta = theta_0 / 2.0

@@ -3,11 +3,11 @@ from unittest import TestCase
 class TestExtract(TestCase):
     def test_runtime_parameter(self):
         from antlr4 import CommonTokenStream, InputStream
-        from mccode.grammar import McInstrParser, McInstrLexer
-        from mccode.instr import InstrVisitor
-        from mccode.reader import MCSTAS_REGISTRY, Reader
-        from mccode.common.expression import Value, ObjectType
-        from mccode.translators.c_listener import extract_c_declared_variables, evaluate_c_defined_variables
+        from mccode_antlr.grammar import McInstrParser, McInstrLexer
+        from mccode_antlr.instr import InstrVisitor
+        from mccode_antlr.reader import MCSTAS_REGISTRY, Reader
+        from mccode_antlr.common.expression import Value, ObjectType
+        from mccode_antlr.translators.c_listener import extract_c_declared_variables, evaluate_c_defined_variables
         instr_source = """
         DEFINE INSTRUMENT blah()
         DECLARE %{

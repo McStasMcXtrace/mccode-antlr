@@ -10,7 +10,7 @@ def walk_stream(lexer, parser_class, parser_root, listener):
 
 
 def walk_comp(stream):
-    from mccode.grammar import McCompLexer, McCompParser, McCompListener, McCompVisitor
+    from mccode_antlr.grammar import McCompLexer, McCompParser, McCompListener, McCompVisitor
 
     class Listener(McCompListener):
         def enterProg(self, ctx: McCompParser.ProgContext):
@@ -25,7 +25,7 @@ def walk_comp(stream):
 
 
 def walk_instr(stream):
-    from mccode.grammar import McInstrLexer, McInstrParser, McInstrListener, McInstrVisitor
+    from mccode_antlr.grammar import McInstrLexer, McInstrParser, McInstrListener, McInstrVisitor
 
     class Listener(McInstrListener):
         def enterProg(self, ctx: McInstrParser.ProgContext):

@@ -2,8 +2,8 @@ from unittest import TestCase
 
 
 def _make_seitz_list(tx, ty, tz, degrees=False):
-    from mccode.common import Expr
-    from mccode.instr.orientation import Seitz, cos_value, sin_value
+    from mccode_antlr.common import Expr
+    from mccode_antlr.instr.orientation import Seitz, cos_value, sin_value
     o, z = Expr.float(1), Expr.float(0)
     cx, sx = cos_value(tx, degrees), sin_value(tx, degrees)
     cy, sy = cos_value(ty, degrees), sin_value(ty, degrees)
@@ -16,20 +16,20 @@ def _make_seitz_list(tx, ty, tz, degrees=False):
 
 def _random_angles_radian():
     from numpy import random, pi
-    from mccode.common import Expr
+    from mccode_antlr.common import Expr
     return [Expr.float(random.rand() * 2 * pi - pi) for _ in range(3)]
 
 
 def _random_angles_degrees():
     from numpy import random
-    from mccode.common import Expr
+    from mccode_antlr.common import Expr
     return [Expr.float(random.rand() * 360 - 180) for _ in range(3)]
 
 
 def _random_vector(minimum: float = 0, maximum: float = 1):
     from numpy import random
-    from mccode.common import Expr
-    from mccode.instr.orientation import Vector
+    from mccode_antlr.common import Expr
+    from mccode_antlr.instr.orientation import Vector
 
     def _random():
         return Expr.float(random.rand() * (maximum - minimum) + minimum)
@@ -39,8 +39,8 @@ def _random_vector(minimum: float = 0, maximum: float = 1):
 
 class TestOrientation(TestCase):
     def test_matrix_vector_multiply(self):
-        from mccode.instr.orientation import Vector, Matrix
-        from mccode.common import Expr
+        from mccode_antlr.instr.orientation import Vector, Matrix
+        from mccode_antlr.common import Expr
         from numpy import random
         v = Vector(*[Expr.float(random.rand()) for _ in range(3)])
         m = Matrix(*[Expr.float(random.rand()) for _ in range(9)])
@@ -59,8 +59,8 @@ class TestOrientation(TestCase):
         self.assertEqual(exchange_yz * v, Vector(v.x, v.z, v.y))
 
     def test_matrix_matrix_subtract(self):
-        from mccode.instr.orientation import Matrix, Vector
-        from mccode.common import Expr
+        from mccode_antlr.instr.orientation import Matrix, Vector
+        from mccode_antlr.common import Expr
         from numpy import random
         m1 = Matrix(*[Expr.float(random.rand()) for _ in range(9)])
         m2 = Matrix(*[Expr.float(random.rand()) for _ in range(9)])
@@ -72,8 +72,8 @@ class TestOrientation(TestCase):
         self.assertTrue((m4 * v).is_null)
 
     def test_vector_length(self):
-        from mccode.instr.orientation import Vector
-        from mccode.common import Expr
+        from mccode_antlr.instr.orientation import Vector
+        from mccode_antlr.common import Expr
         from numpy import random, sqrt
         v = Vector(Expr.float(0), Expr.float(0), Expr.float(0))
         self.assertEqual(v.length(), Expr.float(0))
@@ -88,8 +88,8 @@ class TestOrientation(TestCase):
         self.assertAlmostEqual(v.length(), Expr.float(sqrt(sum([x * x for x in raw_v]))))
 
     def test_rotation_matrix(self):
-        from mccode.instr.orientation import Rotation, Angles, _rotation_angles_to_axes_coordinates
-        from mccode.common import Expr
+        from mccode_antlr.instr.orientation import Rotation, Angles, _rotation_angles_to_axes_coordinates
+        from mccode_antlr.common import Expr
         from numpy import random, pi
         a = Angles(*[Expr.float(random.rand() * 2 * pi - pi) for _ in range(3)])
         while a.is_null():
@@ -107,8 +107,8 @@ class TestOrientation(TestCase):
             self.assertEqual(zero[i], Expr.float(0))
 
     def test_rotation_mccode_style(self):
-        from mccode.instr.orientation import Rotation, Angles, Matrix
-        from mccode.common import Expr
+        from mccode_antlr.instr.orientation import Rotation, Angles, Matrix
+        from mccode_antlr.common import Expr
         o, z, p, m = [Expr.float(x) for x in (1, 0, 90, -90)]
         angles = {'zpz': Rotation.from_angles(Angles(z, p, z)),
                   'pzp': Rotation.from_angles(Angles(p, z, p)),
@@ -159,8 +159,8 @@ class TestOrientation(TestCase):
 
     def test_seitz_multiply_identity(self):
         from numpy import random
-        from mccode.common import Expr
-        from mccode.instr.orientation import Seitz
+        from mccode_antlr.common import Expr
+        from mccode_antlr.instr.orientation import Seitz
         o, z = Expr.float(1), Expr.float(0)
         a = Seitz(o, z, z, z, z, o, z, z, z, z, o, z)
         b = a * a
@@ -172,8 +172,8 @@ class TestOrientation(TestCase):
 
     def test_seitz_inverse(self):
         from numpy import random, pi
-        from mccode.common import Expr
-        from mccode.instr.orientation import Seitz, cos_value, sin_value
+        from mccode_antlr.common import Expr
+        from mccode_antlr.instr.orientation import Seitz, cos_value, sin_value
         o, z = Expr.float(1), Expr.float(0)
         a = Seitz(o, z, z, z, z, o, z, z, z, z, o, z)
         # Construct a matrix that *has* an inverse (use rotations to make life easier)
@@ -191,8 +191,8 @@ class TestOrientation(TestCase):
                 self.assertAlmostEqual(i, j)
 
     def test_OrientationPart(self):
-        from mccode.common import Expr
-        from mccode.instr.orientation import Part, Vector
+        from mccode_antlr.common import Expr
+        from mccode_antlr.instr.orientation import Part, Vector
         op = Part()
         self.assertFalse(op.is_translation)
         self.assertFalse(op.is_rotation)
@@ -243,8 +243,8 @@ class TestOrientation(TestCase):
             self.assertEqual(axis, v)
 
     def test_RotationParts(self):
-        from mccode.common import Expr
-        from mccode.instr.orientation import RotationPart, RotationX, RotationY, RotationZ, Angles, Vector
+        from mccode_antlr.common import Expr
+        from mccode_antlr.instr.orientation import RotationPart, RotationX, RotationY, RotationZ, Angles, Vector
 
         rp = RotationPart()
         self.assertTrue(rp.is_constant)
@@ -285,7 +285,7 @@ class TestOrientation(TestCase):
         self.assertTrue((rpz * rpz.inverse()).is_identity)
 
     def test_RotationPart_subclass_post_init_is_called(self):
-        from mccode.instr.orientation import Rotation, RotationX, RotationY, RotationZ
+        from mccode_antlr.instr.orientation import Rotation, RotationX, RotationY, RotationZ
         tx, ty, tz = _random_angles_degrees()
         while tx.is_zero or ty.is_zero or tz.is_zero:
             print(f'{tx=} {ty=} {tz=} must all be finite')
@@ -302,8 +302,8 @@ class TestOrientation(TestCase):
         self.assertNotEqual(rpz.rotation(), Rotation())
 
     def test_Vector(self):
-        from mccode.instr.orientation import Vector
-        from mccode.common import Expr
+        from mccode_antlr.instr.orientation import Vector
+        from mccode_antlr.common import Expr
         tx = Vector(Expr.float(1), Expr.float(0), Expr.float(0))
         ty = Vector(Expr.float(0), Expr.float(1), Expr.float(0))
         tz = Vector(Expr.float(0), Expr.float(0), Expr.float(1))
@@ -316,7 +316,7 @@ class TestOrientation(TestCase):
         self.assertEqual(cyz, tx)
 
     def test_TranslationPart(self):
-        from mccode.instr.orientation import TranslationPart, Vector
+        from mccode_antlr.instr.orientation import TranslationPart, Vector
         t = _random_vector(0.1, 1.0)
         tp = TranslationPart(v=t)
         self.assertTrue(tp.is_translation)
@@ -326,10 +326,10 @@ class TestOrientation(TestCase):
         self.assertTrue((tp * tp.inverse()).is_identity)
 
     def test_OrientationParts(self):
-        from mccode.common import Expr
-        from mccode.instr.orientation import TranslationPart, Vector
-        from mccode.instr.orientation import RotationX, RotationY, RotationZ
-        from mccode.instr.orientation import Parts
+        from mccode_antlr.common import Expr
+        from mccode_antlr.instr.orientation import TranslationPart, Vector
+        from mccode_antlr.instr.orientation import RotationX, RotationY, RotationZ
+        from mccode_antlr.instr.orientation import Parts
 
         tx = TranslationPart(v=Vector(Expr.float(0.1), Expr.float(0), Expr.float(0)))
         ty = TranslationPart(v=Vector(Expr.float(0.), Expr.float(0.2), Expr.float(0)))
@@ -398,8 +398,8 @@ class TestOrientation(TestCase):
         self.assertEqual(trz2, trz)
 
     def test_OrientationParts_from_at_rotated(self):
-        from mccode.instr.orientation import Parts, Seitz, RotationX, RotationY, RotationZ, TranslationPart, Angles
-        from mccode.common import Expr
+        from mccode_antlr.instr.orientation import Parts, Seitz, RotationX, RotationY, RotationZ, TranslationPart, Angles
+        from mccode_antlr.common import Expr
         tx, ty, tz = _random_angles_degrees()
         rx, ry, rz = _make_seitz_list(tx, ty, tz, degrees=True)
         t = _random_vector(0.1, 1.0)
@@ -427,9 +427,9 @@ class TestOrientation(TestCase):
             self.assertAlmostEqual(full[i], identity[i])
 
     def test_DependentOrientation_no_rotations(self):
-        from mccode.common import Expr
-        from mccode.instr.orientation import TranslationPart, Vector, Angles
-        from mccode.instr.orientation import Parts, Orient
+        from mccode_antlr.common import Expr
+        from mccode_antlr.instr.orientation import TranslationPart, Vector, Angles
+        from mccode_antlr.instr.orientation import Parts, Orient
 
         v123 = Vector(Expr.float(0.1), Expr.float(0.2), Expr.float(0.3))
         v321 = Vector(Expr.float(0.3), Expr.float(0.2), Expr.float(0.1))
@@ -447,10 +447,10 @@ class TestOrientation(TestCase):
         self.assertEqual(d2.angles(), a000)
 
     # def test_DependentOrientation_with_rotations(self):
-    #     from mccode.common import Expr
-    #     from mccode.instr.orientation import TranslationPart, Vector, Angles
-    #     from mccode.instr.orientation import RotationX, RotationY, RotationZ
-    #     from mccode.instr.orientation import OrientParts, Orient
+    #     from mccode_antlr.common import Expr
+    #     from mccode_antlr.instr.orientation import TranslationPart, Vector, Angles
+    #     from mccode_antlr.instr.orientation import RotationX, RotationY, RotationZ
+    #     from mccode_antlr.instr.orientation import OrientParts, Orient
     #
     #     tx, ty, tz = _random_angles_degrees()
     #     f = Expr.float
@@ -484,8 +484,8 @@ class TestOrientation(TestCase):
     #     # self.assertEqual(d2.angles(), a000)
 
     def test_DependentOrientation_simple(self):
-        from mccode.common import Expr
-        from mccode.instr.orientation import Vector, Angles, Orient
+        from mccode_antlr.common import Expr
+        from mccode_antlr.instr.orientation import Vector, Angles, Orient
 
         v_z1 = Vector(Expr.float(0), Expr.float(0), Expr.float(1))
         v_x1 = Vector(Expr.float(1), Expr.float(0), Expr.float(0))
@@ -511,8 +511,8 @@ class TestOrientation(TestCase):
 
     def test_DepedentOrientation_triple_axis(self):
         from math import sin, cos
-        from mccode.common import Expr, unary_expr
-        from mccode.instr.orientation import Vector, Angles, Orient, Rotation, Parts, RotationY
+        from mccode_antlr.common import Expr, unary_expr
+        from mccode_antlr.instr.orientation import Vector, Angles, Orient, Rotation, Parts, RotationY
 
         def ri(i):
             return Angles(Expr.float(0), Expr.id(f'a{i}'), Expr.float(0))
