@@ -306,16 +306,16 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
         if self.config.get('include_runtime'):
             self.out('#define MC_EMBEDDED_RUNTIME')
             self.embed_file('mcstas-d.h' if is_mcstas else 'mcxtrace-d.h')
-            self.embed_file("mccode_antlr-r.h")
+            self.embed_file("mccode-r.h")
             self.embed_file('mcstas-r.h' if is_mcstas else 'mcxtrace-r.h')
-            self.embed_file("mccode_antlr-r.c")
+            self.embed_file("mccode-r.c")
             self.embed_file('mcstas-r.c' if is_mcstas else 'mcxtrace-r.c')
             if self.verbose:
                 print(f"Compile with flags '-DUSE_NEXUS -lNeXus' to enable NeXus support")
         else:
             # This only works if the module is *not* a compressed archive
             # If it is, we would need to do some trickery to ... write out the
-            self.out(f'#include "{self.include_path("mcode-r.h")}"')
+            self.out(f'#include "{self.include_path("mccode-r.h")}"')
             self.out(f'#include "{self.include_path("mcstas-r.h" if is_mcstas else "mcxtrace-r.h")}"')
             print(f"Dependency: mccode_antlr-r.o\nDependency: {'mcstas-r.o' if is_mcstas else 'mcxtrace-r.o'}")
 
