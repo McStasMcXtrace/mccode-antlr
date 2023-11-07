@@ -13,6 +13,14 @@ dependencies = [
     'zenlog==1.1,',
     "importlib_metadata; python_version<'3.8'",
 ]
+description = "ANTLR4 grammars for McStas and McXtrace"
+readme = "README.md"
+authors = [
+    { name = "Gregory Tucker", email = "gregory.tucker@ess.eu" },
+]
+classifiers = [
+    "License :: OSI Approved :: BSD License",
+]
 dynamic = ["version"]
 
 [project.optional-dependencies]
