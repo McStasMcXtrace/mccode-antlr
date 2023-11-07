@@ -254,35 +254,46 @@ class TestOrientation(TestCase):
         self.assertEqual(rp.rotation_axis, Vector(Expr.float(0), Expr.float(0), Expr.float(0)))
         self.assertEqual(rp.position(), Vector(Expr.float(0), Expr.float(0), Expr.float(0)))
 
-        tx, ty, tz = _random_angles_degrees()
+        # Since we use random angles, sample more of angle space to increase the chance of finding problems
+        for _ in range(500):
+            tx, ty, tz = _random_angles_degrees()
+            # for individual rotations, it's easy to prove that axes and coordinates rotate opposite each other:
+            rpx = RotationX(v=tx, degrees=True)
+            self.assertTrue(rpx.is_constant)
+            self.assertFalse(rpx.is_translation)
+            self.assertTrue(rpx.is_rotation)
+            self.assertFalse(rpx.is_identity)
+            self.assertEqual(rpx.rotation_axis, Vector(Expr.float(1), Expr.float(0), Expr.float(0)))
+            self.assertEqual(rpx.angles(), Angles(tx, Expr.float(0), Expr.float(0)))
+            ex = rpx * rpx.inverse()
+            if not ex.is_identity:
+                # This less-robust identity test is needed because of possible numerical errors
+                self.assertAlmostEqual(ex.axes.trace(), Expr.float(3),
+                                       msg=f'{rpx} * {rpx.inverse()} = {ex} is not identity for {tx=}')
 
-        # for individual rotations, it's easy to prove that axes and coordinates rotate opposite each other:
-        rpx = RotationX(v=tx, degrees=True)
-        self.assertTrue(rpx.is_constant)
-        self.assertFalse(rpx.is_translation)
-        self.assertTrue(rpx.is_rotation)
-        self.assertFalse(rpx.is_identity)
-        self.assertEqual(rpx.rotation_axis, Vector(Expr.float(1), Expr.float(0), Expr.float(0)))
-        self.assertEqual(rpx.angles(), Angles(tx, Expr.float(0), Expr.float(0)))
-        self.assertTrue((rpx * rpx.inverse()).is_identity)
+            rpy = RotationY(v=ty, degrees=True)
+            self.assertTrue(rpy.is_constant)
+            self.assertFalse(rpy.is_translation)
+            self.assertTrue(rpy.is_rotation)
+            self.assertFalse(rpy.is_identity)
+            self.assertEqual(rpy.rotation_axis, Vector(Expr.float(0), Expr.float(1), Expr.float(0)))
+            self.assertEqual(rpy.angles(), Angles(Expr.float(0), ty, Expr.float(0)))
+            ey = rpy * rpy.inverse()
+            if not ey.is_identity:
+                self.assertAlmostEqual(ey.axes.trace(), Expr.float(3),
+                                       msg=f'{rpy} * {rpy.inverse()} = {ey} is not identity for {ty=}')
 
-        rpy = RotationY(v=ty, degrees=True)
-        self.assertTrue(rpy.is_constant)
-        self.assertFalse(rpy.is_translation)
-        self.assertTrue(rpy.is_rotation)
-        self.assertFalse(rpy.is_identity)
-        self.assertEqual(rpy.rotation_axis, Vector(Expr.float(0), Expr.float(1), Expr.float(0)))
-        self.assertEqual(rpy.angles(), Angles(Expr.float(0), ty, Expr.float(0)))
-        self.assertTrue((rpy * rpy.inverse()).is_identity)
-
-        rpz = RotationZ(v=tz, degrees=True)
-        self.assertTrue(rpz.is_constant)
-        self.assertFalse(rpz.is_translation)
-        self.assertTrue(rpz.is_rotation)
-        self.assertFalse(rpz.is_identity)
-        self.assertEqual(rpz.rotation_axis, Vector(Expr.float(0), Expr.float(0), Expr.float(1)))
-        self.assertEqual(rpz.angles(), Angles(Expr.float(0), Expr.float(0), tz))
-        self.assertTrue((rpz * rpz.inverse()).is_identity)
+            rpz = RotationZ(v=tz, degrees=True)
+            self.assertTrue(rpz.is_constant)
+            self.assertFalse(rpz.is_translation)
+            self.assertTrue(rpz.is_rotation)
+            self.assertFalse(rpz.is_identity)
+            self.assertEqual(rpz.rotation_axis, Vector(Expr.float(0), Expr.float(0), Expr.float(1)))
+            self.assertEqual(rpz.angles(), Angles(Expr.float(0), Expr.float(0), tz))
+            ez = rpz * rpz.inverse()
+            if not ez.is_identity:
+                self.assertAlmostEqual(ez.axes.trace(), Expr.float(3),
+                                       msg=f'{rpz} * {rpz.inverse()} = {ez} is not identity for {tz=}')
 
     def test_RotationPart_subclass_post_init_is_called(self):
         from mccode_antlr.instr.orientation import Rotation, RotationX, RotationY, RotationZ
