@@ -33,6 +33,9 @@ class Instance:
     jump: tuple[Jump] = field(default_factory=tuple)
     metadata: tuple[MetaData] = field(default_factory=tuple)
 
+    def __repr__(self):
+        return f'Instance({self.name}, {self.type.name})'
+
     def to_file(self, output, wrapper=None):
         if self.cpu:
             print(wrapper.line('CPU', []), file=output)
