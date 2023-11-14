@@ -43,6 +43,23 @@ class ObjectType(Enum):
     function = 4
     parameter = 5
 
+    def __str__(self):
+        return self.name
+
+    @staticmethod
+    def from_name(name):
+        if 'value' in name:
+            return ObjectType.value
+        if 'initializer_list' in name:
+            return ObjectType.initializer_list
+        if 'identifier' in name:
+            return ObjectType.identifier
+        if 'function' in name:
+            return ObjectType.function
+        if 'parameter' in name:
+            return ObjectType.parameter
+        raise RuntimeError(f"No known conversion from non-enumerated object type {name}")
+
     @property
     def is_id(self):
         return self == ObjectType.identifier
@@ -75,6 +92,17 @@ class ShapeType(Enum):
     @property
     def is_vector(self):
         return self == ShapeType.vector
+
+    def __str__(self):
+        return self.name
+
+    @staticmethod
+    def from_name(name):
+        if 'vector' in name:
+            return ShapeType.vector
+        if 'scalar' in name:
+            return ShapeType.scalar
+        return ShapeType.unknown
 
 
 class DataType(Enum):

@@ -23,6 +23,14 @@ class DataSource:
     def is_a(self, source_type: Type):
         return self._type == source_type
 
+    @property
+    def type_name(self):
+        return self._type.name
+
+    @staticmethod
+    def from_type_name_and_name(type_name: str, name: str):
+        return DataSource(DataSource.Type[type_name], name)
+
 
 @dataclass
 class MetaData:

@@ -885,6 +885,12 @@ class Orient:
     def degrees(self):
         return self._degrees
 
+    def get_raw_position(self):
+        return self._position
+
+    def get_raw_rotation(self):
+        return self._rotation
+
     @classmethod
     def from_dependent_orientations(cls, rel: OrientType, at: Vector, rot: OrientType, angles: Angles,
                                     degrees=True, copy=True):
