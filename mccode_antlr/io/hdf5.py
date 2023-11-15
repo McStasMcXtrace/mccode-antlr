@@ -10,10 +10,7 @@ from mccode_antlr.common.expression import Expr, TrinaryOp, BinaryOp, UnaryOp
 from mccode_antlr.instr.orientation import (Matrix, Vector, Angles, Rotation, Seitz, RotationX, RotationY,
                                             RotationZ, TranslationPart, Orient, Parts, Part)
 
-
-def _combine_version_name(name):
-    from mccode_antlr import __version__
-    return f'{__version__}/{name}'
+VERSION_NAME_KEY = 'mccode-antlr_version_data-type-name'
 
 
 def _split_version_name(version_name):
@@ -21,19 +18,19 @@ def _split_version_name(version_name):
 
 
 def _write_header(group, data_type):
-    group.attrs['version_name'] = _combine_version_name(data_type.__name__)
+    from mccode_antlr import __version__
+    group.attrs[VERSION_NAME_KEY] = f'{__version__}/{data_type.__name__}'
 
 
 def _check_header(group, data_type):
     from mccode_antlr import __version__
-    if 'version_name' not in group.attrs:
+    if VERSION_NAME_KEY not in group.attrs:
         raise RuntimeError(f"File does not have type information")
-    version, name = _split_version_name(group.attrs['version_name'])
+    version, name = _split_version_name(group.attrs[VERSION_NAME_KEY])
     if version != __version__:
-        raise RuntimeError(f"File was created with mccode_antlr version {version}, but asked to read version {__version__}")
+        raise RuntimeError(f"File was created with mccode_antlr {version}, but asked to read version {__version__}")
     if name != data_type.__name__:
-        raise RuntimeError(f"File was created with mccode_antlr type {group.attrs['type_name']}, "
-                           f"but asked to read type {data_type}")
+        raise RuntimeError(f"Group contains mccode_antlr type {name}, but asked to read type {data_type}")
 
 
 def _standard_read(typename, group, attrs, optional, required, **kwargs):
@@ -63,7 +60,9 @@ def _standard_save(typename, group, data, attrs, fields, **kwargs):
             HDF5IO.save(group=group.create_group(name), data=getattr(data, name), **kwargs)
 
 
-def _dataclass_io(real_type, attrs, optional, required=()):
+def _dataclass_io(real_type, attrs: tuple = None, optional: tuple = None, required: tuple = None):
+    attrs, optional, required = (attrs or (), optional or (), required or ())
+
     class _DataclassIO:
         @staticmethod
         def load(group, **kwargs) -> real_type:
@@ -74,19 +73,6 @@ def _dataclass_io(real_type, attrs, optional, required=()):
             _standard_save(real_type, group, data, attrs, optional+required, **kwargs)
 
     return _DataclassIO
-
-
-CompIO = _dataclass_io(Comp, attrs=('name', 'category', 'dependency', 'acc'), required=(),
-                       optional=('define', 'setting', 'output', 'metadata', 'share', 'user', 'declare', 'initialize',
-                                 'trace', 'save', 'final', 'display'))
-InstrumentParameterIO = _dataclass_io(InstrumentParameter, attrs=('name', 'unit'), optional=(), required=('value',))
-MetaDataIO = _dataclass_io(MetaData, attrs=('name', 'unit', 'value'), optional=(), required=('source',))
-RawCIO = _dataclass_io(RawC, attrs=('filename', 'line'), required=('source',), optional=('translated',))
-ComponentParameterIO = _dataclass_io(ComponentParameter, attrs=('name',), optional=(), required=('value',))
-JumpIO = _dataclass_io(Jump, attrs=('target', 'relative_target', 'iterate', 'absolute_target'), optional=(), required=('condition',))
-OrientIO = _dataclass_io(Orient, attrs=('_degrees',), optional=('_position', '_rotation'))
-PartsIO = _dataclass_io(Parts, attrs=(), optional=('_stack',))
-PartIO = _dataclass_io(Part, attrs=(), optional=('_axes',))
 
 
 class DataSourceIO:
@@ -279,10 +265,6 @@ def _named_tuple_io(typename, names):
     return _NamedTupleIO
 
 
-# Even though these are not dataclasses, they can use exactly the same machinery to save and load
-ExprIO = _dataclass_io(Expr, attrs=(), optional=('expr',))
-
-
 def _op_io(typename, fields: list[str]):
     class _OpIO:
         @staticmethod
@@ -312,11 +294,6 @@ def _op_io(typename, fields: list[str]):
                     HDF5IO.save(group=group.create_group(name), data=getattr(data, name), **kwargs)
 
     return _OpIO
-
-
-TrinaryOpIO = _op_io(TrinaryOp, ['first', 'second', 'third'])
-BinaryOpIO = _op_io(BinaryOp, ['left', 'right'])
-UnaryOpIO = _op_io(UnaryOp, ['value'])
 
 
 class ValueIO:
@@ -423,19 +400,21 @@ def _direct_io(cls, convert=None):
 class HDF5IO:
     _handlers = {
         'Instr': InstrIO,
-        'InstrumentParameter': InstrumentParameterIO,
-        'MetaData': MetaDataIO,
+        'InstrumentParameter': _dataclass_io(InstrumentParameter, attrs=('name', 'unit'), required=('value',)),
+        'MetaData': _dataclass_io(MetaData, attrs=('name', 'unit', 'value'), required=('source',)),
         'DataSource': DataSourceIO,
         'Instance': InstanceIO,
-        'RawC': RawCIO,
+        'RawC': _dataclass_io(RawC, attrs=('filename', 'line'), required=('source',), optional=('translated',)),
         'Group': GroupIO,
         'RemoteRegistry': RemoteRegistryIO,
         'LocalRegistry': LocalRegistryIO,
-        'ComponentParameter': ComponentParameterIO,
-        'Comp': CompIO,
-        'Orient': OrientIO,
-        'Parts': PartsIO,
-        'Part': PartIO,
+        'ComponentParameter': _dataclass_io(ComponentParameter, attrs=('name',), required=('value',)),
+        'Comp': _dataclass_io(Comp, attrs=('name', 'category', 'dependency', 'acc'),
+                              optional=('define', 'setting', 'output', 'metadata', 'share', 'user',
+                                        'declare', 'initialize', 'trace', 'save', 'final', 'display')),
+        'Orient': _dataclass_io(Orient, attrs=('_degrees',), optional=('_position', '_rotation')),
+        'Parts': _dataclass_io(Parts, optional=('_stack',)),
+        'Part': _dataclass_io(Part, optional=('_axes',)),
         'RotationX': _seitz_part_io(RotationX),
         'RotationY': _seitz_part_io(RotationY),
         'RotationZ': _seitz_part_io(RotationZ),
@@ -445,12 +424,13 @@ class HDF5IO:
         'Matrix': _named_tuple_io(Matrix, ('xx', 'xy', 'xz', 'yx', 'yy', 'yz', 'zx', 'zy', 'zz')),
         'Vector': _named_tuple_io(Vector, ('x', 'y', 'z')),
         'Angles': _named_tuple_io(Angles, ('x', 'y', 'z')),
-        'Jump': JumpIO,
-        'Expr': ExprIO,
+        'Jump': _dataclass_io(Jump, attrs=('target', 'relative_target', 'iterate', 'absolute_target'),
+                              required=('condition',)),
         'Value': ValueIO,
-        'TrinaryOp': TrinaryOpIO,
-        'BinaryOp': BinaryOpIO,
-        'UnaryOp': UnaryOpIO,
+        'Expr': _dataclass_io(Expr, optional=('expr',)),  # Not a dataclass, but sufficiently similar
+        'TrinaryOp': _op_io(TrinaryOp, ['first', 'second', 'third']),
+        'BinaryOp': _op_io(BinaryOp, ['left', 'right']),
+        'UnaryOp': _op_io(UnaryOp, ['value']),
         'list': ListIO,
         'tuple': TupleIO,
         'dict': DictIO,
@@ -468,7 +448,7 @@ class HDF5IO:
 
     @classmethod
     def load(cls, group, **kwargs):
-        version, name = _split_version_name(group.attrs['version_name'])
+        version, name = _split_version_name(group.attrs[VERSION_NAME_KEY])
         if name not in cls._handlers:
             log.warn(f'No handler for {name}, skipping')
             return None
