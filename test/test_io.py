@@ -39,7 +39,6 @@ class HDFIOTestCase(unittest.TestCase):
         instr = parse_mcstas_instr(instr)
         filename = 'test.h5'
         save_hdf5(instr, self.td.joinpath(filename))
-        save_hdf5(instr, filename)
 
         read_instr = load_hdf5(self.td.joinpath(filename))
         self.assertEqual(instr.name, read_instr.name)
