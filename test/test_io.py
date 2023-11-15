@@ -3,11 +3,13 @@ import unittest
 
 class HDFIOTestCase(unittest.TestCase):
     def setUp(self):
-        from tempfile import TemporaryFile
-        self.tf = TemporaryFile()
+        from pathlib import Path
+        from tempfile import mkdtemp
+        self.td = Path(mkdtemp())
 
     def tearDown(self):
-        self.tf.close()
+        from shutil import rmtree
+        rmtree(self.td)
 
     def test_one_axis(self):
         from mccode_antlr.io import load_hdf5, save_hdf5
@@ -35,10 +37,10 @@ class HDFIOTestCase(unittest.TestCase):
         END
         """
         instr = parse_mcstas_instr(instr)
-        save_hdf5(instr, self.tf)
-        save_hdf5(instr, 'test.h5')
+        filename = 'test.h5'
+        save_hdf5(instr, self.td.joinpath(filename))
 
-        read_instr = load_hdf5(self.tf)
+        read_instr = load_hdf5(self.td.joinpath(filename))
         self.assertEqual(instr.name, read_instr.name)
         instance_names = [c.name for c in instr.components]
         read_instance_names = [c.name for c in read_instr.components]

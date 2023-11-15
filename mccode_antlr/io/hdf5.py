@@ -2,30 +2,27 @@ from pathlib import Path
 from typing import Union
 from zenlog import log
 
-from mccode_antlr.instr import Instance
-from mccode_antlr.comp import Comp
-from mccode_antlr.common import InstrumentParameter, MetaData, ComponentParameter, RawC
-from mccode_antlr.instr.jump import Jump
-from mccode_antlr.instr.orientation import Orient, Parts, Part
-from mccode_antlr.common.expression import Expr, TrinaryOp, BinaryOp, UnaryOp
+VERSION_NAME_KEY = 'mccode-antlr_version_data-type-name'
 
 
-def _write_header(group, what):
+def _split_version_name(version_name):
+    return version_name.split('/', 1)
+
+
+def _write_header(group, data_type):
     from mccode_antlr import __version__
-    group.attrs['mccode_antlr_version'] = __version__
-    group.attrs['mccode_antlr_type'] = what
+    group.attrs[VERSION_NAME_KEY] = f'{__version__}/{data_type.__name__}'
 
 
-def _check_header(group, what):
+def _check_header(group, data_type):
     from mccode_antlr import __version__
-    if 'mccode_antlr_version' not in group.attrs:
-        raise RuntimeError(f"File does not have mccode_antlr version information")
-    if group.attrs['mccode_antlr_version'] != __version__:
-        raise RuntimeError(f"File was created with mccode_antlr version {group.attrs['mccode_antlr_version']}, "
-                           f"but this is version {__version__}")
-    if group.attrs['mccode_antlr_type'] != what:
-        raise RuntimeError(f"File was created with mccode_antlr type {group.attrs['mccode_antlr_type']}, "
-                           f"but asked to read type {what}")
+    if VERSION_NAME_KEY not in group.attrs:
+        raise RuntimeError(f"File does not have type information")
+    version, name = _split_version_name(group.attrs[VERSION_NAME_KEY])
+    if version != __version__:
+        raise RuntimeError(f"File was created with mccode_antlr {version}, but asked to read version {__version__}")
+    if name != data_type.__name__:
+        raise RuntimeError(f"Group contains mccode_antlr type {name}, but asked to read type {data_type}")
 
 
 def _standard_read(typename, group, attrs, optional, required, **kwargs):
@@ -41,7 +38,7 @@ def _standard_read(typename, group, attrs, optional, required, **kwargs):
             log.warn('Missing required value!')
             values[name] = None
     if any(values[r] is None for r in required):
-        raise ValueError(f"Could not load required values for {group.attrs['mccode_antlr_type']}")
+        raise ValueError(f"Could not load required values for {typename}")
     return values
 
 
@@ -55,32 +52,19 @@ def _standard_save(typename, group, data, attrs, fields, **kwargs):
             HDF5IO.save(group=group.create_group(name), data=getattr(data, name), **kwargs)
 
 
-def _dataclass_io(real_type, attrs, optional, required=()):
-    typename = real_type.__name__
+def _dataclass_io(real_type, attrs: tuple = None, optional: tuple = None, required: tuple = None):
+    attrs, optional, required = (attrs or (), optional or (), required or ())
 
     class _DataclassIO:
         @staticmethod
         def load(group, **kwargs) -> real_type:
-            return real_type(**_standard_read(typename, group, attrs, optional, required, **kwargs))
+            return real_type(**_standard_read(real_type, group, attrs, optional, required, **kwargs))
 
         @staticmethod
         def save(group, data, **kwargs):
-            _standard_save(typename, group, data, attrs, optional+required, **kwargs)
+            _standard_save(real_type, group, data, attrs, optional+required, **kwargs)
 
     return _DataclassIO
-
-
-CompIO = _dataclass_io(Comp, attrs=('name', 'category', 'dependency', 'acc'), required=(),
-                       optional=('define', 'setting', 'output', 'metadata', 'share', 'user', 'declare', 'initialize',
-                                 'trace', 'save', 'final', 'display'))
-InstrumentParameterIO = _dataclass_io(InstrumentParameter, attrs=('name', 'unit'), optional=(), required=('value',))
-MetaDataIO = _dataclass_io(MetaData, attrs=('name', 'unit', 'value'), optional=(), required=('source',))
-RawCIO = _dataclass_io(RawC, attrs=('filename', 'line'), required=('source',), optional=('translated',))
-ComponentParameterIO = _dataclass_io(ComponentParameter, attrs=('name',), optional=(), required=('value',))
-JumpIO = _dataclass_io(Jump, attrs=('target', 'relative_target', 'iterate', 'absolute_target'), optional=(), required=('condition',))
-OrientIO = _dataclass_io(Orient, attrs=('_degrees',), optional=('_position', '_rotation'))
-PartsIO = _dataclass_io(Parts, attrs=(), optional=('_stack',))
-PartIO = _dataclass_io(Part, attrs=(), optional=('_axes',))
 
 
 class DataSourceIO:
@@ -88,12 +72,12 @@ class DataSourceIO:
 
     @staticmethod
     def load(group, **kwargs) -> DataSource:
-        values = _standard_read('DataSource', group, ('name', 'type_name'), (), (), **kwargs)
+        values = _standard_read(DataSourceIO.DataSource, group, ('name', 'type_name'), (), (), **kwargs)
         return DataSourceIO.DataSource.from_type_name_and_name(values['type_name'], values['name'])
 
     @staticmethod
     def save(group, data, **kwargs):
-        _standard_save('DataSource', group, data, ('name', 'type_name'), (), **kwargs)
+        _standard_save(DataSourceIO.DataSource, group, data, ('name', 'type_name'), (), **kwargs)
 
 
 class InstanceIO:
@@ -104,7 +88,7 @@ class InstanceIO:
 
     @staticmethod
     def load(group, instances: dict[str, Instance], components: dict[str, Comp], **kwargs) -> Instance:
-        values = _standard_read('Instance', group, InstanceIO.attrs, InstanceIO.names, required=(), **kwargs)
+        values = _standard_read(InstanceIO.Instance, group, InstanceIO.attrs, InstanceIO.names, required=(), **kwargs)
         # handle the special cases: type, at_relative, rotate_relative
         # type:
         type_name = group.attrs.get('type')
@@ -127,7 +111,7 @@ class InstanceIO:
 
     @staticmethod
     def save(group, data: Instance, **kwargs):
-        _standard_save('Instance', group, data, InstanceIO.attrs, InstanceIO.names, **kwargs)
+        _standard_save(InstanceIO.Instance, group, data, InstanceIO.attrs, InstanceIO.names, **kwargs)
         # type, at_relative, rotate_relative should be _references_ to other HDF5 objects?
         # Maybe we can get away with only keeping their names, since those are unique in the instrument
         # component _type_ name:
@@ -150,13 +134,13 @@ class InstrIO:
 
     @staticmethod
     def load(group, **kwargs) -> Instr:
-        values = _standard_read('Instr', group, InstrIO.attrs, InstrIO.names, required=(), **kwargs)
+        values = _standard_read(InstrIO.Instr, group, InstrIO.attrs, InstrIO.names, required=(), **kwargs)
         # We had to write the component type definitions, so that they could be loaded before the instances:
         component_types = {component.name: component for component in HDF5IO.load(group['components'])}
         # And the instances need to know which component types and instances have already been loaded:
         known_instances = {}
         # Maybe we could modify the tuple loader to avoid this complexity, but this works for now
-        _check_header(group['instances'], 'tuple')
+        _check_header(group['instances'], tuple)
         instance_count = group['instances'].attrs['length']
         pad = len(str(instance_count))
         instances = []
@@ -171,7 +155,7 @@ class InstrIO:
 
     @staticmethod
     def save(group, data: Instr, **kwargs):
-        _standard_save('Instr', group, data, InstrIO.attrs, InstrIO.names, **kwargs)
+        _standard_save(InstrIO.Instr, group, data, InstrIO.attrs, InstrIO.names, **kwargs)
         # The groups field does not need special treatment for saving, but does for loading
         HDF5IO.save(group=group.create_group('groups'), data=data.groups)
         # the instances _must_ be recorded in order (we can recover their names later):
@@ -181,18 +165,18 @@ class InstrIO:
 
 
 class GroupIO:
-    from mccode_antlr.instr.group import Group
+    from mccode_antlr.instr import Instance, Group
 
     @staticmethod
     def load(group, instances: dict[str, Instance], **kwargs) -> Group:
-        values = _standard_read('Group', group, ('name', 'index'), (), ('ids', 'member_names'), **kwargs)
+        values = _standard_read(GroupIO.Group, group, ('name', 'index'), (), ('ids', 'member_names'), **kwargs)
         values['members'] = [instances[name] for name in values['member_names']]
         del values['member_names']
         return GroupIO.Group(**values)
 
     @staticmethod
     def save(group, data, **kwargs):
-        _standard_save('Group', group, data, ('name', 'index'), ('ids', ), **kwargs)
+        _standard_save(GroupIO.Group, group, data, ('name', 'index'), ('ids', ), **kwargs)
         HDF5IO.save(group=group.create_group('member_names'), data=[member.name for member in data.members])
 
 
@@ -201,7 +185,7 @@ class RemoteRegistryIO:
 
     @staticmethod
     def load(group, **kwargs) -> Registry:
-        values = _standard_read('RemoteRegistry', group, ('name', 'filename', 'url'), (), (), **kwargs)
+        values = _standard_read(RemoteRegistryIO.RemoteRegistry, group, ('name', 'filename', 'url'), (), (), **kwargs)
         try:
             return RemoteRegistryIO.RemoteRegistry(**values)
         except RuntimeError:
@@ -210,7 +194,7 @@ class RemoteRegistryIO:
 
     @staticmethod
     def save(group, data, **kwargs):
-        _standard_save('RemoteRegistry', group, data, ('name', 'filename'), (), **kwargs)
+        _standard_save(RemoteRegistryIO.RemoteRegistry, group, data, ('name', 'filename'), (), **kwargs)
         if data.pooch.base_url is not None:
             group.attrs['url'] = data.pooch.base_url
 
@@ -220,7 +204,7 @@ class LocalRegistryIO:
 
     @staticmethod
     def load(group, **kwargs) -> Registry:
-        values = _standard_read('LocalRegistry', group, ('name', 'root'), (), (), **kwargs)
+        values = _standard_read(LocalRegistryIO.LocalRegistry, group, ('name', 'root'), (), (), **kwargs)
         try:
             return LocalRegistryIO.LocalRegistry(**values)
         except RuntimeError:
@@ -229,31 +213,31 @@ class LocalRegistryIO:
 
     @staticmethod
     def save(group, data, **kwargs):
-        _standard_save('LocalRegistry', group, data, ('name',), (), **kwargs)
+        _standard_save(LocalRegistryIO.LocalRegistry, group, data, ('name',), (), **kwargs)
         if data.root is not None:
             group.attrs['root'] = data.root.as_posix()
 
 
-def _seitz_part_io(actual_type, typename):
+def _seitz_part_io(actual_type):
     class _RotationPartIO:
         @staticmethod
         def load(group, **kwargs):
-            _check_header(group, typename)
+            _check_header(group, actual_type)
             v = HDF5IO.load(group['v'], **kwargs)
             if v is None:
-                raise ValueError(f"Could not load v for {typename}")
+                raise ValueError(f"Could not load v for {actual_type}")
             return actual_type(v=v)
 
         @staticmethod
         def save(group, data, **kwargs):
-            _write_header(group, typename)
+            _write_header(group, actual_type)
             if data.v is not None:
                 HDF5IO.save(group=group.create_group('v'), data=data.v, **kwargs)
 
     return _RotationPartIO
 
 
-def _named_tuple_io(actual_type, typename, names):
+def _named_tuple_io(typename, names):
     class _NamedTupleIO:
         @staticmethod
         def load(group, **kwargs):
@@ -261,7 +245,7 @@ def _named_tuple_io(actual_type, typename, names):
             values = {name: HDF5IO.load(group[name], **kwargs) for name in names}
             if any(v is None for v in values.values()):
                 raise ValueError(f"Could not load values for {typename}")
-            return actual_type(**values)
+            return typename(**values)
 
         @staticmethod
         def save(group, data, **kwargs):
@@ -273,23 +257,17 @@ def _named_tuple_io(actual_type, typename, names):
     return _NamedTupleIO
 
 
-# Even though these are not dataclasses, they can use exactly the same machinery to save and load
-ExprIO = _dataclass_io(Expr, attrs=(), optional=('expr',))
-
-
-def _op_io(actual_type, fields: list[str]):
-    typename = actual_type.__name__
-
+def _op_io(typename, fields: list[str]):
     class _OpIO:
         @staticmethod
-        def load(group, **kwargs) -> actual_type:
+        def load(group, **kwargs) -> typename:
             from mccode_antlr.common.expression import DataType
             _check_header(group, typename)
             attrs = {name: group.attrs.get(name) for name in ('op', 'style', 'data_type_name')}
             values = {name: HDF5IO.load(group[name], **kwargs) for name in fields}
             if any(v is None for v in values.values()):
                 raise ValueError(f"Could not load values for {typename}")
-            op = actual_type(attrs['op'], **values)
+            op = typename(attrs['op'], **values)
             op.style = attrs['style']
             if op.data_type != DataType.from_name(attrs['data_type_name']):
                 raise ValueError(
@@ -297,7 +275,7 @@ def _op_io(actual_type, fields: list[str]):
             return op
 
         @staticmethod
-        def save(group, data: actual_type, **kwargs):
+        def save(group, data: typename, **kwargs):
             _write_header(group, typename)
             for name in ('op', 'style'):
                 if getattr(data, name) is not None:
@@ -310,18 +288,13 @@ def _op_io(actual_type, fields: list[str]):
     return _OpIO
 
 
-TrinaryOpIO = _op_io(TrinaryOp, ['first', 'second', 'third'])
-BinaryOpIO = _op_io(BinaryOp, ['left', 'right'])
-UnaryOpIO = _op_io(UnaryOp, ['value'])
-
-
 class ValueIO:
     from mccode_antlr.common.expression import Value
 
     @staticmethod
     def load(group, **kwargs) -> Value:
         from mccode_antlr.common.expression import ObjectType, DataType, ShapeType
-        _check_header(group, 'Value')
+        _check_header(group, ValueIO.Value)
         types = {f: t.from_name(group.attrs.get(f'{f}_name'))
                  for t, f in ((ObjectType, 'object_type'), (DataType, 'data_type'), (ShapeType, 'shape_type'))}
         # A missing value is valid:
@@ -330,7 +303,7 @@ class ValueIO:
 
     @staticmethod
     def save(group, data: Value, **kwargs):
-        _write_header(group, 'Value')
+        _write_header(group, ValueIO.Value)
         for name in ('object_type', 'data_type', 'shape_type'):
             if getattr(data, name) is not None:
                 group.attrs[f'{name}_name'] = getattr(data, name).name
@@ -359,12 +332,12 @@ class ListIO:
 
     @staticmethod
     def load(group, **kwargs) -> list:
-        count, pad = _iterable_read_setup('list', group)
+        count, pad = _iterable_read_setup(list, group)
         return [HDF5IO.load(group=group[TupleIO.entry_name(idx, pad)], **kwargs) for idx in range(count)]
 
     @staticmethod
     def save(group, data: tuple, **kwargs):
-        pad = _iterable_save_setup('list', group, data)
+        pad = _iterable_save_setup(list, group, data)
         for idx, d in enumerate(data):
             HDF5IO.save(group=group.create_group(TupleIO.entry_name(idx, pad)), data=d, **kwargs)
 
@@ -376,12 +349,12 @@ class TupleIO:
 
     @staticmethod
     def load(group, **kwargs) -> tuple:
-        count, pad = _iterable_read_setup('tuple', group)
+        count, pad = _iterable_read_setup(tuple, group)
         return tuple(HDF5IO.load(group=group[TupleIO.entry_name(idx, pad)], **kwargs) for idx in range(count))
 
     @staticmethod
     def save(group, data: tuple, **kwargs):
-        pad = _iterable_save_setup('tuple', group, data)
+        pad = _iterable_save_setup(tuple, group, data)
         for idx, d in enumerate(data):
             HDF5IO.save(group=group.create_group(TupleIO.entry_name(idx, pad), **kwargs), data=d)
 
@@ -389,69 +362,74 @@ class TupleIO:
 class DictIO:
     @staticmethod
     def load(group, **kwargs) -> dict:
-        _check_header(group, 'dict')
+        _check_header(group, dict)
         return {k: HDF5IO.load(group=group[k], **kwargs) for k in group}
 
     @staticmethod
     def save(group, data: dict, **kwargs):
-        _write_header(group, 'dict')
+        _write_header(group, dict)
         for k, v in data.items():
             HDF5IO.save(group=group.create_group(k), data=v, **kwargs)
 
 
 def _direct_io(cls, convert=None):
-    type_name = cls.__name__
     convert = convert or cls
 
     class _DirectIO:
         @staticmethod
         def load(group):
-            _check_header(group, type_name)
+            _check_header(group, cls)
             return convert(group['entry'][()])
 
         @staticmethod
         def save(group, data):
-            _write_header(group, type_name)
+            _write_header(group, cls)
             group['entry'] = data
 
     return _DirectIO
 
 
 class HDF5IO:
+    from mccode_antlr.comp import Comp
+    from mccode_antlr.common import InstrumentParameter, MetaData, ComponentParameter, RawC
+    from mccode_antlr.common.expression import Expr, TrinaryOp, BinaryOp, UnaryOp
+    from mccode_antlr.instr.jump import Jump
     from mccode_antlr.instr.orientation import (Matrix, Vector, Angles, Rotation, Seitz, RotationX, RotationY,
-                                                RotationZ,
-                                                TranslationPart)
+                                                RotationZ, TranslationPart, Orient, Parts, Part)
+
     _handlers = {
         'Instr': InstrIO,
-        'InstrumentParameter': InstrumentParameterIO,
-        'MetaData': MetaDataIO,
+        'InstrumentParameter': _dataclass_io(InstrumentParameter, attrs=('name', 'unit'), required=('value',)),
+        'MetaData': _dataclass_io(MetaData, attrs=('name', 'unit', 'value'), required=('source',)),
         'DataSource': DataSourceIO,
         'Instance': InstanceIO,
-        'RawC': RawCIO,
+        'RawC': _dataclass_io(RawC, attrs=('filename', 'line'), required=('source',), optional=('translated',)),
         'Group': GroupIO,
         'RemoteRegistry': RemoteRegistryIO,
         'LocalRegistry': LocalRegistryIO,
-        'ComponentParameter': ComponentParameterIO,
-        'Comp': CompIO,
-        'Orient': OrientIO,
-        'Parts': PartsIO,
-        'Part': PartIO,
-        'RotationX': _seitz_part_io(RotationX, 'RotationX'),
-        'RotationY': _seitz_part_io(RotationY, 'RotationY'),
-        'RotationZ': _seitz_part_io(RotationZ, 'RotationZ'),
-        'TranslationPart': _seitz_part_io(TranslationPart, 'TranslationPart'),
-        'Seitz': _named_tuple_io(Seitz, 'Seitz',
-                                 ('xx', 'xy', 'xz', 'xt', 'yx', 'yy', 'yz', 'yt', 'zx', 'zy', 'zz', 'zt')),
-        'Rotation': _named_tuple_io(Rotation, 'Rotation', ('xx', 'xy', 'xz', 'yx', 'yy', 'yz', 'zx', 'zy', 'zz')),
-        'Matrix': _named_tuple_io(Matrix, 'Matrix', ('xx', 'xy', 'xz', 'yx', 'yy', 'yz', 'zx', 'zy', 'zz')),
-        'Vector': _named_tuple_io(Vector, 'Vector', ('x', 'y', 'z')),
-        'Angles': _named_tuple_io(Angles, 'Angles', ('x', 'y', 'z')),
-        'Jump': JumpIO,
-        'Expr': ExprIO,
+        'ComponentParameter': _dataclass_io(ComponentParameter, attrs=('name',), required=('value',)),
+        'Comp': _dataclass_io(Comp, attrs=('name', 'category', 'dependency', 'acc'),
+                              optional=('define', 'setting', 'output', 'metadata', 'share', 'user',
+                                        'declare', 'initialize', 'trace', 'save', 'final', 'display')),
+        'Orient': _dataclass_io(Orient, attrs=('_degrees',), optional=('_position', '_rotation')),
+        'Parts': _dataclass_io(Parts, optional=('_stack',)),
+        'Part': _dataclass_io(Part, optional=('_axes',)),
+        'RotationX': _seitz_part_io(RotationX),
+        'RotationY': _seitz_part_io(RotationY),
+        'RotationZ': _seitz_part_io(RotationZ),
+        'TranslationPart': _seitz_part_io(TranslationPart),
+        'Seitz': _named_tuple_io(Seitz, ('xx', 'xy', 'xz', 'xt', 'yx', 'yy', 'yz', 'yt', 'zx', 'zy', 'zz', 'zt')),
+        'Rotation': _named_tuple_io(Rotation,('xx', 'xy', 'xz', 'yx', 'yy', 'yz', 'zx', 'zy', 'zz')),
+        'Matrix': _named_tuple_io(Matrix, ('xx', 'xy', 'xz', 'yx', 'yy', 'yz', 'zx', 'zy', 'zz')),
+        'Vector': _named_tuple_io(Vector, ('x', 'y', 'z')),
+        'Angles': _named_tuple_io(Angles, ('x', 'y', 'z')),
+        'Jump': _dataclass_io(Jump, attrs=('target', 'relative_target', 'iterate', 'absolute_target'),
+                              required=('condition',)),
         'Value': ValueIO,
-        'TrinaryOp': TrinaryOpIO,
-        'BinaryOp': BinaryOpIO,
-        'UnaryOp': UnaryOpIO,
+        'Expr': _dataclass_io(Expr, optional=('expr',)),  # Not a dataclass, but sufficiently similar
+        'TrinaryOp': _op_io(TrinaryOp, ['first', 'second', 'third']),
+        'BinaryOp': _op_io(BinaryOp, ['left', 'right']),
+        'UnaryOp': _op_io(UnaryOp, ['value']),
         'list': ListIO,
         'tuple': TupleIO,
         'dict': DictIO,
@@ -469,9 +447,7 @@ class HDF5IO:
 
     @classmethod
     def load(cls, group, **kwargs):
-        if 'mccode_antlr_type' not in group.attrs:
-            raise RuntimeError(f"File does not have mccode_antlr type information")
-        name = group.attrs['mccode_antlr_type']
+        version, name = _split_version_name(group.attrs[VERSION_NAME_KEY])
         if name not in cls._handlers:
             log.warn(f'No handler for {name}, skipping')
             return None
@@ -480,11 +456,11 @@ class HDF5IO:
 
 def save_hdf5(obj, filename: Union[str, Path]) -> None:
     import h5py
-    with h5py.File(filename, 'w') as file:
+    with h5py.File(filename, 'w', driver='core', backing_store=True) as file:
         HDF5IO.save(file, obj)
 
 
 def load_hdf5(filename: Union[str, Path]):
     import h5py
-    with h5py.File(filename, 'r') as file:
+    with h5py.File(filename, 'r', driver='core', backing_store=False) as file:
         return HDF5IO.load(file)
