@@ -2,14 +2,6 @@ from pathlib import Path
 from typing import Union
 from zenlog import log
 
-from mccode_antlr.instr import Instance
-from mccode_antlr.comp import Comp
-from mccode_antlr.common import InstrumentParameter, MetaData, ComponentParameter, RawC
-from mccode_antlr.instr.jump import Jump
-from mccode_antlr.common.expression import Expr, TrinaryOp, BinaryOp, UnaryOp
-from mccode_antlr.instr.orientation import (Matrix, Vector, Angles, Rotation, Seitz, RotationX, RotationY,
-                                            RotationZ, TranslationPart, Orient, Parts, Part)
-
 VERSION_NAME_KEY = 'mccode-antlr_version_data-type-name'
 
 
@@ -173,7 +165,7 @@ class InstrIO:
 
 
 class GroupIO:
-    from mccode_antlr.instr.group import Group
+    from mccode_antlr.instr import Instance, Group
 
     @staticmethod
     def load(group, instances: dict[str, Instance], **kwargs) -> Group:
@@ -398,6 +390,13 @@ def _direct_io(cls, convert=None):
 
 
 class HDF5IO:
+    from mccode_antlr.comp import Comp
+    from mccode_antlr.common import InstrumentParameter, MetaData, ComponentParameter, RawC
+    from mccode_antlr.common.expression import Expr, TrinaryOp, BinaryOp, UnaryOp
+    from mccode_antlr.instr.jump import Jump
+    from mccode_antlr.instr.orientation import (Matrix, Vector, Angles, Rotation, Seitz, RotationX, RotationY,
+                                                RotationZ, TranslationPart, Orient, Parts, Part)
+
     _handlers = {
         'Instr': InstrIO,
         'InstrumentParameter': _dataclass_io(InstrumentParameter, attrs=('name', 'unit'), required=('value',)),
