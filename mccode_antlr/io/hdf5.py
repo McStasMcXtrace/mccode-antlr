@@ -45,10 +45,10 @@ def _standard_read(typename, group, attrs, optional, required, **kwargs):
 def _standard_save(typename, group, data, attrs, fields, **kwargs):
     _write_header(group, typename)
     for name in attrs:
-        if getattr(data, name):
+        if getattr(data, name) is not None:
             group.attrs[name] = getattr(data, name)
     for name in fields:
-        if getattr(data, name):
+        if getattr(data, name) is not None:
             HDF5IO.save(group=group.create_group(name), data=getattr(data, name), **kwargs)
 
 
@@ -83,8 +83,8 @@ class DataSourceIO:
 class InstanceIO:
     from mccode_antlr.comp import Comp
     from mccode_antlr.instr import Instance
-    attrs = ('name', 'removable', 'cpu', 'split', 'when', 'group')
-    names = ('orientation', 'parameters', 'extend', 'jump', 'metadata')
+    attrs = ('name', 'removable', 'cpu', 'group')
+    names = ('orientation', 'parameters', 'split', 'when', 'extend', 'jump', 'metadata')
 
     @staticmethod
     def load(group, instances: dict[str, Instance], components: dict[str, Comp], **kwargs) -> Instance:
