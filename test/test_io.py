@@ -26,13 +26,13 @@ class HDFIOTestCase(unittest.TestCase):
                            AT (0, 0, 0) RELATIVE origin
         COMPONENT guide = Guide_gravity(w1 = 0.06, h1 = 0.12, w2 = 0.05, h2 = 0.1, l = 30, m = 4) 
                           AT (0, 0, 1.5) RELATIVE  PREVIOUS
-        COMPONENT guide_end = Arm() AT (0, 0, 30) RELATIVE PREVIOUS
+        COMPONENT guide_end = Arm() WHEN (a1 == 1) AT (0, 0, 30) RELATIVE PREVIOUS
         COMPONENT aperture = Slit(xwidth=virtual_source_x, yheight=virtual_source_y) AT (0, 0, 0.01) RELATIVE PREVIOUS
         METADATA "txt" "something" %{{
             This is some unparsed metadata that will be included as a literal string in the instrument.
         %}}
         COMPONENT split_at = Arm() AT (0, 0, 0.0001) RELATIVE PREVIOUS
-        COMPONENT mono_point = Arm() AT (0, 0, 0.8) RELATIVE split_at
+        SPLIT 10 COMPONENT mono_point = Arm() AT (0, 0, 0.8) RELATIVE split_at
         COMPONENT mono = Monochromator_curved(zwidth = 0.02, yheight = 0.02, NH = 13, NV = 7, DM={d_spacing}) 
                          AT (0, 0, 0) RELATIVE  mono_point ROTATED (0, a1, 0) RELATIVE mono_point
         COMPONENT sample_arm = Arm() AT (0, 0, 0) RELATIVE mono_point ROTATED (0, a2, 0) RELATIVE mono_point
