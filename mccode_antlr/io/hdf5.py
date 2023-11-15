@@ -400,7 +400,7 @@ class HDF5IO:
     _handlers = {
         'Instr': InstrIO,
         'InstrumentParameter': _dataclass_io(InstrumentParameter, attrs=('name', 'unit'), required=('value',)),
-        'MetaData': _dataclass_io(MetaData, attrs=('name', 'unit', 'value'), required=('source',)),
+        'MetaData': _dataclass_io(MetaData, attrs=('name', 'mimetype', 'value'), required=('source',)),
         'DataSource': DataSourceIO,
         'Instance': InstanceIO,
         'RawC': _dataclass_io(RawC, attrs=('filename', 'line'), required=('source',), optional=('translated',)),
