@@ -138,7 +138,7 @@ class InstrVisitor(McInstrVisitor):
             # deal with definition vs instance metadata here?
             for metadata_context in ctx.metadata():
                 mime, name, metadata = self.visit(metadata_context)
-                instance.add_metadata(MetaData.from_component_tokens(name, str(ctx.mime), str(ctx.name), metadata))
+                instance.add_metadata(MetaData.from_component_tokens(name, mime, name, metadata))
         # Include this instantiated component instance in the instrument components list
         if self.destination is None or not instance.removable:
             # if this _is_ an included instrument, any REMOVABLE component instances should not be added
@@ -321,7 +321,11 @@ class InstrVisitor(McInstrVisitor):
 
     def visitMetadata(self, ctx: McInstrParser.MetadataContext):
         filename, line_number, metadata = self.visit(ctx.unparsed_block())
-        return str(self.visit(ctx.mime)), str(self.visit(ctx.name)), metadata
+        # ctx.mime and ctx.name are _either_ identifiers (no double quotes) or string literals (double quotes)
+        # so we need to strip the quotes from the string literals, but not the identifiers
+        mime = ctx.mime.text if ctx.mime.type == McInstrParser.Identifier else ctx.mime.text[1:-1]
+        name = ctx.name.text if ctx.name.type == McInstrParser.Identifier else ctx.name.text[1:-1]
+        return mime, name, metadata
 
     def visitUnparsed_block(self, ctx: McInstrParser.Unparsed_blockContext):
         # We want to extract the source-file line number (and filename) for use in the C-preprocessor
