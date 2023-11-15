@@ -10,38 +10,56 @@ from mccode_antlr.instr.orientation import Orient, Parts, Part
 from mccode_antlr.common.expression import Expr, TrinaryOp, BinaryOp, UnaryOp
 
 
-def _write_info_group(hdf_obj, data_type):
-    from mccode_antlr import __version__
-    if '/mccode_antlr' not in hdf_obj:
-        hdf_obj.create_group('/mccode_antlr')
-    group = hdf_obj['/mccode_antlr']
-    if 'version' not in group.attrs:
-        group.attrs['version'] = __version__
-    if group.attrs['version'] != __version__:
-        raise RuntimeError(f"File was created with mccode_antlr version {group.attrs['version']}, "
-                           f"but this is version {__version__}")
-    if 'types' not in group:
-        import h5py
-        dt = h5py.string_dtype(encoding='utf-8')
-        types = HDF5IO.registered()
-        group.create_dataset('types', (len(types),), dtype=dt, maxshape=(len(types),))
-        for idx, name in enumerate(types):
-            group['types'][idx] = name
-    # data_type_name_bytes = data_type.__name__.encode('utf-8')
-    # if data_type_name_bytes not in group['types']:
-    #     raise ValueError(f"Data type {data_type} not registered")
-    # type_index = list(group['types']).index(data_type_name_bytes)
-
-    # if data_type.__name__ not in group:
-    #     group.create_group(data_type.__name__)
-    # dt_group = group[data_type.__name__]
-    # # TODO: Add a representation of the data type to the group?
-    # return dt_group.ref
-    return HDF5IO.index(data_type)
+# def _write_header(group, data_type):
+#     from mccode_antlr import __version__
+#     if '/mccode_antlr' not in group.file:
+#         group.file.create_group('/mccode_antlr')
+#     info = group.file['/mccode_antlr']
+#     if 'version' not in info.attrs:
+#         info.attrs['version'] = __version__
+#     if info.attrs['version'] != __version__:
+#         raise RuntimeError(f"File was created with mccode_antlr version {info.attrs['version']}, "
+#                            f"but this is version {__version__}")
+#     if 'types' not in info:
+#         import h5py
+#         dt = h5py.string_dtype(encoding='utf-8')
+#         types = HDF5IO.registered()
+#         info.create_dataset('types', (len(types),), dtype=dt, maxshape=(len(types),))
+#         for idx, name in enumerate(types):
+#             info['types'][idx] = name
+#
+#     group.attrs['type_index'] = HDF5IO.index(data_type)
+#
+#
+# def _check_header(group, data_type):
+#     from mccode_antlr import __version__
+#     if '/mccode_antlr' not in group.file:
+#         raise RuntimeError(f"File is not a mccode_antlr file")
+#     info = group.file['/mccode_antlr']
+#     index = group.attrs['type_index']
+#     if 'version' not in info.attrs:
+#         raise RuntimeError(f"File does not have mccode_antlr version information")
+#     if info.attrs['version'] != __version__:
+#         raise RuntimeError(f"File was created with mccode_antlr version {info.attrs['version']}, "
+#                            f"but this is mccode_antlr version {__version__}")
+#     #
+#     # data_type_name = data_type.__name__.encode('utf-8')
+#     # if info['types'][index] != data_type_name:
+#     #     raise RuntimeError(f"File was created with mccode_antlr type {info['types'][index]}, "
+#     #                        f"but asked to read type {data_type}")
 
 
 def _write_header(group, data_type):
-    group.attrs['type_index'] = _write_info_group(group.file, data_type)
+    from mccode_antlr import __version__
+    if '/mccode_antlr' not in group.file:
+        group.file.create_group('/mccode_antlr')
+    info = group.file['/mccode_antlr']
+    if 'version' not in info.attrs:
+        info.attrs['version'] = __version__
+    if info.attrs['version'] != __version__:
+        raise RuntimeError(f"File was created with mccode_antlr version {info.attrs['version']}, "
+                           f"but this is version {__version__}")
+    group.attrs['type_name'] = data_type.__name__
 
 
 def _check_header(group, data_type):
@@ -49,16 +67,15 @@ def _check_header(group, data_type):
     if '/mccode_antlr' not in group.file:
         raise RuntimeError(f"File is not a mccode_antlr file")
     info = group.file['/mccode_antlr']
-    index = group.attrs['type_index']
     if 'version' not in info.attrs:
         raise RuntimeError(f"File does not have mccode_antlr version information")
     if info.attrs['version'] != __version__:
         raise RuntimeError(f"File was created with mccode_antlr version {info.attrs['version']}, "
                            f"but this is mccode_antlr version {__version__}")
-
-    data_type_name = data_type.__name__.encode('utf-8')
-    if info['types'][index] != data_type_name:
-        raise RuntimeError(f"File was created with mccode_antlr type {info['types'][index]}, "
+    if 'type_name' not in group.attrs:
+        raise RuntimeError(f"File does not have type information")
+    if group.attrs['type_name'] != data_type.__name__:
+        raise RuntimeError(f"File was created with mccode_antlr type {group.attrs['type_name']}, "
                            f"but asked to read type {data_type}")
 
 
@@ -486,15 +503,15 @@ class HDF5IO:
         'str': _direct_io(str, convert=lambda b: b.decode('utf-8')),
         **{t.__name__: _direct_io(t) for t in (int, float, bool, bytes)}
     }
-    _keys = {k: i for i, k in enumerate(_handlers.keys())}
+    # _keys = {k: i for i, k in enumerate(_handlers.keys())}
+    #
+    # @classmethod
+    # def registered(cls):
+    #     return cls._handlers.keys()
 
-    @classmethod
-    def registered(cls):
-        return cls._handlers.keys()
-
-    @classmethod
-    def index(cls, data_type):
-        return cls._keys[data_type if isinstance(data_type, str) else data_type.__name__]
+    # @classmethod
+    # def index(cls, data_type):
+    #     return cls._keys[data_type if isinstance(data_type, str) else data_type.__name__]
 
     @classmethod
     def save(cls, group, data, **kwargs):
@@ -508,10 +525,7 @@ class HDF5IO:
     def load(cls, group, **kwargs):
         if '/mccode_antlr' not in group.file:
             raise RuntimeError(f"File does not have information group")
-        info = group.file['/mccode_antlr']
-        if 'type_index' not in group.attrs:
-            raise RuntimeError(f"Group does not have type index")
-        name = info['types'][group.attrs['type_index']].decode('utf-8')
+        name = group.attrs['type_name']
         if name not in cls._handlers:
             log.warn(f'No handler for {name}, skipping')
             return None
@@ -520,11 +534,11 @@ class HDF5IO:
 
 def save_hdf5(obj, filename: Union[str, Path]) -> None:
     import h5py
-    with h5py.File(filename, 'w') as file:
+    with h5py.File(filename, 'w', driver='core', backing_store=True) as file:
         HDF5IO.save(file, obj)
 
 
 def load_hdf5(filename: Union[str, Path]):
     import h5py
-    with h5py.File(filename, 'r') as file:
+    with h5py.File(filename, 'r', driver='core', backing_store=False) as file:
         return HDF5IO.load(file)
