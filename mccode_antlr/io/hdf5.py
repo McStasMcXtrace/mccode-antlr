@@ -308,6 +308,7 @@ class ValueIO:
             if getattr(data, name) is not None:
                 group.attrs[f'{name}_name'] = getattr(data, name).name
         if data.value is not None:
+            print(f'saving value {data.value} for {group}')
             HDF5IO.save(group=group.create_group('value'), data=data.value, **kwargs)
 
 
@@ -390,6 +391,7 @@ def _direct_io(cls, convert=None):
 
 
 class HDF5IO:
+    import numpy as np
     from mccode_antlr.comp import Comp
     from mccode_antlr.common import InstrumentParameter, MetaData, ComponentParameter, RawC
     from mccode_antlr.common.expression import Expr, TrinaryOp, BinaryOp, UnaryOp
@@ -434,7 +436,19 @@ class HDF5IO:
         'tuple': TupleIO,
         'dict': DictIO,
         'str': _direct_io(str, convert=lambda b: b.decode('utf-8')),
-        **{t.__name__: _direct_io(t) for t in (int, float, bool, bytes)}
+        **{t.__name__: _direct_io(t) for t in (
+            int,
+            np.int64,
+            np.int32,
+            np.uint64,
+            np.uint32,
+            float,
+            np.float32,
+            np.float64,
+            bool,
+            np.bool_,
+            bytes,
+        )}
     }
 
     @classmethod
