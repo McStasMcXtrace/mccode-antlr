@@ -308,7 +308,6 @@ class ValueIO:
             if getattr(data, name) is not None:
                 group.attrs[f'{name}_name'] = getattr(data, name).name
         if data.value is not None:
-            print(f'saving value {data.value} for {group}')
             HDF5IO.save(group=group.create_group('value'), data=data.value, **kwargs)
 
 
