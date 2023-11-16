@@ -17,9 +17,9 @@ Darwin:
   cc: /usr/bin/clang
   acc: /usr/bin/clang
   flags:
-    cc: -g -O2 -std=c99 -x c -D_POSIX_C_SOURCE
+    cc: -g -O2 -std=c99 -x c -D_DARWIN_C_SOURCE
     ld: -lm
-    acc: -lm -ta:multicore -DOPENACC -x c -D_POSIX_C_SOURCE
+    acc: -lm -ta:multicore -DOPENACC -x c -D_DARWIN_C_SOURCE
     nexus: -DUSE_NEXUS -lNeXus
     mpi:  -DUSE_MPI -lmpi
   mpi:
