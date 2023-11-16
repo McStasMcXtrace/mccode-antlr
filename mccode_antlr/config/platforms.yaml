@@ -3,7 +3,8 @@ Linux:
   cc: gcc
   acc: nvc
   flags:
-    cc: -g -O2 -lm -std=c99 -x c -D_POSIX_C_SOURCE
+    cc: -g -O2 -std=c99 -x c -D_POSIX_C_SOURCE
+    ld: -lm
     acc: -lm -fast -Minfo=accel -acc=gpu -gpu=managed -DOPENACC -x c -D_POSIX_C_SOURCE
     nexus: -DUSE_NEXUS -lNeXus
     mpi: -DUSE_MPI -lmpi
@@ -16,7 +17,8 @@ Darwin:
   cc: /usr/bin/clang
   acc: /usr/bin/clang
   flags:
-    cc: -g -O2 -lm -std=c99 -x c -D_POSIX_C_SOURCE
+    cc: -g -O2 -std=c99 -x c -D_POSIX_C_SOURCE
+    ld: -lm
     acc: -lm -ta:multicore -DOPENACC -x c -D_POSIX_C_SOURCE
     nexus: -DUSE_NEXUS -lNeXus
     mpi:  -DUSE_MPI -lmpi
@@ -29,7 +31,8 @@ Windows:
   cc: gcc
   acc: gcc
   flags:
-    cc: -g -O2 -lm -std=c99 -x c -D_POSIX_C_SOURCE
+    cc: -g -O2 -std=c99 -x c -D_POSIX_C_SOURCE
+    ld: -lm
     acc: -lm -ta:multicore -DOPENACC -x c -D_POSIX_C_SOURCE
     nexus: -Wl,-rpath,"C:/Program Files/NeXus Data Format/bin" -L"C:/Program Files/NeXus Data Format/bin" -DUSE_NEXUS -lNeXus-0 -I"C:/Program Files/Nexus Data Format/include/nexus"
     mpi: -DUSE_MPI -lmsmpi
