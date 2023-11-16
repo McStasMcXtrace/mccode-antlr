@@ -5,6 +5,9 @@ class HDFIOTestCase(unittest.TestCase):
     def setUp(self):
         from pathlib import Path
         from tempfile import mkdtemp
+        from importlib.util import find_spec
+        if not find_spec('h5py'):
+            self.skipTest("h5py not found -- skipping HDF5 tests")
         self.td = Path(mkdtemp())
 
     def tearDown(self):
@@ -48,8 +51,6 @@ class HDFIOTestCase(unittest.TestCase):
         instance_names = [c.name for c in instr.components]
         read_instance_names = [c.name for c in read_instr.components]
         self.assertEqual(instance_names, read_instance_names)
-
-
 
 
 if __name__ == '__main__':

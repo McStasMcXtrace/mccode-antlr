@@ -391,6 +391,95 @@ class TestInstr(TestCase):
         self.assertEqual(before.components[0].type.name, 'MCPL_output')
         self.assertEqual(after.components[0].type.name, 'MCPL_input')
 
+    def test_tas1_c1(self):
+        from mccode_antlr.loader.loader import parse_mccode_instr_parameters
+        contents = """ DEFINE INSTRUMENT tas(PHM=-37.077,TTM=-74,C1=30) TRACE END"""
+        instr_parameters = parse_mccode_instr_parameters(contents)
+        self.assertEqual(len(instr_parameters), 3)
+        self.assertEqual(instr_parameters[0].name, 'PHM')
+        self.assertEqual(instr_parameters[1].name, 'TTM')
+        self.assertEqual(instr_parameters[2].name, 'C1')
+        self.assertEqual(instr_parameters[0].value, -37.077)
+        self.assertEqual(instr_parameters[1].value, -74)
+        self.assertEqual(instr_parameters[2].value, 30)
+
+
+class CompiledTest(TestCase):
+    def setUp(self):
+        import platform
+        if platform.system() == 'Windows':
+            self.skipTest('Skipping test on Windows')
+
+
+class CompiledInstr(CompiledTest):
+    def test_one_axis(self):
+        from mccode_antlr.instr import Instr
+        from mccode_antlr.common import ComponentParameter, Expr
+        from mccode_antlr.compiler.c import compile_instrument, run_compiled_instrument, CBinaryTarget
+        from mccode_antlr.translators.target import MCSTAS_GENERATOR
+        from mccode_antlr.loader import read_mccode_dat
+        from tempfile import TemporaryDirectory
+        from os import R_OK, access
+        from pathlib import Path
+        from random import randint
+        from numpy import allclose
+
+        from math import pi, asin, sqrt
+        from mccode_antlr.loader import parse_mcstas_instr
+        d_spacing = 3.355  # (002) for Highly-ordered Pyrolytic Graphite
+        mean_energy = 5.0
+        energy_width = 0.1
+        mean_ki = sqrt(mean_energy / 2.7022)
+        instr = f"""
+        DEFINE INSTRUMENT splitRunTest(a1=0, a2=0, virtual_source_x=0.05, virtual_source_y=0.1)
+        TRACE
+        COMPONENT origin = Arm() AT (0, 0, 0) ABSOLUTE
+        COMPONENT source = Source_simple(yheight=0.25, xwidth=0.2, dist=1.5, focus_xw=0.06, focus_yh=0.12,
+                                         E0={mean_energy}, dE={energy_width})
+                           AT (0, 0, 0) RELATIVE origin
+        COMPONENT guide = Guide_gravity(w1 = 0.06, h1 = 0.12, w2 = 0.05, h2 = 0.1, l = 30, m = 4) 
+                          AT (0, 0, 1.5) RELATIVE  PREVIOUS
+        COMPONENT guide_end = Arm() AT (0, 0, 30) RELATIVE PREVIOUS
+        COMPONENT aperture = Slit(xwidth=virtual_source_x, yheight=virtual_source_y) AT (0, 0, 0.01) RELATIVE PREVIOUS
+        COMPONENT split_at = Arm() AT (0, 0, 0.0001) RELATIVE PREVIOUS
+        COMPONENT mono_point = Arm() AT (0, 0, 0.8) RELATIVE split_at
+        COMPONENT mono = Monochromator_curved(zwidth = 0.02, yheight = 0.02, NH = 13, NV = 7, DM={d_spacing}) 
+                         AT (0, 0, 0) RELATIVE  mono_point ROTATED (0, a1, 0) RELATIVE mono_point
+        COMPONENT sample_arm = Arm() AT (0, 0, 0) RELATIVE mono_point ROTATED (0, a2, 0) RELATIVE mono_point
+        COMPONENT detector = Monitor(xwidth=0.01, yheight=0.05) AT (0, 0, 0.8) RELATIVE sample_arm
+        END
+        """
+        instr = parse_mcstas_instr(instr)
+
+        target = CBinaryTarget(mpi=False, acc=False, count=1, nexus=False)
+        config = dict(default_main=True, enable_trace=False, portable=False, include_runtime=True,
+                      embed_instrument_file=False, verbose=False)
+        with TemporaryDirectory() as directory:
+            try:
+                compile_instrument(instr, target, directory, generator=MCSTAS_GENERATOR, config=config, dump_source=True)
+            except RuntimeError as e:
+                log.error(f'Failed to compile instrument: {e}')
+                raise e
+            binary = Path(directory).joinpath(f'{instr.name}.out')
+            self.assertTrue(binary.exists())
+            self.assertTrue(binary.is_file())
+            self.assertTrue(access(binary, R_OK))
+            a1 = asin(pi / d_spacing / mean_ki) * 180 / pi
+            parameters = f'a1={a1} a2={2*a1}'
+            run_compiled_instrument(binary, target, f"--dir {directory}/instr {parameters}")
+
+            instr_files = list(Path(directory).joinpath('instr').glob('*.sim'))
+            print(instr_files)
+
+
+class CompiledMCPL(CompiledTest):
+    def setUp(self):
+        import subprocess
+        try:
+            subprocess.run(['mcpl-config', '--version'], check=True)
+        except FileNotFoundError:
+            self.skipTest('mcpl-config not found')
+
     def test_mcpl_split_run(self):
         # Adapted from Test_MCPL_*.instr in ${MCCODE}/mcstas-comps/examples
         from mccode_antlr.instr import Instr
@@ -491,75 +580,3 @@ class TestInstr(TestCase):
                 instr_data = read_mccode_dat(instr_file)
                 after_data = read_mccode_dat(after_file)
                 self.assertTrue(allclose(instr_data.data, after_data.data))
-
-
-    def test_one_axis(self):
-        from mccode_antlr.instr import Instr
-        from mccode_antlr.common import ComponentParameter, Expr
-        from mccode_antlr.compiler.c import compile_instrument, run_compiled_instrument, CBinaryTarget
-        from mccode_antlr.translators.target import MCSTAS_GENERATOR
-        from mccode_antlr.loader import read_mccode_dat
-        from tempfile import TemporaryDirectory
-        from os import R_OK, access
-        from pathlib import Path
-        from random import randint
-        from numpy import allclose
-
-        from math import pi, asin, sqrt
-        from mccode_antlr.loader import parse_mcstas_instr
-        d_spacing = 3.355  # (002) for Highly-ordered Pyrolytic Graphite
-        mean_energy = 5.0
-        energy_width = 0.1
-        mean_ki = sqrt(mean_energy / 2.7022)
-        instr = f"""
-        DEFINE INSTRUMENT splitRunTest(a1=0, a2=0, virtual_source_x=0.05, virtual_source_y=0.1)
-        TRACE
-        COMPONENT origin = Arm() AT (0, 0, 0) ABSOLUTE
-        COMPONENT source = Source_simple(yheight=0.25, xwidth=0.2, dist=1.5, focus_xw=0.06, focus_yh=0.12,
-                                         E0={mean_energy}, dE={energy_width})
-                           AT (0, 0, 0) RELATIVE origin
-        COMPONENT guide = Guide_gravity(w1 = 0.06, h1 = 0.12, w2 = 0.05, h2 = 0.1, l = 30, m = 4) 
-                          AT (0, 0, 1.5) RELATIVE  PREVIOUS
-        COMPONENT guide_end = Arm() AT (0, 0, 30) RELATIVE PREVIOUS
-        COMPONENT aperture = Slit(xwidth=virtual_source_x, yheight=virtual_source_y) AT (0, 0, 0.01) RELATIVE PREVIOUS
-        COMPONENT split_at = Arm() AT (0, 0, 0.0001) RELATIVE PREVIOUS
-        COMPONENT mono_point = Arm() AT (0, 0, 0.8) RELATIVE split_at
-        COMPONENT mono = Monochromator_curved(zwidth = 0.02, yheight = 0.02, NH = 13, NV = 7, DM={d_spacing}) 
-                         AT (0, 0, 0) RELATIVE  mono_point ROTATED (0, a1, 0) RELATIVE mono_point
-        COMPONENT sample_arm = Arm() AT (0, 0, 0) RELATIVE mono_point ROTATED (0, a2, 0) RELATIVE mono_point
-        COMPONENT detector = Monitor(xwidth=0.01, yheight=0.05) AT (0, 0, 0.8) RELATIVE sample_arm
-        END
-        """
-        instr = parse_mcstas_instr(instr)
-
-        target = CBinaryTarget(mpi=False, acc=False, count=1, nexus=False)
-        config = dict(default_main=True, enable_trace=False, portable=False, include_runtime=True,
-                      embed_instrument_file=False, verbose=False)
-        with TemporaryDirectory() as directory:
-            try:
-                compile_instrument(instr, target, directory, generator=MCSTAS_GENERATOR, config=config, dump_source=True)
-            except RuntimeError as e:
-                log.error(f'Failed to compile instrument: {e}')
-                raise e
-            binary = Path(directory).joinpath(f'{instr.name}.out')
-            self.assertTrue(binary.exists())
-            self.assertTrue(binary.is_file())
-            self.assertTrue(access(binary, R_OK))
-            a1 = asin(pi / d_spacing / mean_ki) * 180 / pi
-            parameters = f'a1={a1} a2={2*a1}'
-            run_compiled_instrument(binary, target, f"--dir {directory}/instr {parameters}")
-
-            instr_files = list(Path(directory).joinpath('instr').glob('*.sim'))
-            print(instr_files)
-
-    def test_tas1_c1(self):
-        from mccode_antlr.loader.loader import parse_mccode_instr_parameters
-        contents = """ DEFINE INSTRUMENT tas(PHM=-37.077,TTM=-74,C1=30) TRACE END"""
-        instr_parameters = parse_mccode_instr_parameters(contents)
-        self.assertEqual(len(instr_parameters), 3)
-        self.assertEqual(instr_parameters[0].name, 'PHM')
-        self.assertEqual(instr_parameters[1].name, 'TTM')
-        self.assertEqual(instr_parameters[2].name, 'C1')
-        self.assertEqual(instr_parameters[0].value, -37.077)
-        self.assertEqual(instr_parameters[1].value, -74)
-        self.assertEqual(instr_parameters[2].value, 30)

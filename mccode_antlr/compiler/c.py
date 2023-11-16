@@ -51,6 +51,11 @@ class CBinaryTarget:
         return config['flags']['cc'].as_str_expanded().split()
 
     @property
+    def linker_flags(self) -> list[str]:
+        from mccode_antlr.config import config
+        return config['flags']['ld'].as_str_expanded().split()
+
+    @property
     def extra_flags(self) -> list[str]:
         """Only a little confusing ..."""
         from mccode_antlr.config import config
@@ -96,17 +101,22 @@ def compile_instrument(instrument: Instr, target: CBinaryTarget, output: Union[s
     log.info(f'Sort out flags for compilation')
 
     # the type of binary requested determines (some of) the required flags:
-    flags = target.flags + target.extra_flags
+    compiler_flags = target.flags + target.extra_flags
+    linker_flags = target.linker_flags
+    # the instrument-defined flags are always(?) linker flags:
     # the flags in an instrument *might* contain ENV, CMD, GETPATH directives which need to be expanded via decode:
-    flags.extend([word for flag in instrument.decoded_flags() for word in flag.split()])
+    linker_flags.extend([word for flag in instrument.decoded_flags() for word in flag.split()])
 
-    log.info(f'{flags = }')
+    log.info(f'{compiler_flags = }')
+    log.info(f'{linker_flags = }')
 
     # Why is this addition necessary?
-    if any('OPENACC' in word for word in flags) and any('NeXus' in word for word in flags):
-        flags.append('-D__GNUC__')
+    if any('OPENACC' in word for word in compiler_flags) and any('NeXus' in word for word in compiler_flags):
+        compiler_flags.append('-D__GNUC__')
 
-    command = [target.compiler, *flags, '-o', str(output), '-']
+    # The solitary '-' specifies *where* the stdin source should be processed, which is critical for getting
+    # linking flags right on (some) Linux systems
+    command = [target.compiler, *compiler_flags, '-o', str(output), '-', *linker_flags]
     source = instrument_source(instrument, **kwargs)
     if dump_source:
         source_file = Path().joinpath(output.parts[-1]).with_suffix('.c')
