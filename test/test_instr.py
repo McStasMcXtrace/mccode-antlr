@@ -404,12 +404,14 @@ class TestInstr(TestCase):
         self.assertEqual(instr_parameters[2].value, 30)
 
 
-class CompiledInstr(TestCase):
+class CompiledTest(TestCase):
     def setUp(self):
         import platform
         if platform.system() == 'Windows':
             self.skipTest('Skipping test on Windows')
 
+
+class CompiledInstr(CompiledTest):
     def test_one_axis(self):
         from mccode_antlr.instr import Instr
         from mccode_antlr.common import ComponentParameter, Expr
@@ -470,13 +472,12 @@ class CompiledInstr(TestCase):
             print(instr_files)
 
 
-class CompiledMCPL(CompiledInstr):
+class CompiledMCPL(CompiledTest):
     def setUp(self):
         import subprocess
-        super().setUp()
-        # check for the presence of the `mcpl-config` utility
-        result = subprocess.run(['mcpl-config', '--version'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        if result.returncode != 0:
+        try:
+            subprocess.run(['mcpl-config', '--version'], check=True)
+        except FileNotFoundError:
             self.skipTest('mcpl-config not found')
 
     def test_mcpl_split_run(self):
