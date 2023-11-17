@@ -413,16 +413,11 @@ class CompiledTest(TestCase):
 
 class CompiledInstr(CompiledTest):
     def test_one_axis(self):
-        from mccode_antlr.instr import Instr
-        from mccode_antlr.common import ComponentParameter, Expr
         from mccode_antlr.compiler.c import compile_instrument, run_compiled_instrument, CBinaryTarget
         from mccode_antlr.translators.target import MCSTAS_GENERATOR
-        from mccode_antlr.loader import read_mccode_dat
         from tempfile import TemporaryDirectory
         from os import R_OK, access
         from pathlib import Path
-        from random import randint
-        from numpy import allclose
 
         from math import pi, asin, sqrt
         from mccode_antlr.loader import parse_mcstas_instr
@@ -443,6 +438,9 @@ class CompiledInstr(CompiledTest):
         COMPONENT aperture = Slit(xwidth=virtual_source_x, yheight=virtual_source_y) AT (0, 0, 0.01) RELATIVE PREVIOUS
         COMPONENT split_at = Arm() AT (0, 0, 0.0001) RELATIVE PREVIOUS
         COMPONENT mono_point = Arm() AT (0, 0, 0.8) RELATIVE split_at
+        METADATA "txt" "something" %{{
+            This is some unparsed metadata that will be included as a literal string in the instrument.
+        %}}
         COMPONENT mono = Monochromator_curved(zwidth = 0.02, yheight = 0.02, NH = 13, NV = 7, DM={d_spacing}) 
                          AT (0, 0, 0) RELATIVE  mono_point ROTATED (0, a1, 0) RELATIVE mono_point
         COMPONENT sample_arm = Arm() AT (0, 0, 0) RELATIVE mono_point ROTATED (0, a2, 0) RELATIVE mono_point
