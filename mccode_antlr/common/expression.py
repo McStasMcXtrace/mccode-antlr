@@ -188,6 +188,10 @@ def _comb(f, s: list):
     return ','.join(f(x) for x in s)
 
 
+def _fmt_comb(fmt, s: list):
+    return ','.join(f'{x:{fmt}}' for x in s)
+
+
 class Op:
     def __init__(self):
         self.data_type = DataType.undefined
@@ -322,6 +326,9 @@ class TrinaryOp(Op):
     def __str__(self):
         return self._str_repr_(_comb(str, self.first), _comb(str, self.second), _comb(str, self.third))
 
+    def __format__(self, format_spec):
+        return self._str_repr_(_fmt_comb(format_spec, self.first), _fmt_comb(format_spec, self.second), _fmt_comb(format_spec, self.third))
+
     def __repr__(self):
         return self._str_repr_(_comb(repr, self.first), _comb(repr, self.second), _comb(repr, self.third))
 
@@ -435,6 +442,9 @@ class BinaryOp(Op):
     def __str__(self):
         return self._str_repr_(_comb(str, self.left), _comb(str, self.right))
 
+    def __format__(self, format_spec):
+        return self._str_repr_(_fmt_comb(format_spec, self.left), _fmt_comb(format_spec, self.right))
+
     def __repr__(self):
         return self._str_repr_(_comb(repr, self.left), _comb(repr, self.right))
 
@@ -534,6 +544,9 @@ class UnaryOp(Op):
 
     def __str__(self):
         return self._str_repr_(_comb(str, self.value))
+
+    def __format__(self, format_spec):
+        return self._str_repr_(_fmt_comb(format_spec, self.value))
 
     def __repr__(self):
         return self._str_repr_(_comb(repr, self.value))
@@ -664,13 +677,23 @@ class Value:
     def vector_known(self):
         return self.is_vector and self.has_value and not isinstance(self.value, str)
 
-    def special_str(self):
-        return f'_instrument_var._parameters.{self.value}' if self.is_parameter else f'{self.value}'
+    def special_str(self, prefix=None):
+        if prefix is None:
+            prefix = "_instrument_var._parameters."
+        return f'{prefix}{self.value}' if self.is_parameter else f'{self.value}'
 
     def _str_repr_(self):
         return str(self.value)
 
     def __str__(self):
+        return self._str_repr_()
+
+    def __format__(self, format_spec):
+        """Abuse string format specifications to prepend the _instrument_var._parameters. prefix to parameters"""
+        if format_spec == 'p':
+            return self.special_str()
+        elif format_spec.startswith('prefix:'):
+            return self.special_str(format_spec[7:])
         return self._str_repr_()
 
     def __repr__(self):
@@ -970,6 +993,10 @@ class Expr:
 
     def __str__(self):
         return ','.join(str(x) for x in self.expr)
+
+    def __format__(self, format_spec):
+        """Abuse string formatting to append the _instrument_var.parameters prefix to parameter names"""
+        return ','.join(format(x, format_spec) for x in self.expr)
 
     def __repr__(self):
         return ','.join(repr(x) for x in self.expr)

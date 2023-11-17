@@ -225,8 +225,13 @@ class TestOrientation(TestCase):
             self.assertFalse(o.is_identity)
             self.assertTrue(o.all_values)
             self.assertTrue(o.is_constant)
-            self.assertTrue((o * o.inverse()).is_identity)
-            self.assertTrue((o.inverse() * o).is_identity)
+            if not (o * o.inverse()).is_identity:
+                # This less-robust identity test is needed because of possible numerical errors
+                self.assertAlmostEqual((o * o.inverse()).axes.trace(), Expr.float(3),
+                                       msg=f'{o} * {o.inverse()} = {o * o.inverse()} is not identity {tx=} {ty=} {tz=}')
+            if not (o.inverse() * o).is_identity:
+                self.assertAlmostEqual((o.inverse() * o).axes.trace(), Expr.float(3),
+                                       msg=f'{o.inverse()} * {o} = {o.inverse() * o} is not identity {tx=} {ty=} {tz=}')
 
         vx = Vector(Expr.float(1), Expr.float(0), Expr.float(0))
         vy = Vector(Expr.float(0), Expr.float(1), Expr.float(0))
