@@ -225,9 +225,12 @@ class TestExpression(TestCase):
         # self.assertFalse(par.is_id)  # changed as of 2023-10-16 -- a parameter is an identifier
         self.assertTrue(par.is_parameter)
         # Verify that the whole reason for this object type existing works (inserting its name into macros)
-        # self.assertEqual(str(par), "_instrument_var._parameters.instrument_parameter")
-        # Which didn't seem to be used anywhere _and_ broke instrument printing
+        self.assertEqual(f'{par:p}', "_instrument_var._parameters.instrument_parameter")
+        # The original implementation broke instrument printing, so str(par) should always be its bare name
         self.assertEqual(str(par), "instrument_parameter")
+        self.assertEqual(f'{par}', 'instrument_parameter')
+        # And, just in case it's useful, we can specify the prefix:
+        self.assertEqual(f'{par:prefix:this_is_cool_}', "this_is_cool_instrument_parameter")
 
     def test_UnaryOp(self):
         from mccode_antlr.common.expression import Value, UnaryOp

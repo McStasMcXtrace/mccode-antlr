@@ -392,15 +392,14 @@ class Instr:
 
     def mcpl_split(self, after, filename=None, output_parameters=None, input_parameters=None, remove_unused_parameters=False):
         from ..common import ComponentParameter
-        from ..common import Expr
-        from ..reader import Reader
+        from ..common import Expr, Value, ObjectType
         from .orientation import Vector, Angles
         if filename is None:
             filename = self.name + '.mcpl'
         if filename[0] != '"' or filename[-1] != '"':
             filename = '"' + filename + '"'
 
-        filename_parameter = ComponentParameter('filename', Expr.id('mcpl_filename'))
+        filename_parameter = ComponentParameter('filename', Expr(Value('mcpl_filename', object_type=ObjectType.parameter)))
         first, second = self.split(after, remove_unused_parameters=remove_unused_parameters)
         mcpl_filename = InstrumentParameter.parse(f'string mcpl_filename = {filename}')
         first.add_parameter(mcpl_filename)

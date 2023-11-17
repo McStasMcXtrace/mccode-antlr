@@ -426,10 +426,10 @@ class CompiledInstr(CompiledTest):
         energy_width = 0.1
         mean_ki = sqrt(mean_energy / 2.7022)
         instr = f"""
-        DEFINE INSTRUMENT splitRunTest(a1=0, a2=0, virtual_source_x=0.05, virtual_source_y=0.1)
+        DEFINE INSTRUMENT splitRunTest(a1=0, a2=0, virtual_source_x=0.05, virtual_source_y=0.1, string newname)
         TRACE
         COMPONENT origin = Arm() AT (0, 0, 0) ABSOLUTE
-        COMPONENT source = Source_simple(yheight=0.25, xwidth=0.2, dist=1.5, focus_xw=0.06, focus_yh=0.12,
+        COMPONENT source = Source_simple(yheight=2*virtual_source_y, xwidth=0.2, dist=1.5, focus_xw=0.06, focus_yh=0.12,
                                          E0={mean_energy}, dE={energy_width})
                            AT (0, 0, 0) RELATIVE origin
         COMPONENT guide = Guide_gravity(w1 = 0.06, h1 = 0.12, w2 = 0.05, h2 = 0.1, l = 30, m = 4) 
@@ -445,6 +445,7 @@ class CompiledInstr(CompiledTest):
                          AT (0, 0, 0) RELATIVE  mono_point ROTATED (0, a1, 0) RELATIVE mono_point
         COMPONENT sample_arm = Arm() AT (0, 0, 0) RELATIVE mono_point ROTATED (0, a2, 0) RELATIVE mono_point
         COMPONENT detector = Monitor(xwidth=0.01, yheight=0.05) AT (0, 0, 0.8) RELATIVE sample_arm
+        COMPONENT lmon = L_monitor(filename=newname) AT (0, 0, 0.001) RELATIVE PREVIOUS
         END
         """
         instr = parse_mcstas_instr(instr)
