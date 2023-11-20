@@ -480,27 +480,6 @@ class CompiledInstr(CompiledTest):
         parameters = f'a1={a1} a2={2 * a1}'
         self._compile_and_run(instr, parameters)
 
-
-        # target = CBinaryTarget(mpi=False, acc=False, count=1, nexus=False)
-        # config = dict(default_main=True, enable_trace=False, portable=False, include_runtime=True,
-        #               embed_instrument_file=False, verbose=False)
-        # with TemporaryDirectory() as directory:
-        #     try:
-        #         compile_instrument(instr, target, directory, generator=MCSTAS_GENERATOR, config=config, dump_source=True)
-        #     except RuntimeError as e:
-        #         log.error(f'Failed to compile instrument: {e}')
-        #         raise e
-        #     binary = Path(directory).joinpath(f'{instr.name}.out')
-        #     self.assertTrue(binary.exists())
-        #     self.assertTrue(binary.is_file())
-        #     self.assertTrue(access(binary, R_OK))
-        #     a1 = asin(pi / d_spacing / mean_ki) * 180 / pi
-        #     parameters = f'a1={a1} a2={2*a1}'
-        #     run_compiled_instrument(binary, target, f"--dir {directory}/instr {parameters}")
-        #
-        #     instr_files = list(Path(directory).joinpath('instr').glob('*.sim'))
-        #     print(instr_files)
-
     def test_assembled_parameters(self):
         """Check that setting an instance parameter to a value that is an instrument parameter name works"""
         assembler = make_mcstas_assembler('assembled_parameters_test_instr')
