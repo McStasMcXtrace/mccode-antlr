@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 from typing import TypeVar, Union
 from ..comp import Comp
 from ..common import Expr, Value, DataType
-from ..common import ComponentParameter, MetaData, parameter_name_present, RawC, blocks_to_raw_c
+from ..common import InstrumentParameter, ComponentParameter, MetaData, parameter_name_present, RawC, blocks_to_raw_c
 from .orientation import Orient, Vector, Angles
 from .jump import Jump
 
@@ -131,7 +131,18 @@ class Instance:
         # # is this parameter value *actually* an instrument parameter *name*
         # if value.is_id:
         #     pass
+        # # If a parameter is set to an instrument parameter name, we need to keep track of that here:
+        # TODO: Either add a reference to the containing instrument (and carry that around always)
+        #       Or perform this check when it comes time to translate the whole instrument :/
+
         self.parameters += (ComponentParameter(p.name, value), )
+
+    def verify_parameters(self, instrument_parameters: tuple[InstrumentParameter]):
+        """Check for instance parameters which are identifiers that match instrument parameter names,
+        and flag them as parameter objects"""
+        instrument_parameter_names = [x.name for x in instrument_parameters]
+        for par in self.parameters:
+            par.value.verify_parameters(instrument_parameter_names)
 
     def get_parameter(self, name: str):
         for par in self.parameters:

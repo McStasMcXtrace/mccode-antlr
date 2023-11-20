@@ -412,6 +412,32 @@ class CompiledTest(TestCase):
 
 
 class CompiledInstr(CompiledTest):
+    def _compile_and_run(self, instr, parameters, run=True):
+        from mccode_antlr.compiler.c import compile_instrument, CBinaryTarget, run_compiled_instrument
+        from mccode_antlr.translators.target import MCSTAS_GENERATOR
+        from tempfile import TemporaryDirectory
+        from os import R_OK, access
+        from pathlib import Path
+
+        target = CBinaryTarget(mpi=False, acc=False, count=1, nexus=False)
+        config = dict(default_main=True, enable_trace=False, portable=False, include_runtime=True,
+                      embed_instrument_file=False, verbose=False)
+
+        with TemporaryDirectory() as directory:
+            try:
+                compile_instrument(instr, target, directory, generator=MCSTAS_GENERATOR, config=config, dump_source=True)
+            except RuntimeError as e:
+                log.error(f'Failed to compile instrument: {e}')
+                raise e
+            binary = Path(directory).joinpath(f'{instr.name}.out')
+            self.assertTrue(binary.exists())
+            self.assertTrue(binary.is_file())
+            self.assertTrue(access(binary, R_OK))
+            if run:
+                run_compiled_instrument(binary, target, f"--dir {directory}/instr {parameters}")
+                sim_files = list(Path(directory).glob('**/*.sim'))
+                print(sim_files)
+
     def test_one_axis(self):
         from mccode_antlr.compiler.c import compile_instrument, run_compiled_instrument, CBinaryTarget
         from mccode_antlr.translators.target import MCSTAS_GENERATOR
@@ -450,25 +476,20 @@ class CompiledInstr(CompiledTest):
         """
         instr = parse_mcstas_instr(instr)
 
-        target = CBinaryTarget(mpi=False, acc=False, count=1, nexus=False)
-        config = dict(default_main=True, enable_trace=False, portable=False, include_runtime=True,
-                      embed_instrument_file=False, verbose=False)
-        with TemporaryDirectory() as directory:
-            try:
-                compile_instrument(instr, target, directory, generator=MCSTAS_GENERATOR, config=config, dump_source=True)
-            except RuntimeError as e:
-                log.error(f'Failed to compile instrument: {e}')
-                raise e
-            binary = Path(directory).joinpath(f'{instr.name}.out')
-            self.assertTrue(binary.exists())
-            self.assertTrue(binary.is_file())
-            self.assertTrue(access(binary, R_OK))
-            a1 = asin(pi / d_spacing / mean_ki) * 180 / pi
-            parameters = f'a1={a1} a2={2*a1}'
-            run_compiled_instrument(binary, target, f"--dir {directory}/instr {parameters}")
+        a1 = asin(pi / d_spacing / mean_ki) * 180 / pi
+        parameters = f'a1={a1} a2={2 * a1}'
+        self._compile_and_run(instr, parameters)
 
-            instr_files = list(Path(directory).joinpath('instr').glob('*.sim'))
-            print(instr_files)
+    def test_assembled_parameters(self):
+        """Check that setting an instance parameter to a value that is an instrument parameter name works"""
+        assembler = make_mcstas_assembler('assembled_parameters_test_instr')
+        assembler.parameter("double par0 = 3.14159")
+        origin = assembler.component("origin", "Progress_bar", at=[0, 0, 0])
+        left = assembler.component('left', 'Slit', at=([0, 0, 1], origin), rotate=[0, 90, 0],
+                                   parameters=dict(xwidth='par0', yheight='2*fmod(par0, 0.1)'))
+
+        self._compile_and_run(assembler.instrument, None, run=False)
+
 
 
 class CompiledMCPL(CompiledTest):

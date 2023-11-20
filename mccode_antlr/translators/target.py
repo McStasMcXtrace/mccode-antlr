@@ -28,6 +28,7 @@ class TargetVisitor:
         self.component_declared_parameters = dict()
         self.ok_to_skip = None
         #
+        self.source.verify_instance_parameters()
         self.__post_init__()
 
     def __init_subclass__(cls, **kwargs):

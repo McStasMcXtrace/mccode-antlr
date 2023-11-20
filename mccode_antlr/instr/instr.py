@@ -464,6 +464,13 @@ class Instr:
                 log.warn(f'Removed unused instrument parameters; {len(self.parameters)} remain')
         return len(used) - sum(used)
 
+    def verify_instance_parameters(self):
+        """Check that all instance parameters are of the expected type, and that identifiers which match
+        instrument parameter names are flagged as such"""
+        for instance in self.components:
+            instance.verify_parameters(self.parameters)
+
+
 
 def _join_rawc_tuple(rawc_tuple: tuple[RawC]):
     return '\n'.join([str(rc) for rc in rawc_tuple])
