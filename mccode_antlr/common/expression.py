@@ -374,6 +374,11 @@ class TrinaryOp(Op):
     def __contains__(self, value):
         return value in self.first or value in self.second or value in self.third
 
+    def verify_parameters(self, instrument_parameter_names: list[str]):
+        for lr in (self.first, self.second, self.third):
+            for x in lr:
+                x.verify_parameters(instrument_parameter_names)
+
 
 class BinaryOp(Op):
     def __init__(self, op, left, right):
@@ -513,6 +518,11 @@ class BinaryOp(Op):
     def __contains__(self, value):
         return value in self.left or value in self.right
 
+    def verify_parameters(self, instrument_parameter_names: list[str]):
+        for lr in (self.left, self.right):
+            for x in lr:
+                x.verify_parameters(instrument_parameter_names)
+
 
 class UnaryOp(Op):
     def __init__(self, op, value):
@@ -608,6 +618,10 @@ class UnaryOp(Op):
 
     def __contains__(self, value):
         return value in self.value
+
+    def verify_parameters(self, instrument_parameter_names: list[str]):
+        for x in self.value:
+            x.verify_parameters(instrument_parameter_names)
 
 
 class Value:
@@ -986,6 +1000,11 @@ class Value:
             return self.value.strip('"') == value.strip('"')
         return self.value == value
 
+    def verify_parameters(self, instrument_parameter_names: list[str]):
+        if self.is_id and self.value in instrument_parameter_names:
+            self._object = ObjectType.parameter
+
+
 
 class Expr:
     def __init__(self, expr: Union[Value, UnaryOp, BinaryOp, list[Union[Value, UnaryOp, BinaryOp]]]):
@@ -1301,6 +1320,10 @@ class Expr:
 
     def copy(self):
         return Expr([x.copy() for x in self.expr])
+
+    def verify_parameters(self, instrument_parameter_names: list[str]):
+        for x in self.expr:
+            x.verify_parameters(instrument_parameter_names)
 
 
 def unary_expr(func, name, v):
