@@ -24,8 +24,8 @@ def mccode_script_parse(prog: str):
 
     if args.version:
         from sys import exit
-        from mccode_antlr import __version__
-        print(f'mccode_antlr code generator version {__version__}')
+        from mccode_antlr.version import version
+        print(f'mccode_antlr code generator version {version()}')
         print(' Copyright (c) European Spallation Source ERIC, 2023')
         print('Based on McStas/McXtrace version 3')
         print(' Copyright (c) DTU Physics and Risoe National Laboratory, 1997-2023')

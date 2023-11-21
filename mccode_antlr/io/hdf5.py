@@ -10,17 +10,17 @@ def _split_version_name(version_name):
 
 
 def _write_header(group, data_type):
-    from mccode_antlr import __version__
-    group.attrs[VERSION_NAME_KEY] = f'{__version__}/{data_type.__name__}'
+    from mccode_antlr.version import version
+    group.attrs[VERSION_NAME_KEY] = f'{version()}/{data_type.__name__}'
 
 
 def _check_header(group, data_type):
-    from mccode_antlr import __version__
+    from mccode_antlr.version import version as module_version
     if VERSION_NAME_KEY not in group.attrs:
         raise RuntimeError(f"File does not have type information")
     version, name = _split_version_name(group.attrs[VERSION_NAME_KEY])
-    if version != __version__:
-        raise RuntimeError(f"File was created with mccode_antlr {version}, but asked to read version {__version__}")
+    if version != module_version():
+        raise RuntimeError(f"File was created with mccode_antlr {version}, but asked to read {module_version()}")
     if name != data_type.__name__:
         raise RuntimeError(f"Group contains mccode_antlr type {name}, but asked to read type {data_type}")
 
