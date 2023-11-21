@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from typing import Union
 from pathlib import Path
@@ -13,7 +15,7 @@ class DatFileCommon:
     data: ndarray = field(default_factory=ndarray)
 
     @classmethod
-    def from_filename(cls, filename: str):
+    def from_filename(cls, filename: str | Path):
         from numpy import array
         source = Path(filename).resolve()
         if not source.exists():
@@ -92,6 +94,45 @@ def dim_metadata(length, label_unit, lower_limit, upper_limit) -> dict:
     bin_width = (upper_limit - lower_limit) / (length - 1)
     boundaries = linspace(lower_limit - bin_width / 2, upper_limit + bin_width / 2, length + 1)
     return dict(lenght=length, label=label, unit=unit, bin_boundaries=boundaries)
+
+
+@dataclass
+class DatFile0D(DatFileCommon):
+    def __post_init__(self):
+        nv = len(self.variables)
+        if self.data.shape == (nv, ):
+            # shortcut in case we're already in the right shape (e.g., from __add__)
+            return
+        if self.data.size != nv:
+            raise RuntimeError(f'Unexpected data shape {self.data.shape} for metadata specifying {nv=}')
+        self.data = self.data.reshape((nv, ))
+
+    def dim_metadata(self) -> list[dict]:
+        return []
+
+    def print_data(self, file):
+        print(' '.join(str(x) for x in self.data), file=file)
+
+    @staticmethod
+    def parts():
+        # Yes, Ncount shows up twice ...
+        first = ('Format', 'URL', 'Creator', 'Instrument', 'Ncount', 'Trace', 'Gravitation', 'Seed', 'Directory')
+        second = ('Date', 'type', 'Source', 'component', 'position', 'title', 'Ncount', 'filename', 'statistics',
+                  'signal', 'values', 'yvar', 'ylabel', 'xlimits', 'variables')
+        return first, second
+
+    def safe_to_combine(self, other):
+        if not isinstance(other, DatFile1D):
+            return False
+        if self.variables != other.variables:
+            return False
+        if self.data.shape != other.data.shape:
+            return False
+        return True
+
+    def __add__(self, other):
+        both = super().__add__(other)
+        return DatFile1D(both.source, both.metadata, both.parameters, both.variables, both.data)
 
 
 @dataclass
@@ -192,13 +233,19 @@ class DatFile2D(DatFileCommon):
         return DatFile2D(both.source, both.metadata, both.parameters, both.variables, both.data)
 
 
-def read_mccode_dat(filename: str):
+def read_mccode_dat(filename: str | Path):
     common = DatFileCommon.from_filename(filename)
-    ndim = len(common.metadata['type'].split('(', 1)[1].strip(')').split(','))
-    if ndim < 1 or ndim > 2:
+    array_type = common.metadata['type']
+    ndim, data_type = -1, None
+    if array_type.startswith('array_0d'):
+        ndim, data_type = 0, DatFile0D
+    elif array_type.startswith('array_1d'):
+        ndim, data_type = 1, DatFile1D
+    elif array_type.startswith('array_2d'):
+        ndim, data_type = 2, DatFile2D
+    if ndim < 0 or ndim > 2:
         raise RuntimeError(f'Unexpected number of dimensions: {ndim}')
-    dat_type = DatFile1D if ndim == 1 else DatFile2D
-    return dat_type(common.source, common.metadata, common.parameters, common.variables, common.data)
+    return data_type(common.source, common.metadata, common.parameters, common.variables, common.data)
 
 
 def combine_scan_dicts(a: dict, b: dict):
