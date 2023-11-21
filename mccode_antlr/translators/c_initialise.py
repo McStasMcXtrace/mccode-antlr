@@ -1,7 +1,7 @@
 from zenlog import log
 
 _GETDISTANCE_FCT = """
-double index_getdistance(int first_index, int second_index)
+double index_getdistance(long first_index, long second_index)
 /* Calculate the distance two components from their indexes*/
 {
   return coords_len(coords_sub(POS_A_COMP_INDEX(first_index), POS_A_COMP_INDEX(second_index)));
@@ -10,16 +10,16 @@ double index_getdistance(int first_index, int second_index)
 double getdistance(char* first_component, char* second_component)
 /* Calculate the distance between two named components */
 {
-  int first_index = _getcomp_index(first_component);
-  int second_index = _getcomp_index(second_component);
+  long first_index = _getcomp_index(first_component);
+  long second_index = _getcomp_index(second_component);
   return index_getdistance(first_index, second_index);
 }
 
-double checked_setpos_getdistance(int current_index, char* first_component, char* second_component)
+double checked_setpos_getdistance(long current_index, char* first_component, char* second_component)
 /* Calculate the distance between two named components at *_setpos() time, with component index checking */
 {
-  int first_index = _getcomp_index(first_component);
-  int second_index = _getcomp_index(second_component);
+  long first_index = _getcomp_index(first_component);
+  long second_index = _getcomp_index(second_component);
   if (first_index >= current_index || second_index >= current_index) {
     printf(\"setpos_getdistance can only be used with the names of components before the current one!\\n\");
     return 0;
@@ -30,11 +30,17 @@ double checked_setpos_getdistance(int current_index, char* first_component, char
 """
 
 
+def _split_xyz_ref(xyz_ref):
+    x, y, z = [f'{v:p}' for v in xyz_ref[0]]
+    return x, y, z, xyz_ref[1]
+
+
 def cogen_comp_init_position(index, comp, last, instr):
     ref = None if index == 0 else instr.components[last]
     var = f'_{comp.name}_var'
     lines = [
         f'  /* component {comp.name}={comp.type.name}() AT ROTATED */',
+        f'  /* {comp} */',
         '  {',
         '    Coords tc1, tc2;',
         '    tc1 = coords_set(0,0,0);',
@@ -43,8 +49,7 @@ def cogen_comp_init_position(index, comp, last, instr):
         '    rot_set_rotation(tr1,0,0,0);'
     ]
     # Rotation first
-    x, y, z = [f'{v:p}' for v in comp.rotate_relative[0]]
-    rel = comp.rotate_relative[1]
+    x, y, z, rel = _split_xyz_ref(comp.rotate_relative)
     if rel is None:
         # log.debug(f'{comp.name} has absolute orientation with rotation ({x}, {y}, {z})')
         lines.append(
@@ -67,8 +72,7 @@ def cogen_comp_init_position(index, comp, last, instr):
     lines.append(f'    {var}._rotation_is_identity = rot_test_identity({var}._rotation_relative);')
 
     # Then translation
-    x, y, z = [f'{v:p}' for v in comp.rotate_relative[0]]
-    rel = comp.at_relative[1]
+    x, y, z, rel = _split_xyz_ref(comp.at_relative)
     if rel is None:
         # log.debug(f'{comp.name} has absolute positioning with rotation ({x}, {y}, {z})')
         lines.append(f'    {var}._position_absolute = coords_set({x}, {y}, {z});')
@@ -119,9 +123,10 @@ def cogen_comp_setpos(index, comp, last, instr, component_declared_parameters):
                     '  }',
                 ])
             elif p.value.has_value and p.value.value != '0' and p.value.value != 'NULL' and p.value.value != '""':
-                pl.append(f'    stracpy({fullname}, {value}, {len(p.value.value)-2});')
+                # len(value)-1 to remove quotes, but copy null terminator
+                pl.append(f'  stracpy({fullname}, {value}, {len(p.value.value)-1});')
             else:
-                pl.append(f"    {fullname}[0] = '\\0';")
+                pl.append(f"  {fullname}[0] = '\\0';")
         elif default.value.is_vector or p.value.is_vector:
             if p.value.vector_known:
                 for i, v in enumerate(p.value.value):
@@ -148,7 +153,7 @@ def cogen_comp_setpos(index, comp, last, instr, component_declared_parameters):
         f'  SIG_MESSAGE("[_{comp.name}_setpos] component {comp.name}={comp.type.name}() SETTING [{f}:{n}]");',
         f'  stracpy(_{comp.name}_var._name, "{comp.name}", {min(len(comp.name)+1, 16384)});',
         f'  stracpy(_{comp.name}_var._type, "{comp.type.name}", {min(len(comp.type.name)+1, 16384)});',
-        f'  int current_setpos_index = _{comp.name}_var._index = {1 + index};'
+        f'  long current_setpos_index = _{comp.name}_var._index = {1 + index};'  # _index is a long
     ]
 
     # <<< This is the first call to `cogen_comp_init_par`: `cogen_comp_init_par(comp, instr, "SETTING")

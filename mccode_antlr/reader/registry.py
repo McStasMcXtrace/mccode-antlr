@@ -1,8 +1,8 @@
 import pooch
 from pathlib import Path
 from re import Pattern
-from importlib.resources import files, as_file
-from mccode_antlr import __version__
+from mccode_antlr.version import version as mccode_antlr_version
+
 
 def ensure_regex_pattern(pattern):
     import re
@@ -67,24 +67,40 @@ def _name_plus_suffix(name: str, suffix: str = None):
     return path.as_posix()
 
 
+def find_registry_file(name: str):
+    """Find a registry file in the mccode_antlr package"""
+    from importlib.resources import files, as_file
+    from importlib.metadata import distribution
+    from json import loads
+    if isinstance(name, Path):
+        name = name.as_posix()
+    if files('mccode_antlr').joinpath(name).is_file():
+        return files('mccode_antlr').joinpath(name)
+    info = loads(distribution('mccode_antlr').read_text('direct_url.json'))
+    if 'dir_info' in info and 'editable' in info['dir_info'] and info['dir_info']['editable'] and 'url' in info:
+        path = Path(info['url'].split('file://')[1]).joinpath('mccode_antlr', name)
+        return path if path.is_file() else None
+    return None
+
+
 class RemoteRegistry(Registry):
-    def __init__(self, name: str, url: str, filename=None):
+    def __init__(self, name: str, url: str, filename=None, version=None):
         self.name = name
         self.filename = filename
         self.pooch = pooch.create(
             path=pooch.os_cache(f'mccode_antlr-{name}'),
             base_url=url,
-            version=__version__,
+            version=version or mccode_antlr_version(),
             version_dev="main",
             registry=None,
         )
         if isinstance(filename, Path):
             self.pooch.load_registry(filename)
-        elif files('mccode_antlr').joinpath(filename).is_file():
-            with as_file(files('mccode_antlr').joinpath(filename)) as path:
-                self.pooch.load_registry(path)
         else:
-            raise RuntimeError(f"The provided filename {filename} is not a path or file packaged with this module")
+            filepath = find_registry_file(filename)
+            if filepath is None:
+                raise RuntimeError(f"The provided filename {filename} is not a path or file packaged with this module")
+            self.pooch.load_registry(filepath)
 
     def to_file(self, output, wrapper):
         contents = '(' + ', '.join([

@@ -415,6 +415,7 @@ class CompiledInstr(CompiledTest):
     def _compile_and_run(self, instr, parameters, run=True):
         from mccode_antlr.compiler.c import compile_instrument, CBinaryTarget, run_compiled_instrument
         from mccode_antlr.translators.target import MCSTAS_GENERATOR
+        from mccode_antlr.loader import read_mccode_dat
         from tempfile import TemporaryDirectory
         from os import R_OK, access
         from pathlib import Path
@@ -435,22 +436,18 @@ class CompiledInstr(CompiledTest):
             self.assertTrue(access(binary, R_OK))
             if run:
                 run_compiled_instrument(binary, target, f"--dir {directory}/instr {parameters}")
-                sim_files = list(Path(directory).glob('**/*.sim'))
-                print(sim_files)
+                sim_files = list(Path(directory).glob('**/*.dat'))
+                dats = {file.stem: read_mccode_dat(file) for file in sim_files}
+                return dats
+            return None
 
     def test_one_axis(self):
-        from mccode_antlr.compiler.c import compile_instrument, run_compiled_instrument, CBinaryTarget
-        from mccode_antlr.translators.target import MCSTAS_GENERATOR
-        from tempfile import TemporaryDirectory
-        from os import R_OK, access
-        from pathlib import Path
-
         from math import pi, asin, sqrt
         from mccode_antlr.loader import parse_mcstas_instr
         d_spacing = 3.355  # (002) for Highly-ordered Pyrolytic Graphite
         mean_energy = 5.0
-        energy_width = 0.1
-        mean_ki = sqrt(mean_energy / 2.7022)
+        energy_width = 0.5
+        mean_ki = sqrt(mean_energy / 2.0722)
         instr = f"""
         DEFINE INSTRUMENT splitRunTest(a1=0, a2=0, virtual_source_x=0.05, virtual_source_y=0.1, string newname)
         TRACE
@@ -458,11 +455,14 @@ class CompiledInstr(CompiledTest):
         COMPONENT source = Source_simple(yheight=2*virtual_source_y, xwidth=0.2, dist=1.5, focus_xw=0.06, focus_yh=0.12,
                                          E0={mean_energy}, dE={energy_width})
                            AT (0, 0, 0) RELATIVE origin
+        COMPONENT m0 = PSD_monitor(xwidth=0.1, yheight=0.15, nx=100, ny=160, restore_neutron=1) AT (0, 0, 0.01) RELATIVE PREVIOUS
         COMPONENT guide = Guide_gravity(w1 = 0.06, h1 = 0.12, w2 = 0.05, h2 = 0.1, l = 30, m = 4) 
                           AT (0, 0, 1.5) RELATIVE  PREVIOUS
         COMPONENT guide_end = Arm() AT (0, 0, 30) RELATIVE PREVIOUS
+        COMPONENT m1 = PSD_monitor(xwidth=0.1, yheight=0.15, nx=100, ny=160, restore_neutron=1) AT (0, 0, 0.01) RELATIVE PREVIOUS
         COMPONENT aperture = Slit(xwidth=virtual_source_x, yheight=virtual_source_y) AT (0, 0, 0.01) RELATIVE PREVIOUS
         COMPONENT split_at = Arm() AT (0, 0, 0.0001) RELATIVE PREVIOUS
+        COMPONENT m3 = PSD_monitor(xwidth=0.1, yheight=0.15, nx=100, ny=160, restore_neutron=1) AT (0, 0, 0.01) RELATIVE PREVIOUS
         COMPONENT mono_point = Arm() AT (0, 0, 0.8) RELATIVE split_at
         METADATA "txt" "something" %{{
             This is some unparsed metadata that will be included as a literal string in the instrument.
@@ -470,15 +470,28 @@ class CompiledInstr(CompiledTest):
         COMPONENT mono = Monochromator_curved(zwidth = 0.02, yheight = 0.02, NH = 13, NV = 7, DM={d_spacing}) 
                          AT (0, 0, 0) RELATIVE  mono_point ROTATED (0, a1, 0) RELATIVE mono_point
         COMPONENT sample_arm = Arm() AT (0, 0, 0) RELATIVE mono_point ROTATED (0, a2, 0) RELATIVE mono_point
-        COMPONENT detector = Monitor(xwidth=0.01, yheight=0.05) AT (0, 0, 0.8) RELATIVE sample_arm
+        COMPONENT detector = Monitor(xwidth=0.1, yheight=0.15, restore_neutron=1) AT (0, 0, 0.8) RELATIVE sample_arm
         COMPONENT lmon = L_monitor(filename=newname) AT (0, 0, 0.001) RELATIVE PREVIOUS
         END
         """
         instr = parse_mcstas_instr(instr)
 
         a1 = asin(pi / d_spacing / mean_ki) * 180 / pi
-        parameters = f'a1={a1} a2={2 * a1}'
-        self._compile_and_run(instr, parameters)
+        self.assertAlmostEqual(a1, 37.0722, 4)
+        parameters = f'a1={a1} a2={2 * a1} -n 1000000'
+
+        dats = self._compile_and_run(instr, parameters)
+        self.assertEqual(len(dats), 5)
+        self.assertEqual(dats['m0'].data.shape, (3, 160, 100))
+        self.assertEqual(dats['m1'].data.shape, (3, 160, 100))
+        self.assertEqual(dats['m3'].data.shape, (3, 160, 100))
+        self.assertEqual(dats['detector'].data.shape, (3, ))
+
+        # Moving farther from the source means less (but finite) intensity in equivalent monitors
+        self.assertTrue(sum(sum(dats['m0']['I'])) > sum(sum(dats['m1']['I'])) > sum(sum(dats['m3']['I'])) > 0)
+        # The detector has been positioned correctly to collect intensity
+        self.assertTrue(dats['detector']['I'] > 0)
+
 
     def test_assembled_parameters(self):
         """Check that setting an instance parameter to a value that is an instrument parameter name works"""
