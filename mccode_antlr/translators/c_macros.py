@@ -37,7 +37,7 @@ def cogen_getparticlevar_fct(uservars):
 
 def cogen_getcompindex_fct(instr):
     lines = [
-        "int _getcomp_index(char* compname)",
+        "long _getcomp_index(char* compname)",
         "/* Enables retrieving the component position & rotation when the index is not known.",
         " * Component indexing into MACROS, e.g., POS_A_COMP_INDEX, are 1-based! */",
         "{",
