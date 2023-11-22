@@ -497,7 +497,6 @@ class CompiledInstr(CompiledTest):
         # The detector has been positioned correctly to collect intensity
         self.assertTrue(dats['detector']['I'] > 0)
 
-
     def test_assembled_parameters(self):
         """Check that setting an instance parameter to a value that is an instrument parameter name works"""
         assembler = make_mcstas_assembler('assembled_parameters_test_instr')
@@ -507,6 +506,29 @@ class CompiledInstr(CompiledTest):
                                    parameters=dict(xwidth='par0', yheight='2*fmod(par0, 0.1)'))
 
         self._compile_and_run(assembler.instrument, None, run=False)
+
+    def test_vector_component_parameter(self):
+        """Some components can use vector parameters, which must be initialized by initializer lists"""
+        from mccode_antlr.common import Value
+        # TODO Update the registry with the new Conics_* components, then update this test (if necessary)
+        instr = """
+        DEFINE INSTRUMENT test_vector_component_parameter() TRACE
+        COMPONENT cEH = Conics_EH(R0=0.99, alpha=6.07, W=0.003, m=3, nshells=4, focal_length_u=10, focal_length_d=10,
+                                  radii={0.05236, 0.03, 0.01, 0.0031416}, le=0.25, lh=0.25, disk=1)
+        AT (0,0,0) ABSOLUTE
+        COMPONENT cEH2 = Conics_EH(R0=0.99, alpha=6.07, W=0.003, m=3, nshells=0, focal_length_u=10, focal_length_d=10,
+                                   le=0.25, lh=0.25, disk=0)
+        AT (0,0,1) ABSOLUTE
+        END
+        """
+        instr = parse_instr_string(instr)
+        self.assertEqual(instr.components[0].get_parameter('radii').value, Value([0.05236, 0.03, 0.01, 0.0031416]))
+
+        try:
+            self._compile_and_run(instr, '-n 1000', run=True)
+        except RuntimeError as e:
+            log.error(f'Failed to compile instrument: {e}')
+            self.fail(f'Failed to compile instrument {e}')
 
 
 

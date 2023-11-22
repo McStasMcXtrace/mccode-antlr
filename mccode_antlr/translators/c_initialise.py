@@ -129,6 +129,9 @@ def cogen_comp_setpos(index, comp, last, instr, component_declared_parameters):
                 pl.append(f"  {fullname}[0] = '\\0';")
         elif default.value.is_vector or p.value.is_vector:
             if p.value.vector_known:
+                # hack-in an allocator for the fixed-length allocated array
+                c_type = par.value.mccode_c_type.translate(str.maketrans('', '', ' *'))  # strip the trailing ' *'
+                pl.append(f'  {fullname} = calloc(sizeof({c_type}), {len(p.value.value)});')
                 for i, v in enumerate(p.value.value):
                     pl.append(f'  {fullname}[{i}] = {v};')
             else:

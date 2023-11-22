@@ -63,7 +63,7 @@ def declarations_pre_libraries(source, typedefs: list, component_declared_parame
         return '\n'.join(lines)
 
     def instrument_parameters_table():
-        def np_str(x):
+        def nps(x):
             """`None`-protected (single) double-quoted string"""
             z = '' if x is None else f'{x}'
             if z == '"':
@@ -72,23 +72,23 @@ def declarations_pre_libraries(source, typedefs: list, component_declared_parame
             return z if len(z) and z[0] == '"' and z[-1] == '"' else f'"{z}"'
 
         def one_line(name, typename, value, unit):
-            return f'  "{name}", &(_instrument_var._parameters.{name}), {typename}, {np_str(value)}, {np_str(unit)},'
+            return f'  {{"{name}", &(_instrument_var._parameters.{name}), {typename}, {nps(value)}, {nps(unit)}}},'
 
         lines = [f'int numipar = {len(source.parameters)};', 'struct mcinputtable_struct mcinputtable[] = {']
         lines.extend([one_line(p.name, p.value.mccode_c_type_name, p.value, p.unit) for p in source.parameters])
-        lines.extend(['  NULL, NULL, instr_type_double, "", ""'])
+        lines.extend(['  {NULL, NULL, instr_type_double, "", ""}'])
         lines.append("};")
         return '\n'.join(lines)
 
     def metadata_table():
         def one_line(defined_by, name, mimetype, value):
             from ..common.utilities import escape_str_for_c
-            return f'  "{defined_by}", "{name}", "{mimetype}", "{escape_str_for_c(value)}", '
+            return f' {{"{defined_by}", "{name}", "{mimetype}", "{escape_str_for_c(value)}"}}, '
 
         metadata = source.collect_metadata()
         lines = ['struct metadata_table_struct metadata_table[] = {']
         lines.extend([one_line(m.source.name, m.name, m.mimetype, m.value) for m in metadata])
-        lines.extend(['  "", "", "", ""', '};', f'int num_metadata = {len(metadata)};'])
+        lines.extend(['  {"", "", "", ""}', '};', f'int num_metadata = {len(metadata)};'])
         return '\n'.join(lines)
 
     def component_share_declarations():
@@ -160,12 +160,14 @@ def component_type_declaration(comp, typedefs: list, declared_parameters: list):
     ]
     # TODO Veryify that the cogen.c iteration over `comp->def->set_par` does not somehow include DEFINITION PARAMETERS
     for par in comp.setting:
-        # if par.value.is_a(Value.Type.float_array) or par.value.is_a(Value.Type.int_array):
-        if par.value.vector_known:
-            # this is only possible if the value is a tuple of numbers, so no str representations of calculations
-            c_type = par.value.mccode_c_type.translate(str.maketrans('', '', ' *'))  # strip the trailing ' *'
-            lines.append(f'  {c_type} {par.name}[{par.value.vector_len}];')
-        elif par.value.is_str:
+        # FIXME We CANT define a static array here without knowing the maximum size used in every component!
+        # # if par.value.is_a(Value.Type.float_array) or par.value.is_a(Value.Type.int_array):
+        # if par.value.vector_known:
+        #     # this is only possible if the value is a tuple of numbers, so no str representations of calculations
+        #     c_type = par.value.mccode_c_type.translate(str.maketrans('', '', ' *'))  # strip the trailing ' *'
+        #     lines.append(f'  {c_type} {par.name}[{par.value.vector_len}];')
+        # el
+        if par.value.is_str:
             # TODO FIXME The cogen implementation *ALSO* makes static arrays for `vector` parameters?
 
             # the mccode_antlr runtime does not want to allocate or deallocate the memory for this string.
