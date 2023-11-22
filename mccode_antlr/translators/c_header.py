@@ -275,7 +275,7 @@ int traceenabled = 1;
 #else
 int traceenabled = 0;
 #endif
-#define {runtime.get("name", "none").upper()} "{include_path}"
+#define {runtime.get("name", "none").upper()} "{escape_str_for_c(include_path)}"
 int   defaultmain         = {1 if config.get("default_main") else 0};
 char  instrument_name[]   = "{source.name}";
 char  instrument_source[] = "{escape_str_for_c(source.source)}";
