@@ -37,6 +37,12 @@ def cogen_finally(source, declared_parameters):
         if len(comp.type.final):
             lines.append(f'  class_{comp.type.name}_finally(&_{comp.name}_var);')
 
+        for p in comp.parameters:
+            if p.value.is_vector and p.value.vector_known:
+                fullname = f'_{comp.name}_var._parameters.{p.name}'
+                lines.append(f'  if({fullname}) free({fullname});')
+
+
     lines.extend([
         '  siminfo_close();'
         '',
@@ -69,3 +75,24 @@ def cogen_comp_finally_class(comp, declared_parameters):
         ''
     ])
     return lines
+
+
+# def cogen_instance_finally(instance):
+#     lines = [
+#         f'/* component {instance.name} = {instance.type.name}() FINALLY */',
+#         f'void _{instance.name}_finally(void) {{',
+#     ]
+#     if len(instance.type.final):
+#         lines.append(f'  class_{instance.type.name}_finally(&_{instance.name}_var);')
+#
+#     for p in instance.parameters:
+#         if p.value.is_vector and p.value.vector_known:
+#             fullname = f'_{instance.name}_var._parameters.{p.name}'
+#             lines.append(f'  if({fullname}) free({fullname});')
+#
+#     lines.extend([
+#         '} /* _{instance.name}_finally */',
+#         ''
+#     ])
+#
+#     return lines
