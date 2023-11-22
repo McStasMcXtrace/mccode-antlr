@@ -420,6 +420,7 @@ class CompiledInstr(CompiledTest):
         from mccode_antlr.compiler.c import compile_instrument, CBinaryTarget, run_compiled_instrument
         from mccode_antlr.translators.target import MCSTAS_GENERATOR
         from mccode_antlr.loader import read_mccode_dat
+        from mccode_antlr.config import config as module_config
         from tempfile import TemporaryDirectory
         from os import R_OK, access
         from pathlib import Path
@@ -434,7 +435,7 @@ class CompiledInstr(CompiledTest):
             except RuntimeError as e:
                 log.error(f'Failed to compile instrument: {e}')
                 raise e
-            binary = Path(directory).joinpath(f'{instr.name}.out')
+            binary = Path(directory).joinpath(f'{instr.name}{module_config["ext"].get(str)}')
             self.assertTrue(binary.exists())
             self.assertTrue(binary.is_file())
             self.assertTrue(access(binary, R_OK))
