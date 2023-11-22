@@ -72,7 +72,7 @@ def declarations_pre_libraries(source, typedefs: list, component_declared_parame
             return z if len(z) and z[0] == '"' and z[-1] == '"' else f'"{z}"'
 
         def one_line(name, typename, value, unit):
-            return f'  {{"{name}", &(_instrument_var._parameters.{name}), {typename}, {nps(value)}, {nps(unit)},}}'
+            return f'  {{"{name}", &(_instrument_var._parameters.{name}), {typename}, {nps(value)}, {nps(unit)}}},'
 
         lines = [f'int numipar = {len(source.parameters)};', 'struct mcinputtable_struct mcinputtable[] = {']
         lines.extend([one_line(p.name, p.value.mccode_c_type_name, p.value, p.unit) for p in source.parameters])
