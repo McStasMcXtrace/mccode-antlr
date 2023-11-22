@@ -406,9 +406,13 @@ class TestInstr(TestCase):
 
 class CompiledTest(TestCase):
     def setUp(self):
-        import platform
-        if platform.system() == 'Windows':
-            self.skipTest('Skipping test on Windows')
+        import subprocess
+        from mccode_antlr.config import config
+        try:
+            subprocess.run([config['cc'].get(str), '--version'], check=True)
+        except FileNotFoundError:
+            log.info(f'Provide alternate C compiler via MCCODE_ANTLR_CC environment variable')
+            self.skipTest(f"C compiler {config['cc']} not found")
 
 
 class CompiledInstr(CompiledTest):
