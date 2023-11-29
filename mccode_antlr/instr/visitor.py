@@ -41,7 +41,8 @@ class InstrVisitor(McInstrVisitor):
     def visitInstrument_metadata(self, ctx: McInstrParser.Instrument_metadataContext):
         for metadata_context in ctx.metadata():
             mime, name, metadata = self.visit(metadata_context)
-            self.state.add_metadata(MetaData.from_instrument_tokens(self.state.name, mime, name, metadata))
+            metadata = MetaData.from_instrument_tokens(source=self.state.name, mimetype=mime, name=name, value=metadata)
+            self.state.add_metadata(metadata)
 
     def visitInstrumentParameterDouble(self, ctx: McInstrParser.InstrumentParameterDoubleContext):
         name = str(ctx.Identifier())
@@ -138,7 +139,8 @@ class InstrVisitor(McInstrVisitor):
             # deal with definition vs instance metadata here?
             for metadata_context in ctx.metadata():
                 mime, name, metadata = self.visit(metadata_context)
-                instance.add_metadata(MetaData.from_component_tokens(name, mime, name, metadata))
+                metadata = MetaData.from_instance_tokens(source=instance.name, mimetype=mime, name=name, value=metadata)
+                instance.add_metadata(metadata)
         # Include this instantiated component instance in the instrument components list
         if self.destination is None or not instance.removable:
             # if this _is_ an included instrument, any REMOVABLE component instances should not be added

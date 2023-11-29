@@ -225,7 +225,10 @@ class CompVisitor(McCompVisitor):
 
     def visitMetadata(self, ctx: Parser.MetadataContext):
         filename, line_number, metadata = self.visit(ctx.unparsed_block())
-        self.state.add_metadata(MetaData.from_component_tokens(self.state.name, str(ctx.mime), str(ctx.name), metadata))
+        mime = ctx.mime.text if ctx.mime.type == Parser.Identifier else ctx.mime.text[1:-1]
+        name = ctx.name.text if ctx.name.type == Parser.Identifier else ctx.name.text[1:-1]
+        metadata = MetaData.from_component_tokens(source=self.state.name, mimetype=mime, name=name, value=metadata)
+        self.state.add_metadata(metadata)
 
     def visitUnparsed_block(self, ctx: Parser.Unparsed_blockContext):
         # We want to extract the source-file line number (and filename) for use in the C-preprocessor

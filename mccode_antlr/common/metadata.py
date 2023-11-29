@@ -55,15 +55,18 @@ class MetaData:
 
     @staticmethod
     def from_component_tokens(source: str, mimetype: str, name: str, value: str):
-        return MetaData.partial_from_tokens(DataSource(DataSource.Type.Component, source), name, mimetype, value)
+        return MetaData.partial_from_tokens(source=DataSource(DataSource.Type.Component, source),
+                                            mimetype=mimetype, name=name, value=value)
 
     @staticmethod
     def from_instance_tokens(source: str, mimetype: str, name: str, value: str):
-        return MetaData.partial_from_tokens(DataSource(DataSource.Type.Instance, source), name, mimetype, value)
+        return MetaData.partial_from_tokens(source=DataSource(DataSource.Type.Instance, source),
+                                            mimetype=mimetype, name=name, value=value)
 
     @staticmethod
     def from_instrument_tokens(source: str, mimetype: str, name: str, value: str):
-        return MetaData.partial_from_tokens(DataSource(DataSource.Type.Instrument, source), name, mimetype, value)
+        return MetaData.partial_from_tokens(source=DataSource(DataSource.Type.Instrument, source),
+                                            mimetype=mimetype, name=name, value=value)
 
     # output to metadata_table_struct initializer list
     def to_table_row(self):
