@@ -1,0 +1,168 @@
+import unittest
+
+FAKE_COMPONENTS = dict(component_with_vector_parameter="""
+DEFINE COMPONENT component_with_vector_parameter
+SETTING PARAMETERS (int n, vector easy_to_spot, vector dont_set_me)
+OUTPUT PARAMETERS ()
+SHARE 
+%{
+%}
+DECLARE
+%{
+%}
+INITIALIZE
+%{
+  if (n < 0) {
+    fprintf(stderr, "component_with_vector_parameter: n < 0\\n");
+  }
+  if (easy_to_spot == NULL) {
+    fprintf(stderr, "component_with_vector_parameter: parameter easy_to_spot is NULL\\n");
+  }
+  if (dont_set_me != NULL) {
+    fprintf(stderr, "component_with_vector_parameter: parameter dont_set_me is not NULL\\n");
+  }
+  for (int i= 0; i < n; i++) {
+    printf("easy_to_spot[%d] = %g\\n", i, easy_to_spot[i]);
+  }
+%}
+TRACE
+%{
+%}
+FINALLY
+%{
+%}
+MCDISPLAY
+%{
+%}
+END
+""")
+
+
+INSTR_CONTENTS = dict(test_vector_parameter="""
+DEFINE INSTRUMENT test_vector_parameter()
+DECLARE %{
+double declared_array[] = {1, 2, 3};
+%}
+TRACE
+COMPONENT origin = Arm() AT (0, 0, 0) ABSOLUTE
+COMPONENT one = component_with_vector_parameter(n=3, easy_to_spot=declared_array) AT (0, 0, 1) RELATIVE origin
+END
+""")
+
+
+class ComponentVectorParameterTestCase(unittest.TestCase):
+    def setUp(self):
+        from mccode_antlr.assembler import Assembler
+        from mccode_antlr.reader import MCSTAS_REGISTRY
+        self.assembler = Assembler('test', registries=[MCSTAS_REGISTRY])
+        for name, contents in FAKE_COMPONENTS.items():
+            self._parse_comp(name, contents)
+
+    def _compiler_check(self):
+        import subprocess
+        from mccode_antlr.config import config
+        try:
+            subprocess.run([config['cc'].get(str), '--version'], check=True)
+        except FileNotFoundError:
+            self.skipTest(f"C compiler {config['cc']} not found")
+
+    def _compile_and_run(self, instr, parameters):
+        from mccode_antlr.compiler.c import compile_instrument, CBinaryTarget, run_compiled_instrument
+        from mccode_antlr.translators.target import MCSTAS_GENERATOR
+        from mccode_antlr.config import config as module_config
+        from tempfile import TemporaryDirectory
+        from os import R_OK, access
+        from pathlib import Path
+
+        target = CBinaryTarget(mpi=False, acc=False, count=1, nexus=False)
+        config = dict(default_main=True, enable_trace=False, portable=False, include_runtime=True,
+                      embed_instrument_file=False, verbose=False)
+
+        with TemporaryDirectory() as directory:
+            try:
+                compile_instrument(instr, target, directory, generator=MCSTAS_GENERATOR, config=config, dump_source=True)
+            except RuntimeError as e:
+                raise e
+            binary = Path(directory).joinpath(f'{instr.name}{module_config["ext"].get(str)}')
+            self.assertTrue(binary.exists())
+            self.assertTrue(binary.is_file())
+            self.assertTrue(access(binary, R_OK))
+            result = run_compiled_instrument(binary, target, f"--dir {directory}/instr {parameters}", capture=True)
+            filtered = filter(lambda x: x.startswith('easy_to_spot'), result.decode('utf8').split('\n'))
+            return [float(x.split('=')[-1].strip()) for x in filtered]
+
+    def _parse_comp(self, comp_name: str, contents: str, instance_name: str = 'instance'):
+        from antlr4 import CommonTokenStream, InputStream
+        from mccode_antlr.grammar import McCompLexer, McCompParser
+        from mccode_antlr.comp import CompVisitor
+        from mccode_antlr.reader.reader import ReaderErrorListener
+        lexer = McCompLexer(InputStream(contents))
+        tokens = CommonTokenStream(lexer)
+        parser = McCompParser(tokens)
+        parser.addErrorListener(ReaderErrorListener('Component', comp_name, contents))
+        # no need to call back to the reader, so we can use a dummy visitor
+        visitor = CompVisitor(self.assembler.reader, __file__, instance_name=instance_name)
+        res = visitor.visitProg(parser.prog())
+        self.assembler.reader.components[comp_name] = res
+        return res
+
+    def _parse_instr(self, contents: str):
+        from antlr4 import CommonTokenStream, InputStream
+        from mccode_antlr.grammar import McInstrParser, McInstrLexer
+        from mccode_antlr.instr import InstrVisitor
+        parser = McInstrParser(CommonTokenStream(McInstrLexer(InputStream(contents))))
+        visitor = InstrVisitor(self.assembler.reader, 'no source')
+        instr = visitor.visitProg(parser.prog())
+        instr.flags = tuple(self.assembler.reader.c_flags)
+        instr.registries = tuple(self.assembler.reader.registries)
+        return instr
+
+    def _check_instr_0_properties(self, instr):
+        from mccode_antlr.common.expression import DataType, ShapeType, Expr, Value
+        self.assertEqual(len(instr.components), 2)
+        self.assertEqual(instr.components[0].name, 'origin')
+        self.assertEqual(instr.components[1].name, 'one')
+        self.assertEqual(len(instr.components[1].parameters), 2)
+        self.assertEqual(instr.components[1].parameters[1].name, 'easy_to_spot')
+        value = instr.components[1].parameters[1].value
+        self.assertEqual(value.shape_type, ShapeType.vector)
+        self.assertEqual(value.data_type, DataType.float)
+        self.assertTrue(value.is_vector)
+        # Now weirdness
+        self.assertTrue(isinstance(value, Expr))
+        self.assertEqual(len(value.expr), 1)
+        self.assertTrue(isinstance(value.expr[0], Value))
+        #
+        self.assertEqual(value.expr[0].value, "declared_array")
+        # the _actual_ value is defined in the instrument declare section, we would need to compile the instrument
+        # to access it -- this should be done later
+
+    def _parse_instr_0(self):
+        return self._parse_instr(INSTR_CONTENTS['test_vector_parameter'])
+
+    def test_instr_0_parsed(self):
+        self._check_instr_0_properties(self._parse_instr_0())
+
+    def _assemble_instr_0(self):
+        self.assembler.declare_array('double', 'declared_array', [1, 2, 3], source=__file__, line=1)
+        self.assembler.component('origin', 'Arm', at=((0, 0, 0), 'absolute'))
+        self.assembler.component('one', 'component_with_vector_parameter', at=((0, 0, 1), 'origin'),
+                                 parameters=dict(n=3, easy_to_spot='declared_array'))
+        return self.assembler.instrument
+
+    def test_instr_0_assembled(self):
+        self._check_instr_0_properties(self._assemble_instr_0())
+
+    def test_parsed_instr_0_compiled(self):
+        self._compiler_check()
+        easy_to_spot = self._compile_and_run(self._parse_instr_0(), '')
+        self.assertEqual(easy_to_spot, [1, 2, 3])
+
+    def test_assembled_instr_0_compiled(self):
+        self._compiler_check()
+        easy_to_spot = self._compile_and_run(self._assemble_instr_0(), '')
+        self.assertEqual(easy_to_spot, [1, 2, 3])
+
+
+if __name__ == '__main__':
+    unittest.main()

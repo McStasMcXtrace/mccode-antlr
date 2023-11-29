@@ -120,7 +120,10 @@ class Instance:
             log.debug(f'{p=}, {name=}, {value=}')
             raise RuntimeError(f"Provided value for parameter {name} is not compatible with {self.type.name}")
 
-        if isinstance(value, str):
+        if p.value.is_vector and isinstance(value, str):
+            # FIXME can this be more general? Do we _need_ to treat vectors differently?
+            value = Expr(Value(value, data_type=p.value.data_type, shape_type=p.value.shape_type))
+        elif isinstance(value, str):
             value = Expr.parse(value)
         elif not isinstance(value, Expr):
             # Copy the data_type of the component definition parameter
