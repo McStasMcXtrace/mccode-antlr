@@ -134,6 +134,8 @@ def cogen_comp_setpos(index, comp, last, instr, component_declared_parameters):
                 pl.append(f'  {fullname} = calloc(sizeof({c_type}), {len(p.value.value)});')
                 for i, v in enumerate(p.value.value):
                     pl.append(f'  {fullname}[{i}] = {v};')
+            elif p.value.is_id:
+                pl.append(f'  {fullname} = {value};')
             else:
                 # it's a string (if not None), and should be an identifier that is a pointer to the data
                 pl.append(f'  {fullname} = {value if p.value.has_value else "NULL"};')
