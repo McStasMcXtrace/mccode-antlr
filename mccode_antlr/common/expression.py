@@ -372,7 +372,8 @@ class TrinaryOp(Op):
         return TrinaryOp(self.op, self.first, self.second, self.third)
 
     def __contains__(self, value):
-        return value in self.first or value in self.second or value in self.third
+        # first, second, and third are lists, so we need to check each element to avoid using __eq__
+        return any([any(value in x for x in y) for y in (self.first, self.second, self.third)])
 
     def verify_parameters(self, instrument_parameter_names: list[str]):
         for lr in (self.first, self.second, self.third):
@@ -516,7 +517,8 @@ class BinaryOp(Op):
         return BinaryOp(self.op, self.left.copy(), self.right.copy())
 
     def __contains__(self, value):
-        return value in self.left or value in self.right
+        # left and right are lists, so we need to check each element to avoid using __eq__
+        return any(value in x for x in self.left) or any(value in x for x in self.right)
 
     def verify_parameters(self, instrument_parameter_names: list[str]):
         for lr in (self.left, self.right):
@@ -617,7 +619,8 @@ class UnaryOp(Op):
         return UnaryOp(self.op, self.value.copy())
 
     def __contains__(self, value):
-        return value in self.value
+        # value is a list
+        return any(value in x for x in self.value)
 
     def verify_parameters(self, instrument_parameter_names: list[str]):
         for x in self.value:
