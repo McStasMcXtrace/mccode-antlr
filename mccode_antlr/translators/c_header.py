@@ -26,7 +26,8 @@ def header_pre_runtime(is_mcstas, source, runtime: dict, config: dict, typedefs:
     uservar_string += '\n'.join([f'  {x.type} {x.name};' for x in uservars])
 
     # Shouldn't we exclude array-valued names here?
-    getvar = '\n'.join([f'  if(!str_comp("{x.name}",name)){{rval=*((double*)(&(p->{x.name})));s=0;}}' for x in uservars])
+    getvar = '\n'.join(
+        [f'  if(!str_comp("{x.name}",name)){{rval=*((double*)(&(p->{x.name})));s=0;}}' for x in uservars])
 
     # Array valued names seem OK here, since a user can type-cast correctly
     getvar_void = '\n'.join(
@@ -89,9 +90,17 @@ struct particle_logic_struct {{
 struct _struct_particle {{
   double x,y,z; /* position [m] */
 {particle_struct}
+  /* Generic Temporaries: */
+  /* May be used internally by components e.g. for special */
+  /* return-values from functions used in trace, thusreturned via */
+  /* particle struct. (Example: Wolter Conics from McStas, silicon slabs.) */
+  double _mctmp_a; /* temp a */
+  double _mctmp_b; /* temp b */
+  double _mctmp_c; /* temp c */
   unsigned long randstate[7];
   double t, p;    /* time, event weight */
-  long long _uid;  /* event ID */
+  long long _uid;  /* Unique event ID */
+  long long _loopid; /* inner-loop event ID */
   long _index;     /* component index where to send this event */
   long _absorbed;  /* flag set to TRUE when this event is to be removed/ignored */
   long _scattered; /* flag set to TRUE when this event has interacted with the last component instance */
@@ -149,6 +158,9 @@ double particle_getvar(_class_particle *p, char *name, int *suc){{
   if(!str_comp("sz",name)){{rval=p->sz;s=0;}}
   if(!str_comp("t",name)){{rval=p->t;s=0;}}
   if(!str_comp("p",name)){{rval=p->p;s=0;}}
+  if(!str_comp("_mctmp_a",name)){{rval=p->_mctmp_a;s=0;}}
+  if(!str_comp("_mctmp_b",name)){{rval=p->_mctmp_b;s=0;}}
+  if(!str_comp("_mctmp_c",name)){{rval=p->_mctmp_c;s=0;}}
 {getvar}  
   if (suc!=0x0) {{*suc=s;}}
   return rval;
