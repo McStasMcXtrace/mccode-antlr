@@ -180,23 +180,25 @@ class GroupIO:
         HDF5IO.save(group=group.create_group('member_names'), data=[member.name for member in data.members])
 
 
-class RemoteRegistryIO:
-    from mccode_antlr.reader.registry import Registry, RemoteRegistry
+def RemoteRegistryIO(actual_type):
+    from mccode_antlr.reader.registry import RemoteRegistry
 
-    @staticmethod
-    def load(group, **kwargs) -> Registry:
-        values = _standard_read(RemoteRegistryIO.RemoteRegistry, group, ('name', 'filename', 'url'), (), (), **kwargs)
-        try:
-            return RemoteRegistryIO.RemoteRegistry(**values)
-        except RuntimeError:
-            log.warn(f'Unable to reconstruct remote registry from {values}')
-        return RemoteRegistryIO.Registry()
+    class _RemoteRegistryIO:
+        @staticmethod
+        def load(group, **kwargs) -> RemoteRegistry:
+            _check_header(group, actual_type)
+            values = _standard_read(actual_type, group, actual_type.file_keys(), (), (), **kwargs)
+            try:
+                return actual_type(**values)
+            except RuntimeError:
+                log.warn(f'Unable to reconstruct {actual_type.__name__} registry from {values}')
+            return RemoteRegistry('loading error', None, None, None)
 
-    @staticmethod
-    def save(group, data, **kwargs):
-        _standard_save(RemoteRegistryIO.RemoteRegistry, group, data, ('name', 'filename'), (), **kwargs)
-        if data.pooch.base_url is not None:
-            group.attrs['url'] = data.pooch.base_url
+        @staticmethod
+        def save(group, data, **kwargs):
+            _standard_save(actual_type, group, data, actual_type.file_keys(), (), **kwargs)
+
+    return _RemoteRegistryIO
 
 
 class LocalRegistryIO:
@@ -397,6 +399,7 @@ class HDF5IO:
     from mccode_antlr.instr.jump import Jump
     from mccode_antlr.instr.orientation import (Matrix, Vector, Angles, Rotation, Seitz, RotationX, RotationY,
                                                 RotationZ, TranslationPart, Orient, Parts, Part)
+    from mccode_antlr.reader.registry import ModuleRemoteRegistry, GitHubRegistry
 
     _handlers = {
         'Instr': InstrIO,
@@ -406,7 +409,8 @@ class HDF5IO:
         'Instance': InstanceIO,
         'RawC': _dataclass_io(RawC, attrs=('filename', 'line'), required=('source',), optional=('translated',)),
         'Group': GroupIO,
-        'RemoteRegistry': RemoteRegistryIO,
+        'ModuleRemoteRegistry': RemoteRegistryIO(ModuleRemoteRegistry),
+        'GitHubRegistry': RemoteRegistryIO(GitHubRegistry),
         'LocalRegistry': LocalRegistryIO,
         'ComponentParameter': _dataclass_io(ComponentParameter, attrs=('name',), required=('value',)),
         'Comp': _dataclass_io(Comp, attrs=('name', 'category', 'dependency', 'acc'),

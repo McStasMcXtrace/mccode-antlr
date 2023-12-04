@@ -4,6 +4,8 @@ def _runtime_parameters(is_mcstas):
         pars.extend(['vx', 'vy', 'vz', 't', 'sx', 'sy', 'sz', 'p', 'mcgravitation', 'mcMagnet', 'allow_backprop'])
     else:
         pars.extend(['kx', 'ky', 'kz', 'phi', 't', 'Ex', 'Ey', 'Ez', 'p'])
+    # Add the temporary particle parameters added sometime after v3.4.0 ... to the v3.4.0 tag
+    pars.extend(['_mctmp_a', '_mctmp_b', '_mctmp_c'])
     return pars
 
 

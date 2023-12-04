@@ -2,7 +2,7 @@
 from zenlog import log
 from collections import namedtuple
 from dataclasses import dataclass
-from ..reader import Registry, LIBC_REGISTRY
+from ..reader import Registry, FIXED_LIBC_REGISTRY, LIBC_REGISTRY
 from ..instr import Instr, Instance
 from .target import TargetVisitor
 from .c_listener import extract_c_declared_variables
@@ -245,6 +245,8 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
         languages. (A different target language would not include the same libraries in its raw blocks)
         """
         # Make sure the registry list contains the C library registry, so that we can find and include files
+        if not any(reg == FIXED_LIBC_REGISTRY for reg in self.registries):
+            self.source.registries += (FIXED_LIBC_REGISTRY, )
         if not any(reg == LIBC_REGISTRY for reg in self.registries):
             self.source.registries += (LIBC_REGISTRY, )
 
