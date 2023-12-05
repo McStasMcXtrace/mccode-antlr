@@ -435,6 +435,41 @@ class TestInstr(TestCase):
         self.assertTrue(inst.parameter_used('a4'))
         self.assertEqual(2, inst.check_instrument_parameters(), )
 
+    def test_split_broken_reference(self):
+        from textwrap import dedent
+        from mccode_antlr.instr import Instance
+        from mccode_antlr.common.expression import Expr
+        from mccode_antlr.instr.orientation import Vector
+        instr = dedent("""\
+        DEFINE INSTRUMENT test_tof(phase/"degree"=0)
+        TRACE
+        COMPONENT Origin = Progress_bar() AT (0, 0, 0) ABSOLUTE 
+        COMPONENT ESS_source = ESS_butterfly(
+            sector="W", beamline=4, yheight=0.03, cold_frac=0.5, dist=1, focus_xw=0.01, focus_yh=0.01, 
+            c_performance=1.0, t_performance=1.0, Lmin=1, Lmax=2, tmax_multiplier=1.5, n_pulses=1, acc_power=2.0
+        ) AT (0, 0, 0) ABSOLUTE 
+        COMPONENT guide = Guide_gravity(w1=0.01, w2=0.05, h1=0.01, h2=0.05, l=8.0, m=3.5, G=-9.82) AT (0, 0, 1) ABSOLUTE 
+        COMPONENT guide_end = Arm() AT (0, 0, 8.0) RELATIVE guide
+        COMPONENT chopper = DiskChopper(radius=0.35, nu=14, phase=phase, theta_0=115) AT (0, 0, 0.01) RELATIVE guide_end
+        COMPONENT split_at = Arm() AT (0, 0, 1e-08) RELATIVE chopper
+        COMPONENT sample = Incoherent(
+            radius=0.005, yheight=0.02, thickness=0.001, focus_ah=2.0, focus_aw=2.0, target_x=1.0, target_y=0.0, 
+            target_z=0.0, Etrans=0.0, deltaE=0.2
+        ) AT (0, 0, 1) RELATIVE chopper 
+        END""")
+        instr = parse_instr_string(instr)
+        first, second = instr.split('split_at', remove_unused_parameters=True)
+        # The sample _should not_ still depend on the chopper, which is only present in the first instrument!
+        sample = second.components[-1]
+        self.assertEqual(sample.name, 'sample')
+        at_ref = sample.at_relative
+        self.assertTrue(isinstance(at_ref[0], Vector))
+        self.assertFalse(isinstance(at_ref[1], Instance))
+        self.assertTrue(at_ref[1] is None)
+        # the position of the sample depends on the source, guide, guide-end, and chopper
+        v = Vector(Expr.float(0), Expr.float(0), Expr.float(1 + 8 + 0.01 + 1))
+        self.assertEqual(v, at_ref[0])
+
 
 class CompiledTest(TestCase):
     def setUp(self):
@@ -558,6 +593,35 @@ class CompiledInstr(CompiledTest):
 
         try:
             self._compile_and_run(instr, '-n 1000', run=True)
+        except RuntimeError as e:
+            log.error(f'Failed to compile instrument: {e}')
+            self.fail(f'Failed to compile instrument {e}')
+
+    def test_split_broken_reference_compiles(self):
+        from textwrap import dedent
+        instr = dedent("""\
+        DEFINE INSTRUMENT test_tof(phase/"degree"=0, ang/"degree"=0)
+        TRACE
+        COMPONENT Origin = Progress_bar() AT (0, 0, 0) ABSOLUTE 
+        COMPONENT ESS_source = ESS_butterfly(
+            sector="W", beamline=4, yheight=0.03, cold_frac=0.5, dist=1, focus_xw=0.01, focus_yh=0.01, 
+            c_performance=1.0, t_performance=1.0, Lmin=1, Lmax=2, tmax_multiplier=1.5, n_pulses=1, acc_power=2.0
+        ) AT (0, 0, 0) ABSOLUTE 
+        COMPONENT guide = Guide_gravity(w1=0.01, w2=0.05, h1=0.01, h2=0.05, l=8.0, m=3.5, G=-9.82) AT (0, 0, 1) ABSOLUTE 
+        COMPONENT guide_end = Arm() AT (0, 0, 8.0) RELATIVE guide
+        COMPONENT chopper = DiskChopper(radius=0.35, nu=14, phase=phase, theta_0=115) AT (0, 0, 0.01) RELATIVE guide_end
+        COMPONENT rotate = Arm() AT (0, 0, 0) RELATIVE chopper ROTATED (0, ang, 0) RELATIVE chopper
+        COMPONENT aperture = Slit(xwidth=0.05, yheight=0.05) AT (0, 0, 1) RELATIVE rotate
+        COMPONENT split_at = Arm() AT (0, 0, 1e-08) RELATIVE rotate
+        COMPONENT sample = Incoherent(
+            radius=0.005, yheight=0.02, thickness=0.001, focus_ah=2.0, focus_aw=2.0, target_x=1.0, target_y=0.0, 
+            target_z=0.0, Etrans=0.0, deltaE=0.2
+        ) AT (0, 0, 1) RELATIVE aperture
+        END""")
+        instr = parse_instr_string(instr)
+        _, second = instr.split('split_at', remove_unused_parameters=True)
+        try:
+            self._compile_and_run(second, '-n 1000 ang=10', run=True)
         except RuntimeError as e:
             log.error(f'Failed to compile instrument: {e}')
             self.fail(f'Failed to compile instrument {e}')
