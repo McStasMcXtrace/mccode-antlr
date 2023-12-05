@@ -370,10 +370,20 @@ class Instr:
         first.name = self.name + '_first'
         if first.check_instrument_parameters(remove=remove_unused_parameters) and not remove_unused_parameters:
             log.warn(f'Instrument {first.name} has unused instrument parameters')
+
         second = self.copy(first=index + 1)
         second.name = self.name + '_second'
+        # remove any dangling component references:
+        for instance in second.components:
+            at_rel = instance.at_relative[1]
+            rot_rel = instance.rotate_relative[1]
+            if at_rel is not None and at_rel not in second.components:
+                instance.at_relative = instance.orientation.position(), None
+            if rot_rel is not None and rot_rel not in second.components:
+                instance.rotate_relative = instance.orientation.angles(), None
         if second.check_instrument_parameters(remove=remove_unused_parameters) and not remove_unused_parameters:
-            log.warn(f'Instrument {second.name} has unused instrument parameters')
+            log.info(f'Instrument {second.name} has unused instrument parameters')
+
         return first, second
 
     def make_instance(self, name, component, at_relative=None, rotate_relative=None, orientation=None,
@@ -407,7 +417,7 @@ class Instr:
 
         fc = first.components[-1]
         if fc.type.name != 'Arm':
-            log.warn(f'Component {after} is a {fc.type.name} instead of an Arm -- using MCPL file may cause problems')
+            log.info(f'Component {after} is a {fc.type.name} instead of an Arm -- using MCPL file may cause problems')
 
         if output_parameters is None:
             output_parameters = (filename_parameter,)
@@ -457,11 +467,11 @@ class Instr:
         names = [p.name for p in self.parameters]
         used = [self.parameter_used(p.name) for p in self.parameters]
         if not all(used):
-            log.warn(f'The following instrument parameters are not used in the instrument: '
+            log.info(f'The following instrument parameters are not used in the instrument: '
                      f'{", ".join([n for n, u in zip(names, used) if not u])}')
             if remove:
                 self.parameters = tuple(p for i, p in enumerate(self.parameters) if used[i])
-                log.warn(f'Removed unused instrument parameters; {len(self.parameters)} remain')
+                log.info(f'Removed unused instrument parameters; {len(self.parameters)} remain')
         return len(used) - sum(used)
 
     def verify_instance_parameters(self):

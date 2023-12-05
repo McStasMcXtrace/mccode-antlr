@@ -902,7 +902,6 @@ class Orient:
         rot = Parts.from_dependent_chain(rot and rot.rotation_parts(), rotated=angles, degrees=degrees, copy=copy)
         return cls(pos, rot, degrees)
 
-
     @classmethod
     def from_dependent_orientation(cls, dep: OrientType, at: Vector, angles: Angles, degrees=True, copy=True):
         dep = dep or Orient()
