@@ -600,7 +600,7 @@ class CompiledInstr(CompiledTest):
     def test_split_broken_reference_compiles(self):
         from textwrap import dedent
         instr = dedent("""\
-        DEFINE INSTRUMENT test_tof(phase/"degree"=0)
+        DEFINE INSTRUMENT test_tof(phase/"degree"=0, ang/"degree"=0)
         TRACE
         COMPONENT Origin = Progress_bar() AT (0, 0, 0) ABSOLUTE 
         COMPONENT ESS_source = ESS_butterfly(
@@ -610,16 +610,18 @@ class CompiledInstr(CompiledTest):
         COMPONENT guide = Guide_gravity(w1=0.01, w2=0.05, h1=0.01, h2=0.05, l=8.0, m=3.5, G=-9.82) AT (0, 0, 1) ABSOLUTE 
         COMPONENT guide_end = Arm() AT (0, 0, 8.0) RELATIVE guide
         COMPONENT chopper = DiskChopper(radius=0.35, nu=14, phase=phase, theta_0=115) AT (0, 0, 0.01) RELATIVE guide_end
-        COMPONENT split_at = Arm() AT (0, 0, 1e-08) RELATIVE chopper
+        COMPONENT rotate = Arm() AT (0, 0, 0) RELATIVE chopper ROTATED (0, ang, 0) RELATIVE chopper
+        COMPONENT aperture = Slit(xwidth=0.05, yheight=0.05) AT (0, 0, 1) RELATIVE rotate
+        COMPONENT split_at = Arm() AT (0, 0, 1e-08) RELATIVE rotate
         COMPONENT sample = Incoherent(
             radius=0.005, yheight=0.02, thickness=0.001, focus_ah=2.0, focus_aw=2.0, target_x=1.0, target_y=0.0, 
             target_z=0.0, Etrans=0.0, deltaE=0.2
-        ) AT (0, 0, 1) RELATIVE chopper 
+        ) AT (0, 0, 1) RELATIVE aperture
         END""")
         instr = parse_instr_string(instr)
         _, second = instr.split('split_at', remove_unused_parameters=True)
         try:
-            self._compile_and_run(second, '-n 1000', run=True)
+            self._compile_and_run(second, '-n 1000 ang=10', run=True)
         except RuntimeError as e:
             log.error(f'Failed to compile instrument: {e}')
             self.fail(f'Failed to compile instrument {e}')
