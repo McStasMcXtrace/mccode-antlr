@@ -387,7 +387,8 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
         from .c_trace import def_trace_section, cogen_trace_section
         self.out(def_trace_section(self.is_mcstas))
         self.out(cogen_trace_section(self.is_mcstas, self.source, self.component_declared_parameters,
-                                     self.instrument_uservars, self.component_uservars))
+                                     self.instrument_uservars, self.component_uservars,
+                                     experimental_extend=self.config.get('experimental_extend', False)))
 
     def leave_trace(self):
         from .c_trace import undef_trace_section

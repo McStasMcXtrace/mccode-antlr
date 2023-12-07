@@ -73,14 +73,17 @@ def undef_trace_section(is_mcstas):
     return '\n'.join(lines)
 
 
-def cogen_trace_section(is_mcstas, source, declared_parameters, instrument_uservars, component_uservars):
+def cogen_trace_section(is_mcstas, source, declared_parameters, instrument_uservars, component_uservars,
+                        experimental_extend=False):
     return '\n'.join([
         cogen_comp_trace_class(is_mcstas, c, source, declared_parameters[c.name],
-                               instrument_uservars, component_uservars[c.name]) for c in source.component_types()
+                               instrument_uservars, component_uservars[c.name],
+                               experimental_extend=experimental_extend) for c in source.component_types()
     ])
 
 
-def cogen_comp_trace_class(is_mcstas, comp, source, declared_parameters, instr_uservars, comp_uservars):
+def cogen_comp_trace_class(is_mcstas, comp, source, declared_parameters, instr_uservars, comp_uservars,
+                           experimental_extend=False):
     from .c_defines import cogen_parameter_define, cogen_parameter_undef
     # count matching component type instances which define an EXTEND block:
     extended = [(n, i) for n, i in enumerate(source.components) if i.type.name == comp.name and len(i.extend)]
@@ -140,16 +143,34 @@ def cogen_comp_trace_class(is_mcstas, comp, source, declared_parameters, instr_u
 
     if len(extended):
         # combine the USERVARS from the instrument and this component type blocks:
-        # uvs = set().union(instr_uservars).union(comp_uservars)
         uvs = list(dict.fromkeys([*instr_uservars, *comp_uservars]))
         # So that the EXTEND block(s) can access them
         lines.extend([f'  #define {x.name} (_particle->{x.name})' for x in uvs])
         # `index` was defined above to be the component index into the full instrument list
-        for index, inst in extended:
-            lines.append(f'if (_comp->_index == {1+index}) {{ // EXTEND {inst.name}')
-            for ext in inst.extend:
-                lines.append(ext.to_c())
-            lines.append("}")
+
+        if experimental_extend:
+            # switch statement for all component instances, combining repeated extend blocks
+            def full_ext(xs):
+                return '\n'.join([x.to_c() for x in xs])
+
+            uniques = list(dict.fromkeys([full_ext(x[1].extend) for x in extended]))
+            unique_index = [uniques.index(full_ext(x[1].extend)) for x in extended]
+            inverted = [[k for k, j in enumerate(unique_index) if j == i] for i in range(len(uniques))]
+            lines.append('switch (_comp->_index) {')
+            for u, extended_indexes in enumerate(inverted):
+                for extended_index in extended_indexes:
+                    lines.append(f"case {extended[extended_index][0]}: // EXTEND {extended[extended_index][1].name}")
+                lines.append(f'{{{uniques[u]}\nbreak;\n}}')
+            lines.append('default: break;')
+            lines.append('}')
+        else:
+            # individual if statements for each component instance
+            for index, inst in extended:
+                lines.append(f'if (_comp->_index == {1+index}) {{ // EXTEND {inst.name}')
+                for ext in inst.extend:
+                    lines.append(ext.to_c())
+                lines.append("}")
+
         lines.extend(f'  #undef {x.name}' for x in uvs)
 
     # return the component
