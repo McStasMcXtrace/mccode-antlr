@@ -302,6 +302,22 @@ class CompVisitor(McCompVisitor):
         left, right = self.visit(ctx.left), self.visit(ctx.right)
         return left * right if ctx.Div() is None else left / right
 
+
+    def visitExpressionBinaryMod(self, ctx: Parser.ExpressionBinaryModContext):
+        from ..common import BinaryOp
+        left, right = self.visit(ctx.left), self.visit(ctx.right)
+        return Expr(BinaryOp('%', left, right))
+
+    def visitExpressionBinaryLeftShift(self, ctx: Parser.ExpressionBinaryLeftShiftContext):
+        from ..common import BinaryOp
+        left, right = self.visit(ctx.left), self.visit(ctx.right)
+        return Expr(BinaryOp('<<', left, right))
+
+    def visitExpressionBinaryRightShift(self, ctx: Parser.ExpressionBinaryRightShiftContext):
+        from ..common import BinaryOp
+        left, right = self.visit(ctx.left), self.visit(ctx.right)
+        return Expr(BinaryOp('>>', left, right))
+
     def visitInitializerlist(self, ctx: Parser.InitializerlistContext):
         from ..common import Value, ObjectType, ShapeType
         values = [self.visit(x).expr[0].value for x in ctx.values]

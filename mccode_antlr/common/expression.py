@@ -436,7 +436,7 @@ class BinaryOp(Op):
             return f'{lstr} || {rstr}' if 'C' == self.style else f'{lstr} or {rstr}'
         if '__and__' == self.op:
             return f'{lstr} && {rstr}' if 'C' == self.style else f'{lstr} and {rstr}'
-        if any(x in self.op for x in '+-'):
+        if any(x == self.op for x in ('+', '-', '%', '<<', '>>')):
             return f'({lstr} {self.op} {rstr})'
         if self.op == '//' and 'C' == self.style:
             # Verify that the operands are integers before reducing to a single slash?

@@ -28,6 +28,20 @@ class CBinaryTarget:
         if nexus:
             self.type |= CBinaryTarget.Type.nexus
 
+    def update(self, d: dict):
+        self.count = d.get('count', self.count)
+        d_mpi = d.get('mpi', self.type & CBinaryTarget.Type.mpi)
+        d_acc = d.get('acc', self.type & CBinaryTarget.Type.acc)
+        if d_mpi and d_acc:
+            self.type = CBinaryTarget.Type.acc | CBinaryTarget.Type.mpi
+        elif d_mpi:
+            self.type = CBinaryTarget.Type.mpi
+        elif d_acc:
+            self.type = CBinaryTarget.Type.acc
+        else:
+            self.type = CBinaryTarget.Type.single
+        if d.get('nexus', self.type & CBinaryTarget.Type.nexus):
+            self.type |= CBinaryTarget.Type.nexus
 
     @property
     def compiler(self) -> str:

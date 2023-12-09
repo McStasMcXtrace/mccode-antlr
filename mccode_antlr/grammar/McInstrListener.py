@@ -1,4 +1,4 @@
-# Generated from /home/g/Code/mccode_antlr-antlr/mccode_antlr/grammar/McInstr.g4 by ANTLR 4.13.1
+# Generated from /home/gst/PycharmProjects/mccode4/mccode_antlr/grammar/McInstr.g4 by ANTLR 4.13.1
 from antlr4 import *
 if "." in __name__:
     from .McInstrParser import McInstrParser
@@ -449,6 +449,15 @@ class McInstrListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by McInstrParser#ExpressionBinaryMod.
+    def enterExpressionBinaryMod(self, ctx:McInstrParser.ExpressionBinaryModContext):
+        pass
+
+    # Exit a parse tree produced by McInstrParser#ExpressionBinaryMod.
+    def exitExpressionBinaryMod(self, ctx:McInstrParser.ExpressionBinaryModContext):
+        pass
+
+
     # Enter a parse tree produced by McInstrParser#ExpressionBinaryLess.
     def enterExpressionBinaryLess(self, ctx:McInstrParser.ExpressionBinaryLessContext):
         pass
@@ -464,15 +473,6 @@ class McInstrListener(ParseTreeListener):
 
     # Exit a parse tree produced by McInstrParser#ExpressionBinaryGreater.
     def exitExpressionBinaryGreater(self, ctx:McInstrParser.ExpressionBinaryGreaterContext):
-        pass
-
-
-    # Enter a parse tree produced by McInstrParser#ExpressionGrouping.
-    def enterExpressionGrouping(self, ctx:McInstrParser.ExpressionGroupingContext):
-        pass
-
-    # Exit a parse tree produced by McInstrParser#ExpressionGrouping.
-    def exitExpressionGrouping(self, ctx:McInstrParser.ExpressionGroupingContext):
         pass
 
 
@@ -512,30 +512,12 @@ class McInstrListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by McInstrParser#ExpressionExponentiation.
-    def enterExpressionExponentiation(self, ctx:McInstrParser.ExpressionExponentiationContext):
+    # Enter a parse tree produced by McInstrParser#ExpressionBinaryRightShift.
+    def enterExpressionBinaryRightShift(self, ctx:McInstrParser.ExpressionBinaryRightShiftContext):
         pass
 
-    # Exit a parse tree produced by McInstrParser#ExpressionExponentiation.
-    def exitExpressionExponentiation(self, ctx:McInstrParser.ExpressionExponentiationContext):
-        pass
-
-
-    # Enter a parse tree produced by McInstrParser#ExpressionBinaryGreaterEqual.
-    def enterExpressionBinaryGreaterEqual(self, ctx:McInstrParser.ExpressionBinaryGreaterEqualContext):
-        pass
-
-    # Exit a parse tree produced by McInstrParser#ExpressionBinaryGreaterEqual.
-    def exitExpressionBinaryGreaterEqual(self, ctx:McInstrParser.ExpressionBinaryGreaterEqualContext):
-        pass
-
-
-    # Enter a parse tree produced by McInstrParser#ExpressionZero.
-    def enterExpressionZero(self, ctx:McInstrParser.ExpressionZeroContext):
-        pass
-
-    # Exit a parse tree produced by McInstrParser#ExpressionZero.
-    def exitExpressionZero(self, ctx:McInstrParser.ExpressionZeroContext):
+    # Exit a parse tree produced by McInstrParser#ExpressionBinaryRightShift.
+    def exitExpressionBinaryRightShift(self, ctx:McInstrParser.ExpressionBinaryRightShiftContext):
         pass
 
 
@@ -548,15 +530,6 @@ class McInstrListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by McInstrParser#ExpressionUnaryPM.
-    def enterExpressionUnaryPM(self, ctx:McInstrParser.ExpressionUnaryPMContext):
-        pass
-
-    # Exit a parse tree produced by McInstrParser#ExpressionUnaryPM.
-    def exitExpressionUnaryPM(self, ctx:McInstrParser.ExpressionUnaryPMContext):
-        pass
-
-
     # Enter a parse tree produced by McInstrParser#ExpressionPrevious.
     def enterExpressionPrevious(self, ctx:McInstrParser.ExpressionPreviousContext):
         pass
@@ -566,66 +539,12 @@ class McInstrListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by McInstrParser#ExpressionTrinaryLogic.
-    def enterExpressionTrinaryLogic(self, ctx:McInstrParser.ExpressionTrinaryLogicContext):
-        pass
-
-    # Exit a parse tree produced by McInstrParser#ExpressionTrinaryLogic.
-    def exitExpressionTrinaryLogic(self, ctx:McInstrParser.ExpressionTrinaryLogicContext):
-        pass
-
-
-    # Enter a parse tree produced by McInstrParser#ExpressionFloat.
-    def enterExpressionFloat(self, ctx:McInstrParser.ExpressionFloatContext):
-        pass
-
-    # Exit a parse tree produced by McInstrParser#ExpressionFloat.
-    def exitExpressionFloat(self, ctx:McInstrParser.ExpressionFloatContext):
-        pass
-
-
-    # Enter a parse tree produced by McInstrParser#ExpressionPointerAccess.
-    def enterExpressionPointerAccess(self, ctx:McInstrParser.ExpressionPointerAccessContext):
-        pass
-
-    # Exit a parse tree produced by McInstrParser#ExpressionPointerAccess.
-    def exitExpressionPointerAccess(self, ctx:McInstrParser.ExpressionPointerAccessContext):
-        pass
-
-
     # Enter a parse tree produced by McInstrParser#ExpressionIdentifier.
     def enterExpressionIdentifier(self, ctx:McInstrParser.ExpressionIdentifierContext):
         pass
 
     # Exit a parse tree produced by McInstrParser#ExpressionIdentifier.
     def exitExpressionIdentifier(self, ctx:McInstrParser.ExpressionIdentifierContext):
-        pass
-
-
-    # Enter a parse tree produced by McInstrParser#ExpressionBinaryEqual.
-    def enterExpressionBinaryEqual(self, ctx:McInstrParser.ExpressionBinaryEqualContext):
-        pass
-
-    # Exit a parse tree produced by McInstrParser#ExpressionBinaryEqual.
-    def exitExpressionBinaryEqual(self, ctx:McInstrParser.ExpressionBinaryEqualContext):
-        pass
-
-
-    # Enter a parse tree produced by McInstrParser#ExpressionBinaryPM.
-    def enterExpressionBinaryPM(self, ctx:McInstrParser.ExpressionBinaryPMContext):
-        pass
-
-    # Exit a parse tree produced by McInstrParser#ExpressionBinaryPM.
-    def exitExpressionBinaryPM(self, ctx:McInstrParser.ExpressionBinaryPMContext):
-        pass
-
-
-    # Enter a parse tree produced by McInstrParser#ExpressionUnaryLogic.
-    def enterExpressionUnaryLogic(self, ctx:McInstrParser.ExpressionUnaryLogicContext):
-        pass
-
-    # Exit a parse tree produced by McInstrParser#ExpressionUnaryLogic.
-    def exitExpressionUnaryLogic(self, ctx:McInstrParser.ExpressionUnaryLogicContext):
         pass
 
 
@@ -662,6 +581,114 @@ class McInstrListener(ParseTreeListener):
 
     # Exit a parse tree produced by McInstrParser#ExpressionString.
     def exitExpressionString(self, ctx:McInstrParser.ExpressionStringContext):
+        pass
+
+
+    # Enter a parse tree produced by McInstrParser#ExpressionGrouping.
+    def enterExpressionGrouping(self, ctx:McInstrParser.ExpressionGroupingContext):
+        pass
+
+    # Exit a parse tree produced by McInstrParser#ExpressionGrouping.
+    def exitExpressionGrouping(self, ctx:McInstrParser.ExpressionGroupingContext):
+        pass
+
+
+    # Enter a parse tree produced by McInstrParser#ExpressionExponentiation.
+    def enterExpressionExponentiation(self, ctx:McInstrParser.ExpressionExponentiationContext):
+        pass
+
+    # Exit a parse tree produced by McInstrParser#ExpressionExponentiation.
+    def exitExpressionExponentiation(self, ctx:McInstrParser.ExpressionExponentiationContext):
+        pass
+
+
+    # Enter a parse tree produced by McInstrParser#ExpressionBinaryLeftShift.
+    def enterExpressionBinaryLeftShift(self, ctx:McInstrParser.ExpressionBinaryLeftShiftContext):
+        pass
+
+    # Exit a parse tree produced by McInstrParser#ExpressionBinaryLeftShift.
+    def exitExpressionBinaryLeftShift(self, ctx:McInstrParser.ExpressionBinaryLeftShiftContext):
+        pass
+
+
+    # Enter a parse tree produced by McInstrParser#ExpressionBinaryGreaterEqual.
+    def enterExpressionBinaryGreaterEqual(self, ctx:McInstrParser.ExpressionBinaryGreaterEqualContext):
+        pass
+
+    # Exit a parse tree produced by McInstrParser#ExpressionBinaryGreaterEqual.
+    def exitExpressionBinaryGreaterEqual(self, ctx:McInstrParser.ExpressionBinaryGreaterEqualContext):
+        pass
+
+
+    # Enter a parse tree produced by McInstrParser#ExpressionZero.
+    def enterExpressionZero(self, ctx:McInstrParser.ExpressionZeroContext):
+        pass
+
+    # Exit a parse tree produced by McInstrParser#ExpressionZero.
+    def exitExpressionZero(self, ctx:McInstrParser.ExpressionZeroContext):
+        pass
+
+
+    # Enter a parse tree produced by McInstrParser#ExpressionUnaryPM.
+    def enterExpressionUnaryPM(self, ctx:McInstrParser.ExpressionUnaryPMContext):
+        pass
+
+    # Exit a parse tree produced by McInstrParser#ExpressionUnaryPM.
+    def exitExpressionUnaryPM(self, ctx:McInstrParser.ExpressionUnaryPMContext):
+        pass
+
+
+    # Enter a parse tree produced by McInstrParser#ExpressionTrinaryLogic.
+    def enterExpressionTrinaryLogic(self, ctx:McInstrParser.ExpressionTrinaryLogicContext):
+        pass
+
+    # Exit a parse tree produced by McInstrParser#ExpressionTrinaryLogic.
+    def exitExpressionTrinaryLogic(self, ctx:McInstrParser.ExpressionTrinaryLogicContext):
+        pass
+
+
+    # Enter a parse tree produced by McInstrParser#ExpressionFloat.
+    def enterExpressionFloat(self, ctx:McInstrParser.ExpressionFloatContext):
+        pass
+
+    # Exit a parse tree produced by McInstrParser#ExpressionFloat.
+    def exitExpressionFloat(self, ctx:McInstrParser.ExpressionFloatContext):
+        pass
+
+
+    # Enter a parse tree produced by McInstrParser#ExpressionPointerAccess.
+    def enterExpressionPointerAccess(self, ctx:McInstrParser.ExpressionPointerAccessContext):
+        pass
+
+    # Exit a parse tree produced by McInstrParser#ExpressionPointerAccess.
+    def exitExpressionPointerAccess(self, ctx:McInstrParser.ExpressionPointerAccessContext):
+        pass
+
+
+    # Enter a parse tree produced by McInstrParser#ExpressionBinaryEqual.
+    def enterExpressionBinaryEqual(self, ctx:McInstrParser.ExpressionBinaryEqualContext):
+        pass
+
+    # Exit a parse tree produced by McInstrParser#ExpressionBinaryEqual.
+    def exitExpressionBinaryEqual(self, ctx:McInstrParser.ExpressionBinaryEqualContext):
+        pass
+
+
+    # Enter a parse tree produced by McInstrParser#ExpressionBinaryPM.
+    def enterExpressionBinaryPM(self, ctx:McInstrParser.ExpressionBinaryPMContext):
+        pass
+
+    # Exit a parse tree produced by McInstrParser#ExpressionBinaryPM.
+    def exitExpressionBinaryPM(self, ctx:McInstrParser.ExpressionBinaryPMContext):
+        pass
+
+
+    # Enter a parse tree produced by McInstrParser#ExpressionUnaryLogic.
+    def enterExpressionUnaryLogic(self, ctx:McInstrParser.ExpressionUnaryLogicContext):
+        pass
+
+    # Exit a parse tree produced by McInstrParser#ExpressionUnaryLogic.
+    def exitExpressionUnaryLogic(self, ctx:McInstrParser.ExpressionUnaryLogicContext):
         pass
 
 

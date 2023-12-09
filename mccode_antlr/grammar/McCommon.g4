@@ -50,6 +50,9 @@ expr
   | <assoc=right> base=expr '^' exponent=expr       #ExpressionExponentiation
   | left=expr ('*' | '/') right=expr                #ExpressionBinaryMD
   | left=expr ('+' | '-') right=expr                #ExpressionBinaryPM
+  | left=expr '%' right=expr                        #ExpressionBinaryMod
+  | left=expr '>>' right=expr                       #ExpressionBinaryRightShift
+  | left=expr '<<' right=expr                       #ExpressionBinaryLeftShift
   | Identifier                                      #ExpressionIdentifier
   | left=expr '==' right=expr                       #ExpressionBinaryEqual
   | left=expr '<=' right=expr                       #ExpressionBinaryLessEqual
@@ -81,7 +84,7 @@ Category: 'CATEGORY' | 'Category' | 'category';
 Component : 'COMPONENT' | 'Component' | 'component';
 UserVars: 'USERVARS' | 'UserVars' | 'uservars';
 Define: 'DEFINE' | 'Define' | 'define';
-Declare: 'DECLARE';
+Declare: 'DECLARE' | 'Declare' | 'declare';
 Definition: 'DEFINITION' | 'Definition' | 'definition';
 End: 'END' | 'End' | 'end';
 McDisplay: 'MCDISPLAY' | 'DISPLAY' | 'McDisplay' | 'mcdisplay' | 'Display' | 'display';

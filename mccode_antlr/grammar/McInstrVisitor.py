@@ -1,4 +1,4 @@
-# Generated from /home/g/Code/mccode_antlr-antlr/mccode_antlr/grammar/McInstr.g4 by ANTLR 4.13.1
+# Generated from /home/gst/PycharmProjects/mccode4/mccode_antlr/grammar/McInstr.g4 by ANTLR 4.13.1
 from antlr4 import *
 if "." in __name__:
     from .McInstrParser import McInstrParser
@@ -254,6 +254,11 @@ class McInstrVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by McInstrParser#ExpressionBinaryMod.
+    def visitExpressionBinaryMod(self, ctx:McInstrParser.ExpressionBinaryModContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by McInstrParser#ExpressionBinaryLess.
     def visitExpressionBinaryLess(self, ctx:McInstrParser.ExpressionBinaryLessContext):
         return self.visitChildren(ctx)
@@ -261,11 +266,6 @@ class McInstrVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by McInstrParser#ExpressionBinaryGreater.
     def visitExpressionBinaryGreater(self, ctx:McInstrParser.ExpressionBinaryGreaterContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by McInstrParser#ExpressionGrouping.
-    def visitExpressionGrouping(self, ctx:McInstrParser.ExpressionGroupingContext):
         return self.visitChildren(ctx)
 
 
@@ -289,18 +289,8 @@ class McInstrVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by McInstrParser#ExpressionExponentiation.
-    def visitExpressionExponentiation(self, ctx:McInstrParser.ExpressionExponentiationContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by McInstrParser#ExpressionBinaryGreaterEqual.
-    def visitExpressionBinaryGreaterEqual(self, ctx:McInstrParser.ExpressionBinaryGreaterEqualContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by McInstrParser#ExpressionZero.
-    def visitExpressionZero(self, ctx:McInstrParser.ExpressionZeroContext):
+    # Visit a parse tree produced by McInstrParser#ExpressionBinaryRightShift.
+    def visitExpressionBinaryRightShift(self, ctx:McInstrParser.ExpressionBinaryRightShiftContext):
         return self.visitChildren(ctx)
 
 
@@ -309,48 +299,13 @@ class McInstrVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by McInstrParser#ExpressionUnaryPM.
-    def visitExpressionUnaryPM(self, ctx:McInstrParser.ExpressionUnaryPMContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by McInstrParser#ExpressionPrevious.
     def visitExpressionPrevious(self, ctx:McInstrParser.ExpressionPreviousContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by McInstrParser#ExpressionTrinaryLogic.
-    def visitExpressionTrinaryLogic(self, ctx:McInstrParser.ExpressionTrinaryLogicContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by McInstrParser#ExpressionFloat.
-    def visitExpressionFloat(self, ctx:McInstrParser.ExpressionFloatContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by McInstrParser#ExpressionPointerAccess.
-    def visitExpressionPointerAccess(self, ctx:McInstrParser.ExpressionPointerAccessContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by McInstrParser#ExpressionIdentifier.
     def visitExpressionIdentifier(self, ctx:McInstrParser.ExpressionIdentifierContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by McInstrParser#ExpressionBinaryEqual.
-    def visitExpressionBinaryEqual(self, ctx:McInstrParser.ExpressionBinaryEqualContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by McInstrParser#ExpressionBinaryPM.
-    def visitExpressionBinaryPM(self, ctx:McInstrParser.ExpressionBinaryPMContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by McInstrParser#ExpressionUnaryLogic.
-    def visitExpressionUnaryLogic(self, ctx:McInstrParser.ExpressionUnaryLogicContext):
         return self.visitChildren(ctx)
 
 
@@ -371,6 +326,66 @@ class McInstrVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by McInstrParser#ExpressionString.
     def visitExpressionString(self, ctx:McInstrParser.ExpressionStringContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by McInstrParser#ExpressionGrouping.
+    def visitExpressionGrouping(self, ctx:McInstrParser.ExpressionGroupingContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by McInstrParser#ExpressionExponentiation.
+    def visitExpressionExponentiation(self, ctx:McInstrParser.ExpressionExponentiationContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by McInstrParser#ExpressionBinaryLeftShift.
+    def visitExpressionBinaryLeftShift(self, ctx:McInstrParser.ExpressionBinaryLeftShiftContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by McInstrParser#ExpressionBinaryGreaterEqual.
+    def visitExpressionBinaryGreaterEqual(self, ctx:McInstrParser.ExpressionBinaryGreaterEqualContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by McInstrParser#ExpressionZero.
+    def visitExpressionZero(self, ctx:McInstrParser.ExpressionZeroContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by McInstrParser#ExpressionUnaryPM.
+    def visitExpressionUnaryPM(self, ctx:McInstrParser.ExpressionUnaryPMContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by McInstrParser#ExpressionTrinaryLogic.
+    def visitExpressionTrinaryLogic(self, ctx:McInstrParser.ExpressionTrinaryLogicContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by McInstrParser#ExpressionFloat.
+    def visitExpressionFloat(self, ctx:McInstrParser.ExpressionFloatContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by McInstrParser#ExpressionPointerAccess.
+    def visitExpressionPointerAccess(self, ctx:McInstrParser.ExpressionPointerAccessContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by McInstrParser#ExpressionBinaryEqual.
+    def visitExpressionBinaryEqual(self, ctx:McInstrParser.ExpressionBinaryEqualContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by McInstrParser#ExpressionBinaryPM.
+    def visitExpressionBinaryPM(self, ctx:McInstrParser.ExpressionBinaryPMContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by McInstrParser#ExpressionUnaryLogic.
+    def visitExpressionUnaryLogic(self, ctx:McInstrParser.ExpressionUnaryLogicContext):
         return self.visitChildren(ctx)
 
 
