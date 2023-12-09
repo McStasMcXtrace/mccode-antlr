@@ -1,5 +1,6 @@
 from __future__ import annotations
 from functools import cache
+from unittest import TestCase
 
 
 @cache
@@ -21,20 +22,37 @@ def check_for_mccode_antlr_compiler(which: str) -> bool:
     return False
 
 
+@cache
+def simple_instr_compiles(which: str) -> bool:
+    if check_for_mccode_antlr_compiler(which):
+        try:
+            from mccode_antlr.loader import parse_mcstas_instr
+            instr = parse_mcstas_instr("define instrument check() trace component a = Arm() at (0,0,0) absolute end")
+            compile_and_run(instr, "-n 1", run=False, target={'acc': which == 'acc'})
+        except RuntimeError:
+            return False
+        except FileNotFoundError:
+            return False
+    return True
+
+
 def compiled(method, compiler: str | None = None):
     if compiler is None:
         # Basic compiled instruments only need the 'cc' compiler specified in the config file
         compiler = 'cc'
 
     def wrapper(*args, **kwargs):
-        if check_for_mccode_antlr_compiler(compiler):
+        if simple_instr_compiles(compiler):
             method(*args, **kwargs)
+        elif isinstance(args[0], TestCase):
+            args[0].skipTest(f'Skipping due to lack of working ${compiler}')
 
     return wrapper
 
 
 def gpu_only(method):
     # GPU compiled instruments need the specific OpenACC compiler
+    # **PLUS** they need to _actually_ have the openACC header (macOS and Windows don't use different compilers)
     return compiled(method, 'acc')
 
 
