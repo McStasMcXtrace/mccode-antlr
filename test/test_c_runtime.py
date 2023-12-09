@@ -17,7 +17,7 @@ class CRuntimeTestCase(unittest.TestCase):
         )
         #
         results, data = compile_and_run(instr, "-n 1", target={'acc': with_acc})
-        lines = results.decode('utf-8').split('\n')
+        lines = results.decode('utf-8').splitlines()
         self.assertEqual(1, sum(line == 'visited a' for line in lines))
         self.assertEqual(1, sum(line == 'visited b' for line in lines))
 
@@ -39,7 +39,7 @@ class CRuntimeTestCase(unittest.TestCase):
     def _do_jump_tests(self, contents: str, jumps: int):
         instr = parse_mcstas_instr(contents)
         results, data = compile_and_run(instr, f"-n 1 jumps={jumps}")
-        lines = results.decode('utf-8').split('\n')
+        lines = results.decode('utf-8').splitlines()
         self.assertEqual(jumps, sum(line.startswith('time=') for line in lines))
         times = [int(x.split('=')[-1]) for x in filter(lambda y: y.startswith('time='), lines)]
         self.assertEqual(((jumps + 1) * jumps) >> 1, sum(times))
@@ -87,7 +87,7 @@ class CRuntimeTestCase(unittest.TestCase):
         instr = parse_mcstas_instr(contents)
         splits = 10
         results, data = compile_and_run(instr, f"-n 1 splits={splits}")
-        lines = results.decode('utf-8').split('\n')
+        lines = results.decode('utf-8').splitlines()
         self.assertEqual(1, sum(line == 'a' for line in lines))
         self.assertEqual(splits, sum(line == 'b' for line in lines))
         self.assertEqual(splits*splits, sum(line == 'c' for line in lines))
@@ -109,7 +109,7 @@ class CRuntimeTestCase(unittest.TestCase):
         """))
         n_max = 10
         results, data = compile_and_run(instr, f"-n {n_max} dummy=1")
-        lines = results.decode('utf-8').split('\n')
+        lines = results.decode('utf-8').splitlines()
         print(lines)
         expected = [f'count={x}' for x in range(1, n_max, 2)]
         for ex, ln in zip(expected, lines):
@@ -131,7 +131,7 @@ class CRuntimeTestCase(unittest.TestCase):
         """))
         n_max = 10
         results, data = compile_and_run(instr, f"-n {n_max} dummy=1")
-        lines = results.decode('utf-8').split('\n')
+        lines = results.decode('utf-8').splitlines()
         print(lines)
         expected = [f'{"a" if x % 4 == 0 else "b"}={x}' for x in range(0, n_max, 2)]
         for ex, ln in zip(expected, lines):
