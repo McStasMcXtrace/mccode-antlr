@@ -1,6 +1,10 @@
 from unittest import TestCase
 from zenlog import log
 
+from mccode_antlr.instr import Instr, Instance
+from mccode_antlr.common.expression import Expr
+from mccode_antlr.instr.orientation import Vector
+
 
 def parse_instr_string(instr_source: str):
     from mccode_antlr.loader import parse_mcstas_instr
@@ -368,28 +372,43 @@ class TestInstr(TestCase):
         self.assertEqual(len(instr.parameters), len(instr_copy.parameters) - 1)
 
     def test_mcpl_split(self):
-        from mccode_antlr.instr import Instr
         instr_source = """
-        DEFINE INSTRUMENT test_copy(par0=3.14159, double par1 = 49, int par2 =     1010110
-            , string par3="this is a long string with spaces", 
-
-            string par4, int par5, double par6, par7)
+        DEFINE INSTRUMENT test_copy()
         TRACE
-        COMPONENT first = Arm() AT (0, 0, 0) ABSOLUTE
-        COMPONENT second = Arm() AT (0, 0, 1) RELATIVE first ROTATED (0, 90, 0) RELATIVE first
+        COMPONENT origin = Arm() AT (0, 0, 0) ABSOLUTE
+        COMPONENT first = Arm() AT (0, 0, 100) RELATIVE origin ROTATED (0, 90, 0) RELATIVE origin
+        COMPONENT second = Arm() AT (0, 0, 1) RELATIVE first ROTATED (-90, 0, 0) RELATIVE first
+        COMPONENT split_here = Arm() AT (0, 0, 0) RELATIVE second
+        COMPONENT third = Arm() AT (0, 0, 10) RELATIVE second
         END
         """
         instr = parse_instr_string(instr_source)
-        before, after = instr.mcpl_split('first', filename='test_mcpl_split')
+        before, after = instr.mcpl_split('split_here', filename='test_mcpl_split')
         self.assertTrue(isinstance(before, Instr))
         self.assertTrue(isinstance(after, Instr))
-        self.assertEqual(len(before.components), 1)
+        self.assertEqual(len(before.components), 4)
         self.assertEqual(len(after.components), 2)
-        self.assertEqual(before.components[0].name, 'first')
-        self.assertEqual(after.components[0].name, 'first')
-        self.assertEqual(after.components[1].name, 'second')
-        self.assertEqual(before.components[0].type.name, 'MCPL_output')
+        for inst, name in zip(before.components, ('origin', 'first', 'second', 'split_here')):
+            self.assertEqual(name, inst.name)
+
+        for inst, name in zip(after.components, ('split_here', 'third')):
+            self.assertEqual(name, inst.name)
+
+        self.assertEqual(before.components[-1].type.name, 'MCPL_output')
         self.assertEqual(after.components[0].type.name, 'MCPL_input')
+
+        # It is imperative that the split-point did not move:
+        sp = after.components[0]
+        at_rel = sp.at_relative
+        self.assertTrue(at_rel[1] is None)  # the position is absolute
+        pos = Vector(Expr.float(1), Expr.float(0), Expr.float(100))
+        self.assertEqual(pos, at_rel[0])
+
+        # The final component had a relative position which spanned the split point, so it should now be absolute
+        self.assertTrue(after.components[-1].at_relative[1] is None)
+        # rounding makes third.x 1.000...07
+        for a, b in zip(Vector(Expr.float(1), Expr.float(10), Expr.float(100)), after.components[-1].at_relative[0]):
+            self.assertAlmostEqual(a, b)
 
     def test_tas1_c1(self):
         from mccode_antlr.loader.loader import parse_mccode_instr_parameters
@@ -437,9 +456,6 @@ class TestInstr(TestCase):
 
     def test_split_broken_reference(self):
         from textwrap import dedent
-        from mccode_antlr.instr import Instance
-        from mccode_antlr.common.expression import Expr
-        from mccode_antlr.instr.orientation import Vector
         instr = dedent("""\
         DEFINE INSTRUMENT test_tof(phase/"degree"=0)
         TRACE
@@ -451,14 +467,26 @@ class TestInstr(TestCase):
         COMPONENT guide = Guide_gravity(w1=0.01, w2=0.05, h1=0.01, h2=0.05, l=8.0, m=3.5, G=-9.82) AT (0, 0, 1) ABSOLUTE 
         COMPONENT guide_end = Arm() AT (0, 0, 8.0) RELATIVE guide
         COMPONENT chopper = DiskChopper(radius=0.35, nu=14, phase=phase, theta_0=115) AT (0, 0, 0.01) RELATIVE guide_end
-        COMPONENT split_at = Arm() AT (0, 0, 1e-08) RELATIVE chopper
+        COMPONENT split_before = Arm() AT (0, 0, 1e-08) RELATIVE chopper
+        COMPONENT split_after = Arm() AT (0, 0, 0) RELATIVE split_before
         COMPONENT sample = Incoherent(
             radius=0.005, yheight=0.02, thickness=0.001, focus_ah=2.0, focus_aw=2.0, target_x=1.0, target_y=0.0, 
             target_z=0.0, Etrans=0.0, deltaE=0.2
         ) AT (0, 0, 1) RELATIVE chopper 
         END""")
         instr = parse_instr_string(instr)
-        first, second = instr.split('split_at', remove_unused_parameters=True)
+        first, second = instr.split('split_before', remove_unused_parameters=True)
+        # The last component in the first part of the instrument _is_ split_before
+        self.assertEqual('split_before', first.components[-1].name)
+        # The position of the split_at component should be absolute and the same as in the main instrument
+        split_after = second.components[0]
+        self.assertEqual(split_after.name, 'split_after')
+        at_ref = split_after.at_relative
+        self.assertTrue(isinstance(at_ref[0], Vector))
+        self.assertTrue(at_ref[1] is None)
+        v = Vector(Expr.float(0), Expr.float(0), Expr.float(1 + 8 + 0.01 + 1E-8))
+        self.assertEqual(v, at_ref[0])
+
         # The sample _should not_ still depend on the chopper, which is only present in the first instrument!
         sample = second.components[-1]
         self.assertEqual(sample.name, 'sample')
