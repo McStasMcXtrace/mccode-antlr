@@ -425,6 +425,21 @@ class InstrVisitor(McInstrVisitor):
         left, right = self.visit(ctx.left), self.visit(ctx.right)
         return left * right if ctx.Div() is None else left / right
 
+    def visitExpressionBinaryMod(self, ctx: McInstrParser.ExpressionBinaryModContext):
+        from ..common import BinaryOp
+        left, right = self.visit(ctx.left), self.visit(ctx.right)
+        return Expr(BinaryOp('%', left, right))
+
+    def visitExpressionBinaryLeftShift(self, ctx: McInstrParser.ExpressionBinaryLeftShiftContext):
+        from ..common import BinaryOp
+        left, right = self.visit(ctx.left), self.visit(ctx.right)
+        return Expr(BinaryOp('<<', left, right))
+
+    def visitExpressionBinaryRightShift(self, ctx: McInstrParser.ExpressionBinaryRightShiftContext):
+        from ..common import BinaryOp
+        left, right = self.visit(ctx.left), self.visit(ctx.right)
+        return Expr(BinaryOp('>>', left, right))
+
     def visitInitializerlist(self, ctx: McInstrParser.InitializerlistContext):
         from ..common import Value, ObjectType, ShapeType
         values = [self.visit(x).expr[0].value for x in ctx.values]

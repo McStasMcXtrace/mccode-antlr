@@ -37,13 +37,13 @@ def cogen_raytrace(source, ok_to_skip):
     for index, comp in enumerate(source.components):
         if comp.split is not None:
             # split is a Value, containing a number or expression indicating *how many* split particles to produce
-            print(f'-> SPLIT {comp.split} at component {comp.name}')
+            print(f'-> SPLIT {comp.split:p} at component {comp.name}')
             lines.extend([
                 '#ifndef NOSPLIT',
                 f'    /* start SPLIT at {comp.name} */',
                 '    if (!ABSORBED) {',
                 f'    _class_particle Split_{comp.name}_particle = *_particle;',
-                f'    int SplitS_{comp.name} = {comp.split};',
+                f'    int SplitS_{comp.name} = {comp.split:p};',
                 f'    for (int SplitN_{comp.name}=0; SplitN_{comp.name} < SplitS_{comp.name}; SplitN_{comp.name}++) {{',
                 '    randstate_t randbackup = *_particle->randstate;',
                 f'    *_particle=Split_{comp.name}_particle;',
@@ -96,8 +96,8 @@ def cogen_raytrace(source, ok_to_skip):
         for jump in comp.jump:
             if jump.iterate:
                 lines.extend([
-                    f'      if (++_particle->_logic.Jump_{comp.name}_{jump.target} < {jump.condition}) {{ /* test for iteration */',
-                    f'        _particle->_index = {jump.absolute_target - 1};',
+                    f'      if (++_particle->_logic.Jump_{comp.name}_{jump.target} < {jump.condition:p}) {{ /* test for iteration */',
+                    f'        _particle->_index = {jump.absolute_target};',  # NO -1 despite to ++ below, 0-based target
                     '        _particle->flag_nocoordschange=1; /* pass coordinate transformations when jumping */',
                     '      } else {',
                     f'        _particle->_logic.Jump_{comp.name}_{jump.target} = 0; /* reset Jump top and go forward */',
@@ -105,8 +105,8 @@ def cogen_raytrace(source, ok_to_skip):
                 ])
             else:
                 lines.extend([
-                    f'      if ({jump.condition}) {{/* conditional JUMP to {jump.target} */',
-                    f'        _particle->_index = {jump.absolute_target - 1};',
+                    f'      if ({jump.condition:p}) {{/* conditional JUMP to {jump.target} */',
+                    f'        _particle->_index = {jump.absolute_target};',  # target is 0-based, _index 1; OK
                     '        _particle->flag_nocoordschange=1; /* pass coordinate transformations when jumping */',
                     '      }'
                 ])
@@ -345,7 +345,7 @@ def cogen_funnel(source, ok_to_skip):
 
         lines.extend([
             f'      // {comp.name}',
-            f'      if (!ABSORBED && _particle->index == {index}) {{',
+            f'      if (!ABSORBED && _particle->_index == {index+1}) {{',
         ])
         if not ok_to_skip[index]:
             lines.extend([

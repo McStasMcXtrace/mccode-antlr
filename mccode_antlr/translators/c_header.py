@@ -3,7 +3,7 @@ def header_pre_runtime(is_mcstas, source, runtime: dict, config: dict, typedefs:
     from mccode_antlr import version
 
     def jump_line(instance, jump):
-        return f'long Jump_{instance.name}_{jump}; /* the JUMP connection <from>_<to> */'
+        return f'long Jump_{instance.name}_{jump.target}; /* the JUMP connection <from>_<to> */'
 
     jump_string = '\n'.join([jump_line(i, j) for i in source.components for j in i.jump if j.iterate])
 
