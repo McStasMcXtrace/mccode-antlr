@@ -1,18 +1,8 @@
 from __future__ import annotations
+from functools import cache
 
 
-def once(fun):
-
-    def wrapper(*args, **kwargs):
-        if wrapper.result is None:
-            wrapper.result = fun(*args, **kwargs)
-        return wrapper.result
-
-    wrapper.result = None
-    return wrapper
-
-
-@once
+@cache
 def check_for_mccode_antlr_compiler(which: str) -> bool:
     import subprocess
     from zenlog import log
@@ -43,12 +33,12 @@ def compiled(method, compiler: str | None = None):
     return wrapper
 
 
-def gpu(method):
+def gpu_only(method):
     # GPU compiled instruments need the specific OpenACC compiler
     return compiled(method, 'acc')
 
 
-def mpi(method):
+def mpi_only(method):
     # MPI compiled instruments need the specified compiler
     return compiled(method, 'mpi/cc')
 

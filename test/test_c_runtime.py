@@ -1,35 +1,40 @@
 import unittest
 from textwrap import dedent
 from mccode_antlr.loader import parse_mcstas_instr
-from .compiled import compiled, compile_and_run
+from .compiled import compiled, gpu_only, compile_and_run
 
 
 class CRuntimeTestCase(unittest.TestCase):
+    def _do_trace_tests(self, with_acc):
+        instr = parse_mcstas_instr(dedent(
+            """\
+            DEFINE INSTRUMENT test_component_traces_visited()
+            TRACE
+            COMPONENT a = Arm() AT (0, 0, 0) ABSOLUTE EXTEND %{printf("visited a\\n");%}
+            COMPONENT b = Arm() AT (0, 0, 1) ABSOLUTE EXTEND %{printf("visited b\\n");%}
+            END
+            """)
+        )
+        #
+        results, data = compile_and_run(instr, "-n 1", target={'acc': with_acc})
+        lines = results.decode('utf-8').split('\n')
+        self.assertEqual(1, sum(line == 'visited a' for line in lines))
+        self.assertEqual(1, sum(line == 'visited b' for line in lines))
 
     @compiled
-    def test_component_traces_visited(self):
-        contents = dedent("""\
-                          DEFINE INSTRUMENT test_component_traces_visited()
-                          TRACE
-                          COMPONENT a = Arm() AT (0, 0, 0) ABSOLUTE EXTEND %{printf("visited a\\n");%}
-                          COMPONENT b = Arm() AT (0, 0, 1) ABSOLUTE EXTEND %{printf("visited b\\n");%}
-                          END
-                          """)
-        #
-        instr = parse_mcstas_instr(contents)
-        #
+    def test_raytrace_traces_visited(self):
+        self._do_trace_tests(with_acc=False)
+
+    @gpu_only
+    def test_funnel_raytrace_traces_visited(self):
         # The FUNNEL define is only followed if OpenACC is enabled :/
         # And real OpenACC can only be enabled if we have a GPU :(
         # But since we don't actually need ACC, we can force use of the normal compiler instead
+        # Unfortunately the runtime still includes openacc.h, so we should not try to run this normally.
         from mccode_antlr.config import config
         config['acc'] = config['cc'].get(str)
         config['flags']['acc'] = config['flags']['cc'].get(str) + ' -DFUNNEL -DOPENACC -DGCCOFFLOAD'
-
-        for with_acc in (False, True):
-            results, data = compile_and_run(instr, "-n 1", target={'acc': with_acc})
-            lines = results.decode('utf-8').split('\n')
-            self.assertEqual(1, sum(line == 'visited a' for line in lines))
-            self.assertEqual(1, sum(line == 'visited b' for line in lines))
+        self._do_trace_tests(with_acc=True)
 
     def _do_jump_tests(self, contents: str, jumps: int):
         instr = parse_mcstas_instr(contents)
