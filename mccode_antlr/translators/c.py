@@ -1,5 +1,5 @@
 """Translates a McComp instrument from its intermediate form to a C runtime source file."""
-from zenlog import log
+from loguru import logger
 from collections import namedtuple
 from dataclasses import dataclass
 from ..reader import Registry, FIXED_LIBC_REGISTRY, LIBC_REGISTRY
@@ -60,7 +60,7 @@ class CInclude:
 def sort_include_hierarchy(includes: list[CInclude]):
     if len(includes) == 0:
         return []
-    log.debug(f'sort includes {" ".join(str(x) for x in includes)}')
+    logger.debug(f'sort includes {" ".join(str(x) for x in includes)}')
     # find the 'root' of the tree, a parent which is _not_ a named include:
     roots = list(set([x.parent for x in includes]).difference(set([x.name for x in includes])))
     options = {}
@@ -85,7 +85,7 @@ def sort_include_hierarchy(includes: list[CInclude]):
                 if name_at > parent_at:
                     contradicts = True
         if not contradicts:
-            log.debug(f"sorted to {'  '.join(order)}")
+            logger.debug(f"sorted to {'  '.join(order)}")
             options[root] = output
     if len(options) == 0:
         raise RuntimeError(f'No valid sorting of {includes=}')
@@ -147,7 +147,7 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
 
             #filename = matches[0].group('filename')
             #this_re = re.compile(rf'^\s*%include\s*"{filename}"\s*$', re.MULTILINE)
-            #log.info(f'Replacing {this_re} with file contents from {filename}')
+            #logger.info(f'Replacing {this_re} with file contents from {filename}')
             #raw_c = re.sub(this_re, self._file_contents(filename, True), raw_c)
 
             # re-match since we modified raw_c
@@ -165,11 +165,11 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
         from .c_listener import extract_c_declared_variables_and_defined_types as parse
         typedefs = set()
         for include in self.includes:
-            # log.debug(f'library {include.name}')
+            # logger.debug(f'library {include.name}')
             # The files '%include'-d can themselves use the '%include' mechanism :/
             declares, defined_types = parse(include.content, user_types=list(typedefs))
             typedefs = typedefs.union(set(defined_types))
-            # log.debug(f'{include.name} done')
+            # logger.debug(f'{include.name} done')
         # types can also be defined in component 'SHARE' blocks:
         for block in [share for comp in self.source.component_types() if len(comp.share) for share in comp.share]:
             # TODO decide if this should be block.translated or block.source
@@ -197,8 +197,8 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
             # TODO decide if this should be raw_c_obj.translated or raw_c_obj.source
             c_decs = extracted_declares(extract_c_declared_variables(raw_c_obj.to_c(), user_types=self.typedefs))
             if any(d.init is not None for d in c_decs):
-                log.critical(f'Warning USERVARS block from {name} contains assignment(s) (= sign).')
-                log.critical('        Move them to an EXTEND section. May fail at compile')
+                logger.critical(f'Warning USERVARS block from {name} contains assignment(s) (= sign).')
+                logger.critical('        Move them to an EXTEND section. May fail at compile')
             return c_decs
 
         declares = []  # runtime-accessing by 'ID' only possible if order is preserved
@@ -295,7 +295,7 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
     def visit_header(self):
         from .c_header import header_pre_runtime, header_post_runtime
         # Get the unique list of USERVAR declarations:
-        # log.debug(f'Instrument uservars = {self.instrument_uservars}')
+        # logger.debug(f'Instrument uservars = {self.instrument_uservars}')
         # uuv = set().union(self.instrument_uservars)
         # for x in self.component_uservars:
         #     uuv = uuv.union(x)
@@ -343,7 +343,7 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
         c_name = f'{source.name}.c'
         c_libraries, c_content = self._handle_raw_c_include(c_name, self._file_contents(c_name))
         for c_lib in [c_lib for c_lib in c_libraries if c_lib.name not in lib_names]:
-            log.info(f'{c_name} requested {c_lib.name} but is has not been included yet!')
+            logger.info(f'{c_name} requested {c_lib.name} but is has not been included yet!')
             self.include_header(c_lib)
             self.include_source(c_lib)
             #self.includes.append(c_lib)

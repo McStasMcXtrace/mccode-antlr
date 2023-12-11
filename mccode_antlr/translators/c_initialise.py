@@ -1,4 +1,4 @@
-from zenlog import log
+from loguru import logger
 
 _GETDISTANCE_FCT = """
 double index_getdistance(long first_index, long second_index)
@@ -51,12 +51,12 @@ def cogen_comp_init_position(index, comp, last, instr):
     # Rotation first
     x, y, z, rel = _split_xyz_ref(comp.rotate_relative)
     if rel is None:
-        # log.debug(f'{comp.name} has absolute orientation with rotation ({x}, {y}, {z})')
+        # logger.debug(f'{comp.name} has absolute orientation with rotation ({x}, {y}, {z})')
         lines.append(
             f'    rot_set_rotation({var}._rotation_absolute, ({x})*DEG2RAD, ({y})*DEG2RAD, ({z})*DEG2RAD);'
         )
     else:
-        # log.debug(f'{comp.name} has relative orientation to {rel.name} with rotation ({x}, {y}, {z})')
+        # logger.debug(f'{comp.name} has relative orientation to {rel.name} with rotation ({x}, {y}, {z})')
         lines.extend([
             f'    rot_set_rotation(tr1, ({x})*DEG2RAD, ({y})*DEG2RAD, ({z})*DEG2RAD);',
             f'    rot_mul(tr1, _{rel.name}_var._rotation_absolute, {var}._rotation_absolute);'
@@ -74,10 +74,10 @@ def cogen_comp_init_position(index, comp, last, instr):
     # Then translation
     x, y, z, rel = _split_xyz_ref(comp.at_relative)
     if rel is None:
-        # log.debug(f'{comp.name} has absolute positioning with rotation ({x}, {y}, {z})')
+        # logger.debug(f'{comp.name} has absolute positioning with rotation ({x}, {y}, {z})')
         lines.append(f'    {var}._position_absolute = coords_set({x}, {y}, {z});')
     else:
-        # log.debug(f'{comp.name} has relative positioning to {rel.name} with rotation ({x}, {y}, {z})')
+        # logger.debug(f'{comp.name} has relative positioning to {rel.name} with rotation ({x}, {y}, {z})')
         lines.extend([
             f'    tc1 = coords_set({x}, {y}, {z});',
             f'    rot_transpose(_{rel.name}_var._rotation_absolute, tr1);',

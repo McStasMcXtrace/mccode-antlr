@@ -1,6 +1,6 @@
 from pathlib import Path
 from typing import Union
-from zenlog import log
+from loguru import logger
 
 VERSION_NAME_KEY = 'mccode-antlr_version_data-type-name'
 
@@ -35,7 +35,7 @@ def _standard_read(typename, group, attrs, optional, required, **kwargs):
         if name in group:
             values[name] = HDF5IO.load(group[name], **kwargs)
         else:
-            log.warn('Missing required value!')
+            logger.warning('Missing required value!')
             values[name] = None
     if any(values[r] is None for r in required):
         raise ValueError(f"Could not load required values for {typename}")
@@ -191,7 +191,7 @@ def RemoteRegistryIO(actual_type):
             try:
                 return actual_type(**values)
             except RuntimeError:
-                log.warn(f'Unable to reconstruct {actual_type.__name__} registry from {values}')
+                logger.warning(f'Unable to reconstruct {actual_type.__name__} registry from {values}')
             return RemoteRegistry('loading error', None, None, None)
 
         @staticmethod
@@ -210,7 +210,7 @@ class LocalRegistryIO:
         try:
             return LocalRegistryIO.LocalRegistry(**values)
         except RuntimeError:
-            log.warn(f'Unable to reconstruct local registry from {values}')
+            logger.warning(f'Unable to reconstruct local registry from {values}')
         return LocalRegistryIO.Registry()
 
     @staticmethod
@@ -458,7 +458,7 @@ class HDF5IO:
     def save(cls, group, data, **kwargs):
         name = data.__class__.__name__
         if name not in cls._handlers:
-            log.warn(f'No handler for {type(data)}, skipping')
+            logger.warning(f'No handler for {type(data)}, skipping')
             return None
         return cls._handlers[name].save(group, data, **kwargs)
 
@@ -466,7 +466,7 @@ class HDF5IO:
     def load(cls, group, **kwargs):
         version, name = _split_version_name(group.attrs[VERSION_NAME_KEY])
         if name not in cls._handlers:
-            log.warn(f'No handler for {name}, skipping')
+            logger.warning(f'No handler for {name}, skipping')
             return None
         return cls._handlers[name].load(group, **kwargs)
 

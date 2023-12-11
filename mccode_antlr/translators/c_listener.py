@@ -1,4 +1,4 @@
-from zenlog import log
+from loguru import logger
 from ..grammar import CParser, CListener, McInstrParser
 from ..instr import InstrVisitor
 from ..common import Expr
@@ -18,15 +18,15 @@ class CErrorListener(ErrorListener):
         self.post = post
 
     def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
-        log.error(f'Syntax error in parsing {line},{column}')
+        logger.error(f'Syntax error in parsing {line},{column}')
         lines = self.source.split('\n')
         pre_lines = lines[line-self.pre:line]
         post_lines = lines[line:line+self.post]
         for line in pre_lines:
-            log.info(line)
-        log.error('~'*column + '^ ' + msg)
+            logger.info(line)
+        logger.error('~'*column + '^ ' + msg)
         for line in post_lines:
-            log.info(line)
+            logger.info(line)
 
 
 class DeclaresCListener(CListener):
@@ -45,7 +45,7 @@ class DeclaresCListener(CListener):
         
     def debug(self, message):
         if self.verbose:
-            log.debug(message)
+            logger.debug(message)
 
     def enterDeclaration(self, ctx: CParser.DeclarationContext):
         self.debug('Enter declaration')
@@ -126,7 +126,7 @@ class EvalCVisitor(InstrVisitor):
 
     def debug(self, message):
         if self.verbose:
-            log.debug(message)
+            logger.debug(message)
 
     def visitAssignment(self, ctx: McInstrParser.AssignmentContext):
         name = str(ctx.Identifier())

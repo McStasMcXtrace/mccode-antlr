@@ -6,7 +6,7 @@ from unittest import TestCase
 @cache
 def check_for_mccode_antlr_compiler(which: str) -> bool:
     import subprocess
-    from zenlog import log
+    from loguru import logger
     from mccode_antlr.config import config
     cc = config
     for key in which.split('/'):
@@ -17,8 +17,8 @@ def check_for_mccode_antlr_compiler(which: str) -> bool:
         subprocess.run([cc, '--version'], check=True)
         return True
     except FileNotFoundError:
-        log.info(f'Expected compiler {cc} not found.')
-        log.info('Provide alternate C compiler via MCCODE_ANTLR_CC environment variable')
+        logger.info(f'Expected compiler {cc} not found.')
+        logger.info('Provide alternate C compiler via MCCODE_ANTLR_CC environment variable')
     return False
 
 
@@ -70,7 +70,7 @@ def compile_and_run(instr, parameters, run=True, dump_source=True,
     from tempfile import TemporaryDirectory
     from os import R_OK, access
     from pathlib import Path
-    from zenlog import log
+    from loguru import logger
 
     def_target = CBinaryTarget(mpi=False, acc=False, count=1, nexus=False)
     def_config = dict(default_main=True, enable_trace=False, portable=False, include_runtime=True,
@@ -83,7 +83,7 @@ def compile_and_run(instr, parameters, run=True, dump_source=True,
             compile_instrument(instr, def_target, directory,
                                generator=MCSTAS_GENERATOR, config=def_config, dump_source=dump_source)
         except RuntimeError as e:
-            log.error(f'Failed to compile instrument: {e}')
+            logger.error(f'Failed to compile instrument: {e}')
             raise e
         binary = Path(directory).joinpath(f'{instr.name}{module_config["ext"].get(str)}')
 

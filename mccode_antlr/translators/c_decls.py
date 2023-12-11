@@ -1,4 +1,4 @@
-from zenlog import log
+from loguru import logger
 """
 /*******************************************************************************
 * cogen_decls: write the declaration part from the instrument description
@@ -67,7 +67,7 @@ def declarations_pre_libraries(source, typedefs: list, component_declared_parame
             """`None`-protected (single) double-quoted string"""
             z = '' if x is None else f'{x}'
             if z == '"':
-                log.info('single double-quote found in parameter value -- escaping to avoid C syntax error')
+                logger.info('single double-quote found in parameter value -- escaping to avoid C syntax error')
                 z = '\"'
             return z if len(z) and z[0] == '"' and z[-1] == '"' else f'"{z}"'
 

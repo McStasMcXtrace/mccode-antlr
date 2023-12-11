@@ -2,7 +2,7 @@ import ast
 from dataclasses import dataclass
 from typing import Union
 from enum import Enum
-from zenlog import log
+from loguru import logger
 
 # class NameReplacer(ast.NodeTransformer):
 #     def __init__(self, **values):
@@ -599,7 +599,7 @@ class UnaryOp(Op):
     #     return len(self.value)
 
     def __gt__(self, other):
-        log.debug(f'{self} > {other} has been called (but probably should not have been!)')
+        logger.debug(f'{self} > {other} has been called (but probably should not have been!)')
         return False
 
     def simplify(self):
@@ -678,7 +678,7 @@ class Value:
 
     @value.setter
     def value(self, value):
-        log.debug(f'Updating Value from {self._value} to {value}')
+        logger.debug(f'Updating Value from {self._value} to {value}')
         self._object = self.data_type != DataType.str and isinstance(value, str)
         self._value = value
 
@@ -1278,7 +1278,7 @@ class Expr:
         if len(self.expr) != 1:
             raise RuntimeError('No McCode C type for array Expr objects')
         if not isinstance(self.expr[0], Value):
-            log.critical(f'Why is {self.expr[0]} not a Value?')
+            logger.critical(f'Why is {self.expr[0]} not a Value?')
         return self.expr[0].mccode_c_type
 
     @property

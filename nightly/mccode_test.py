@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from datetime import timedelta
 from pathlib import Path
 from typing import TypeVar
-from zenlog import log
+from loguru import logger
 
 from numpy import nan
 
@@ -35,16 +35,16 @@ class NightlyInstrExample:
         if '.instr' in self.parameter_values:
             rinstr = re.compile(r'[a-zA-Z][a-zA-Z0-9_\-]*\.instr')
             new_param = rinstr.sub('', self.parameter_values)
-            log.info(f'Removing .instr from {self.parameter_values} now {new_param}')
+            logger.info(f'Removing .instr from {self.parameter_values} now {new_param}')
             self.parameter_values = new_param
         if self.sourcefile.stem in self.parameter_values:
             new_param = self.parameter_values
             self.parameter_values = new_param.replace(self.sourcefile.stem, '')
-            log.info(f'Removing {self.sourcefile.stem} from {new_param} now {self.parameter_values}')
+            logger.info(f'Removing {self.sourcefile.stem} from {new_param} now {self.parameter_values}')
         if '-n' in self.parameter_values:
             rn = re.compile(r'-n[0-9eE\.]*')
             new_param = rn.sub('', self.parameter_values)
-            log.info(f'Removing -n from {self.parameter_values}, now {new_param}')
+            logger.info(f'Removing -n from {self.parameter_values}, now {new_param}')
             self.parameter_values = new_param
 
     @classmethod
@@ -187,8 +187,8 @@ def mccode_test_compiler(work_dir, file_path, target, registry, generator, dump,
     try:
         binary_path = compile_instrument(inst, target, output, generator=generator, config=config, dump_source=dump, **kwargs)
     except RuntimeError as err:
-        log.critical(f'Failed to produce a binary for {file_path}')
-        log.info(err)
+        logger.critical(f'Failed to produce a binary for {file_path}')
+        logger.info(err)
         return False, Path()
     return True, binary_path
 
@@ -279,8 +279,7 @@ def _mccode_test(compiler, runner, registry: Registry, search_pattern=None, inst
         skip_non_test: a flag to control whether instr files which do not specify test cases should be compiled and run
     """
     import re
-    # import logging
-    from zenlog import log as logging
+    from loguru import logger as logging
     import tempfile
     from datetime import datetime
     logging.info(f"Finding test instruments in: {registry}")
@@ -347,7 +346,7 @@ def _mccode_test(compiler, runner, registry: Registry, search_pattern=None, inst
             continue
 
         t1 = datetime.now()
-        log.info(f'run {binaries[test.sourcefile][1]} -n {n_particles} {test.parameter_values}')
+        logger.info(f'run {binaries[test.sourcefile][1]} -n {n_particles} {test.parameter_values}')
         test.ran, stdout, output_dir = runner(binaries[test.sourcefile][1], test.parameter_values, n_particles)
         test.run_time = datetime.now() - t1
         test.stdout = stdout.decode() if isinstance(stdout, bytes) else stdout
@@ -404,7 +403,7 @@ def ispath(arg: str):
 
 def main(name, program):
     from argparse import ArgumentParser
-    from zenlog import log
+    from loguru import logger
     parser = ArgumentParser(name, description=f'Test instrument compilation and runtime for {name}')
     parser.add_argument('-s', '--search', help='Regular expression positive filter for instrument names', default=None)
     parser.add_argument('-c', '--count', type=int, help='Maximum number of instruments to test', default=None)
@@ -417,8 +416,6 @@ def main(name, program):
 
     # logging.basicConfig(level=logging.DEBUG, format='{asctime} {levelname} {message}', style='{')
     # logging.basicConfig(level=logging.DEBUG)
-
-    log.level('debug')
 
     args = parser.parse_args()
     results = program(search_pattern=args.search, instr_count=args.count, skip_non_test=args.skip, mpi=args.mpi,
