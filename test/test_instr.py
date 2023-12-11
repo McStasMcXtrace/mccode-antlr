@@ -474,6 +474,10 @@ class TestInstr(TestCase):
             radius=0.005, yheight=0.02, thickness=0.001, focus_ah=2.0, focus_aw=2.0, target_x=1.0, target_y=0.0, 
             target_z=0.0, Etrans=0.0, deltaE=0.2
         ) AT (0, 0, 1) RELATIVE chopper 
+        COMPONENT a4 = Arm() AT (0, 0, 0) RELATIVE sample ROTATED (0, 90, 0) RELATIVE sample
+        COMPONENT analyzer = Arm() AT (0, 0, 1) RELATIVE a4
+        COMPONENT a6 = Arm() AT (0, 0, 0) RELATIVE analyzer ROTATED (0, -90, 0) RELATIVE analyzer
+        COMPONENT detector = Arm() AT (0, 0, 1) RELATIVE a6
         END""")
         instr = parse_instr_string(instr)
         first, second = instr.split('split_at', remove_unused_parameters=True)
@@ -489,7 +493,7 @@ class TestInstr(TestCase):
         self.assertEqual(v, at_ref[0])
 
         # The sample _should not_ still depend on the chopper, which is only present in the first instrument!
-        sample = second.components[-1]
+        sample = second.components[2]
         self.assertEqual(sample.name, 'sample')
         at_ref = sample.at_relative
         self.assertTrue(isinstance(at_ref[0], Vector))
@@ -498,6 +502,21 @@ class TestInstr(TestCase):
         # the position of the sample depends on the source, guide, guide-end, and chopper
         v = Vector(Expr.float(0), Expr.float(0), Expr.float(1 + 8 + 0.01 + 1))
         self.assertEqual(v, at_ref[0])
+
+        # But everything after _should_ still depend on relative positions
+        for i, name in enumerate(('a4', 'analyzer', 'a6', 'detector')):
+            # Verify that we positioned the components relative in the initial instrument
+            i_inst = instr.components[len(first.components)+2+i]
+            self.assertEqual(name, i_inst.name)
+            self.assertTrue(i_inst.at_relative[1] is not None)
+            self.assertTrue(i_inst.rotate_relative[1] is not None)
+            self.assertTrue(instr.has_component_named(i_inst.at_relative[1].name))
+            self.assertTrue(second.has_component_named(i_inst.at_relative[1].name))
+            # And that, since they're relative to second-instrument components, they're still relative
+            s_inst = second.components[3+i]
+            self.assertEqual(name, s_inst.name)
+            self.assertTrue(s_inst.at_relative[1] is not None)
+            self.assertTrue(s_inst.rotate_relative[1] is not None)
 
 
 class CompiledTest(TestCase):
