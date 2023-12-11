@@ -306,13 +306,30 @@ class Instr:
         copy.registries = tuple(x for x in self.registries)
         return copy
 
-    def split(self, after, remove_unused_parameters=False):
-        if isinstance(after, Instance):
-            index = self.components.index(after)
-        elif isinstance(after, str):
-            index = [i for i, x in enumerate(self.components) if x.name == after]
+    def split(self, at, remove_unused_parameters=False):
+        """Produces two instruments, both containing the indicated component
+
+        Parameters:
+        -----------
+        after: Union[Instance, str]
+            A component instance or the _name_ of a component instance at which to split the instrument.
+            The instance or one with a matching name _must_ be in the instrument, and should probably be an Arm.
+        remove_unused_parameters: bool
+            If True, any Instrument parameters which do not appear in instance definitions or code blocks is not
+            included in the output instruments
+
+        Return:
+        -------
+        tuple[Instr, Instr]
+            The first Instr has components up to and including the split-point.
+            The second Instr has components starting from the split-point.
+        """
+        if isinstance(at, Instance):
+            index = self.components.index(at)
+        elif isinstance(at, str):
+            index = [i for i, x in enumerate(self.components) if x.name == at]
             if len(index) != 1:
-                raise RuntimeError(f'Can only split an instrument after a single component, "{after}" matches {index}')
+                raise RuntimeError(f'Can only split an instrument after a single component, "{at}" matches {index}')
             index = index[0]
         else:
             raise RuntimeError('Can only split an instrument after a component or component name')
@@ -321,7 +338,7 @@ class Instr:
         if first.check_instrument_parameters(remove=remove_unused_parameters) and not remove_unused_parameters:
             log.warn(f'Instrument {first.name} has unused instrument parameters')
 
-        second = self.copy(first=index + 1)
+        second = self.copy(first=index)
         second.name = self.name + '_second'
         # remove any dangling component references:
         for instance in second.components:
@@ -385,11 +402,18 @@ class Instr:
             input_parameters = (filename_parameter,) + input_parameters
         if not any(p.name == 'verbose' for p in input_parameters):
             input_parameters = (ComponentParameter('verbose', Expr.float(0)),) + input_parameters
-        # the MCPL input component _is_ the origin of its simulation, but must be placed relative to other components.
-        # so we need the *absolute* position and orientation of the removed component:
-        abs_at_rel = fc.orientation.position(), None
-        abs_rot_rel = fc.orientation.angles(), None
-        second.make_instance(fc.name, 'MCPL_input', abs_at_rel, abs_rot_rel, parameters=input_parameters)
+        # # the MCPL input component _is_ the origin of its simulation, but must be placed relative to other components.
+        # # so we need the *absolute* position and orientation of the removed component:
+        # abs_at_rel = fc.orientation.position(), None
+        # abs_rot_rel = fc.orientation.angles(), None
+
+        # the split at component in the second instrument should have already been converted to absolute-positioning:
+        sc = second.components[0]
+        if sc.at_relative[1] is not None or sc.rotate_relative[1] is not None:
+            log.error("The split-at point should be positioned absolutely in the second instrument")
+        # remove the first component before adding an-equal named one:
+        second.components = second.components[1:]
+        second.make_instance(sc.name, 'MCPL_input', sc.at_relative, sc.rotate_relative, parameters=input_parameters)
         # move the newly added component to the front of the list:
         second.components = (second.components[-1],) + second.components[:-1]
 
