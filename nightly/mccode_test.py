@@ -1,3 +1,5 @@
+"""The McCode nightly test script implemented for mccode-antlr."""
+
 from dataclasses import dataclass, field
 from datetime import timedelta
 from pathlib import Path
@@ -8,11 +10,11 @@ from numpy import nan
 
 from mccode_antlr.reader import Registry
 
-TestInstrExampleType = TypeVar('TestInstrExampleType', bound='TestInstrExample')
+NightlyInstrExampleType = TypeVar('NightlyInstrExampleType', bound='NightlyInstrExample')
 
 
 @dataclass
-class TestInstrExample:
+class NightlyInstrExample:
     """Holds parameters for a single instr file %Example: test case"""
     sourcefile: Path
     test_number: int
@@ -46,7 +48,7 @@ class TestInstrExample:
             self.parameter_values = new_param
 
     @classmethod
-    def list_from_file(cls, filename: Path) -> list[TestInstrExampleType]:
+    def list_from_file(cls, filename: Path) -> list[NightlyInstrExampleType]:
         import re
         rspec = re.compile(f'%Example:([^\n]*)Detector:([^\n]*)_I=([0-9.+-e]+)')
         with open(filename, 'r') as file:
@@ -127,8 +129,11 @@ def get_cpu_name():
 
 def get_nvidia_gpu_name():
     """Identify GPU (Uses GPUtil which only knows about Nvidia GPUs)"""
-    import GPUtil
-    gpus = GPUtil.getGPUs()
+    from importlib import import_module
+    from importlib.util import find_spec
+    if find_spec('GPUtil') is None:
+        return "none"
+    gpus = import_module('GPUtil').getGPUs()
     names = ','.join(gpu.name for gpu in gpus)
     return names if len(names) else "none"
 
@@ -297,7 +302,7 @@ def _mccode_test(compiler, runner, registry: Registry, search_pattern=None, inst
     longest_name = max(len(x.stem) for x in filepaths)
 
     # Build test objects from the '%Example:' line(s) in each file:
-    tests = [x for filepath in filepaths for x in TestInstrExample.list_from_file(filepath)]
+    tests = [x for filepath in filepaths for x in NightlyInstrExample.list_from_file(filepath)]
 
     binaries = dict()
 
