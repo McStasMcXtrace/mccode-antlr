@@ -340,14 +340,20 @@ class Instr:
 
         second = self.copy(first=index)
         second.name = self.name + '_second'
-        # remove any dangling component references:
+        # remove any dangling component references and re-reference into the new instrument's components:
         for instance in second.components:
             at_rel = instance.at_relative[1]
             rot_rel = instance.rotate_relative[1]
-            if at_rel is not None and at_rel not in second.components:
-                instance.at_relative = instance.orientation.position(), None
-            if rot_rel is not None and rot_rel not in second.components:
-                instance.rotate_relative = instance.orientation.angles(), None
+            if isinstance(at_rel, Instance):
+                if second.has_component_named(at_rel.name):
+                    instance.at_relative = instance.at_relative[0], second.get_component(at_rel.name)
+                else:
+                    instance.at_relative = instance.orientation.position(), None
+            if isinstance(rot_rel, Instance):
+                if second.has_component_named(rot_rel.name):
+                    instance.rotate_relative = instance.rotate_relative[0], second.get_component(rot_rel.name)
+                else:
+                    instance.rotate_relative = instance.orientation.angles(), None
         if second.check_instrument_parameters(remove=remove_unused_parameters) and not remove_unused_parameters:
             log.info(f'Instrument {second.name} has unused instrument parameters')
 
