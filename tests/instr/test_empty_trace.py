@@ -1,10 +1,5 @@
 from unittest import TestCase
-
-
-def make_assembler(name: str):
-    from mccode_antlr.assembler import Assembler
-    from mccode_antlr.reader import MCSTAS_REGISTRY
-    return Assembler(name, registries=[MCSTAS_REGISTRY])
+from .utils import make_assembler
 
 
 class TestInstrEmptyTrace(TestCase):

@@ -1,11 +1,7 @@
 from unittest import TestCase
 from loguru import logger
+from .utils import make_assembler
 
-
-def make_assembler(name: str):
-    from mccode_antlr.assembler import Assembler
-    from mccode_antlr.reader import MCSTAS_REGISTRY
-    return Assembler(name, registries=[MCSTAS_REGISTRY])
 
 
 class TestInstrInstanceParameters(TestCase):
