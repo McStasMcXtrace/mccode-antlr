@@ -468,6 +468,7 @@ class TestInstr(TestCase):
         COMPONENT guide_end = Arm() AT (0, 0, 8.0) RELATIVE guide
         COMPONENT chopper = DiskChopper(radius=0.35, nu=14, phase=phase, theta_0=115) AT (0, 0, 0.01) RELATIVE guide_end
         COMPONENT split_before = Arm() AT (0, 0, 1e-08) RELATIVE chopper
+        COMPONENT split_at = Arm() AT (0, 0, 0) RELATIVE split_before
         COMPONENT split_after = Arm() AT (0, 0, 0) RELATIVE split_before
         COMPONENT sample = Incoherent(
             radius=0.005, yheight=0.02, thickness=0.001, focus_ah=2.0, focus_aw=2.0, target_x=1.0, target_y=0.0, 
@@ -475,13 +476,13 @@ class TestInstr(TestCase):
         ) AT (0, 0, 1) RELATIVE chopper 
         END""")
         instr = parse_instr_string(instr)
-        first, second = instr.split('split_before', remove_unused_parameters=True)
-        # The last component in the first part of the instrument _is_ split_before
-        self.assertEqual('split_before', first.components[-1].name)
+        first, second = instr.split('split_at', remove_unused_parameters=True)
+        # The last component in the first part of the instrument _is_ split_at
+        self.assertEqual('split_at', first.components[-1].name)
         # The position of the split_at component should be absolute and the same as in the main instrument
-        split_after = second.components[0]
-        self.assertEqual(split_after.name, 'split_after')
-        at_ref = split_after.at_relative
+        split_at = second.components[0]
+        self.assertEqual(split_at.name, 'split_at')
+        at_ref = split_at.at_relative
         self.assertTrue(isinstance(at_ref[0], Vector))
         self.assertTrue(at_ref[1] is None)
         v = Vector(Expr.float(0), Expr.float(0), Expr.float(1 + 8 + 0.01 + 1E-8))
@@ -653,7 +654,6 @@ class CompiledInstr(CompiledTest):
         except RuntimeError as e:
             log.error(f'Failed to compile instrument: {e}')
             self.fail(f'Failed to compile instrument {e}')
-
 
 
 class CompiledMCPL(CompiledTest):
