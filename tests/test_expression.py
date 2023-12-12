@@ -149,7 +149,7 @@ class TestExpression(TestCase):
 
     def test_null_vector_Value(self):
         from mccode_antlr.common.expression import Value, ObjectType, ShapeType
-        from zenlog import log
+        from loguru import logger
         array = Value.array("NULL")
         # an Array is compatible with a raw string (nor a Value.best(str) which produces an identifier)
         self.assertTrue(array.compatible("identifier"))

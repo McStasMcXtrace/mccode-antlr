@@ -189,8 +189,8 @@ class SimFileSimulation:
             out = deepcopy(self)
             out.Ncount += other.Ncount
             if other.Seed == self.Seed:
-                from zenlog import log
-                log.warn('combining two simulations with the same seed is not statistically valid')
+                from loguru import logger
+                logger.warning('combining two simulations with the same seed is not statistically valid')
             return out
         if other in self:
             return self

@@ -3,7 +3,7 @@ from ..common import InstrumentParameter, MetaData, Expr
 from .instr import Instr
 from .instance import Instance
 from .jump import Jump
-from zenlog import log
+from loguru import logger
 
 
 def literal_string(ctx):
@@ -73,8 +73,8 @@ class InstrVisitor(McInstrVisitor):
     def visitInstrument_trace_include(self, ctx: McInstrParser.Instrument_trace_includeContext):
         quoted_filename = str(ctx.StringLiteral())
         if self.destination is not None:
-            log.critical(f'including {quoted_filename} from {self.filename}, which is itself included from {self.destination.name}')
-            log.critical('Expect component referencing errors, as the implementation does not cover this use case.')
+            logger.critical(f'including {quoted_filename} from {self.filename}, which is itself included from {self.destination.name}')
+            logger.critical('Expect component referencing errors, as the implementation does not cover this use case.')
         instr = self.parent.get_instrument(quoted_filename.strip('"'), destination=self.state)
         # TODO work out how/what to copy from the other instrument into this one
         self.state.add_included(instr.name)
@@ -252,14 +252,14 @@ class InstrVisitor(McInstrVisitor):
             elif self.destination is not None:
                 return self.destination.last_component(count - instances, removable_ok=True)
             else:
-                log.error(f'Too large PREVIOUS count {count} for instrument with {instances} component instances')
+                logger.error(f'Too large PREVIOUS count {count} for instrument with {instances} component instances')
         name = str(ctx.Identifier())
         if any(inst.name == name for inst in self.state.components):
             return self.state.get_component(name)
         elif self.destination is not None:
             return self.destination.get_component(name)
         else:
-            log.error(f'Unknown component reference for instance named {name}')
+            logger.error(f'Unknown component reference for instance named {name}')
 
     def visitCoords(self, ctx: McInstrParser.CoordsContext):
         # FIXME 2023-10-16 previously Cooridnate parsing forced all returned Expression objects to be floats

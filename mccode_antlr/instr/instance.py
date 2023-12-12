@@ -1,4 +1,4 @@
-from zenlog import log
+from loguru import logger
 from dataclasses import dataclass, field
 from typing import TypeVar, Union
 from ..comp import Comp
@@ -91,9 +91,9 @@ class Instance:
         if self.orientation is None:
             ar, rr = self.at_relative, self.rotate_relative
             if not isinstance(ar[0], Vector) or not isinstance(rr[0], Angles):
-                log.warn(f'Expected {ar=} and {rr=} to be Vector and Angles respectively')
+                logger.warning(f'Expected {ar=} and {rr=} to be Vector and Angles respectively')
             if rr[1] is None and ar[1] is not None:
-                log.warn(f'Expected rotation reference to be specified when at reference is specified')
+                logger.warning(f'Expected rotation reference to be specified when at reference is specified')
             at = ar[0] if isinstance(ar[0], Vector) else Vector(*ar[0])
             an, ar = (ar[1].name, ar[1].orientation) if ar[1] else ("ABSOLUTE", None)
             rt = rr[0] if isinstance(rr[0], Angles) else Angles(*rr[0])
@@ -108,16 +108,16 @@ class Instance:
                 self.parameters = tuple(x for x in self.parameters if name != x.name)
             elif allow_repeated:
                 par = [p for p in self.parameters if name == p.name][0]
-                log.info(f'Multiple definitions of {name} in component instance {self.name}')
+                logger.info(f'Multiple definitions of {name} in component instance {self.name}')
                 if par.value != value:
-                    log.info(f'  first-encountered value {par.value} retained')
-                    log.info(f'  newly-encountered value {value} dropped')
+                    logger.info(f'  first-encountered value {par.value} retained')
+                    logger.info(f'  newly-encountered value {value} dropped')
             else:
                 raise RuntimeError(f"Multiple definitions of {name} in component instance {self.name}")
         p = self.type.get_parameter(name)
 
         if not p.compatible_value(value):
-            log.debug(f'{p=}, {name=}, {value=}')
+            logger.debug(f'{p=}, {name=}, {value=}')
             raise RuntimeError(f"Provided value for parameter {name} is not compatible with {self.type.name}")
 
         if p.value.is_vector and isinstance(value, str):

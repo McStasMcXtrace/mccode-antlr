@@ -1,6 +1,6 @@
 from typing import Union
 from pathlib import Path
-from zenlog import log
+from loguru import logger
 from dataclasses import dataclass, field
 from antlr4.error.ErrorListener import ErrorListener
 from .registry import Registry, MCSTAS_REGISTRY, registries_match, registry_from_specification
@@ -16,15 +16,15 @@ class ReaderErrorListener(ErrorListener):
         self.post = post
 
     def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
-        log.error(f'Syntax error in parsing {self.filetype} {self.name} at {line},{column}')
+        logger.error(f'Syntax error in parsing {self.filetype} {self.name} at {line},{column}')
         lines = self.source.split('\n')
         pre_lines = lines[line-self.pre:line]
         post_lines = lines[line:line+self.post]
         for line in pre_lines:
-            log.info(line)
-        log.error('~'*column + '^ ' + msg)
+            logger.info(line)
+        logger.error('~'*column + '^ ' + msg)
         for line in post_lines:
-            log.info(line)
+            logger.info(line)
 
 
 @dataclass

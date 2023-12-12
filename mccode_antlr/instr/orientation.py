@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from ..common import Expr, unary_expr, binary_expr
-from zenlog import log
 from typing import TypeVar, NamedTuple, Union
+from loguru import logger
 
 VectorType = TypeVar('VectorType', bound='Vector')
 AnglesType = TypeVar('AnglesType', bound='Angles')
@@ -449,7 +449,7 @@ class Part:
         # The first condition _should_ always be true -- the second is only true if this is not the identity matrix
         if round((self._axes.inverse() * self._axes).trace(), 12) == Expr.float(3.):
             return round(self._axes.trace(), 12) != Expr.float(3.)
-        log.info(f'Not a rotation matrix: {self._axes}')
+        loging.info(f'Not a rotation matrix: {self._axes}')
         return False
 
     @property
@@ -474,11 +474,11 @@ class Part:
         # The eigenvalues, dd, are (1+0j, a+bj, a-bj) of which we want 1+0j.
         axis = vv[:, argmin(sqrt(real(conj(dd-1) * (dd-1))))]
         if sum(imag(axis)) != 0:
-            log.warn(f'Imaginary rotation axis {real(axis)} + j {imag(axis)}')
+            loging.warning(f'Imaginary rotation axis {real(axis)} + j {imag(axis)}')
         axis = real(axis)
         cos_angle = (matrix[0][0] + matrix[1][1] + matrix[2][2] - 1) / 2
         if abs(cos_angle) > 1:
-            log.warn(f'Invalid cos(angle) {cos_angle} for {self}')
+            loging.warning(f'Invalid cos(angle) {cos_angle} for {self}')
             cos_angle = 1 if cos_angle > 0 else -1
         angle = Expr.float(acos_degree(cos_angle))
         axis = Vector(Expr.float(axis[0]), Expr.float(axis[1]), Expr.float(axis[2]))

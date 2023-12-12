@@ -2,7 +2,7 @@ from typing import Union
 from ..common import Expr, InstrumentParameter
 from ..instr import Instr, Instance
 from ..reader import Reader, Registry
-from zenlog import log
+from loguru import logger
 from mccode_antlr.instr.orientation import Vector, Angles
 
 class Assembler:
@@ -96,7 +96,7 @@ class Assembler:
         if isinstance(par, str):
             par = InstrumentParameter.parse(par)
         if not isinstance(par, InstrumentParameter):
-            log.warning(f'Unhandled parameter {par}')
+            logger.warninging(f'Unhandled parameter {par}')
         self.instrument.add_parameter(par, ignore_repeated=ignore_repeated)
 
     def parameters(self, *pars, **pairs):
@@ -104,7 +104,7 @@ class Assembler:
             if isinstance(par, str):
                 par = InstrumentParameter.parse(par)
             if not isinstance(par, InstrumentParameter):
-                log.warning(f'Unhandled parameter(s) {par}')
+                logger.warninging(f'Unhandled parameter(s) {par}')
             self.instrument.add_parameter(par)
 
         for name, value in pairs.items():

@@ -31,8 +31,8 @@ class RawC:
         """Use the preprocessor #line directive to aid in debugging produced C source code."""
         # return f'#line {self.line} "{self.filename}"\n{self.source}'
         if self.translated is None:
-            from zenlog import log
-            log.error('RawC.to_c() called before translation')
+            from loguru import logger
+            logger.error('RawC.to_c() called before translation')
         return self.translated
 
     @property

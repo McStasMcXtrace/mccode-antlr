@@ -10,7 +10,7 @@ dependencies = [
     'numpy>=1.25.1',
     'pooch>=1.7.0',
     'confuse>=2.0.1',
-    'zenlog>=1.1,',
+    'loguru>=0.7.2,',
     "importlib_metadata; python_version<'3.8'",
 ]
 description = "ANTLR4 grammars for McStas and McXtrace"

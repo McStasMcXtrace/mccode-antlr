@@ -6,7 +6,7 @@ from ..common import InstrumentParameter, MetaData, parameter_name_present, RawC
 from ..reader import Registry
 from .instance import Instance
 from .group import Group
-from zenlog import log
+from loguru import logger
 
 
 @dataclass
@@ -143,7 +143,7 @@ class Instr:
         fixed = [comp for comp in self.components if not comp.removable]
         if len(fixed) < count:
             for comp in self.components:
-                log.info(f'{comp.name}')
+                logger.info(f'{comp.name}')
             raise RuntimeError(f"Only {len(fixed)} fixed components defined -- can not go back {count}.")
         return fixed[-count]
 
@@ -278,7 +278,7 @@ class Instr:
         # Each 'flag' in self.flags is from a single instrument component DEPENDENCY, and might contain duplicates:
         # If we accept that white space differences matter, we can deduplicate the strings 'easily'
         unique_flags = set(self.flags)
-        # log.debug(f'{unique_flags = }')
+        # logger.debug(f'{unique_flags = }')
         # The dependency strings are allowed to contain any of
         #       '@NEXUSFLAGS@', @MCCODE_LIB@, CMD(...), ENV(...), GETPATH(...)
         # each of which should be replaced by ... something. Start by replacing the 'static' (old-style) keywords
@@ -336,7 +336,7 @@ class Instr:
         first = self.copy(last=index + 1)
         first.name = self.name + '_first'
         if first.check_instrument_parameters(remove=remove_unused_parameters) and not remove_unused_parameters:
-            log.warn(f'Instrument {first.name} has unused instrument parameters')
+            logger.warning(f'Instrument {first.name} has unused instrument parameters')
 
         second = self.copy(first=index)
         second.name = self.name + '_second'
@@ -355,7 +355,7 @@ class Instr:
                 else:
                     instance.rotate_relative = instance.orientation.angles(), None
         if second.check_instrument_parameters(remove=remove_unused_parameters) and not remove_unused_parameters:
-            log.info(f'Instrument {second.name} has unused instrument parameters')
+            logger.info(f'Instrument {second.name} has unused instrument parameters')
 
         return first, second
 
@@ -390,7 +390,7 @@ class Instr:
 
         fc = first.components[-1]
         if fc.type.name != 'Arm':
-            log.info(f'Component {after} is a {fc.type.name} instead of an Arm -- using MCPL file may cause problems')
+            logger.info(f'Component {after} is a {fc.type.name} instead of an Arm -- using MCPL file may cause problems')
 
         if output_parameters is None:
             output_parameters = (filename_parameter,)
@@ -416,7 +416,7 @@ class Instr:
         # the split at component in the second instrument should have already been converted to absolute-positioning:
         sc = second.components[0]
         if sc.at_relative[1] is not None or sc.rotate_relative[1] is not None:
-            log.error("The split-at point should be positioned absolutely in the second instrument")
+            logger.error("The split-at point should be positioned absolutely in the second instrument")
         # remove the first component before adding an-equal named one:
         second.components = second.components[1:]
         second.make_instance(sc.name, 'MCPL_input', sc.at_relative, sc.rotate_relative, parameters=input_parameters)
@@ -449,11 +449,11 @@ class Instr:
         names = [p.name for p in self.parameters]
         used = [self.parameter_used(p.name) for p in self.parameters]
         if not all(used):
-            log.info(f'The following instrument parameters are not used in the instrument: '
+            logger.info(f'The following instrument parameters are not used in the instrument: '
                      f'{", ".join([n for n, u in zip(names, used) if not u])}')
             if remove:
                 self.parameters = tuple(p for i, p in enumerate(self.parameters) if used[i])
-                log.info(f'Removed unused instrument parameters; {len(self.parameters)} remain')
+                logger.info(f'Removed unused instrument parameters; {len(self.parameters)} remain')
         return len(used) - sum(used)
 
     def verify_instance_parameters(self):

@@ -1,7 +1,7 @@
 from io import StringIO
 from ..instr import Instr, Instance
 from ..comp import Comp
-from zenlog import log
+from loguru import logger
 
 MCSTAS_GENERATOR = dict(project=1, name="mcstas", fancy="McStas", url='http://www.mcstas.org')
 MCXTRACE_GENERATOR = dict(project=2, name='mcxtrace', fancy='McXtrace', url='http://www.mcxtrace.org')
@@ -93,7 +93,7 @@ class TargetVisitor:
 
     def info(self, msg: str):
         if self.verbose:
-            log.info(f'{self.source.name}: {msg}')
+            logger.info(f'{self.source.name}: {msg}')
 
     def translate(self, reprocess=True):
         if self.output is not None:

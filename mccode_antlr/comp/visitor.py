@@ -1,7 +1,7 @@
 from ..grammar import McCompParser as Parser, McCompVisitor
 from .comp import Comp
 from ..common import ComponentParameter, Expr, MetaData
-from zenlog import log
+from loguru import logger
 
 class CompVisitor(McCompVisitor):
     def __init__(self, parent, filename, instance_name=None):
@@ -45,9 +45,9 @@ class CompVisitor(McCompVisitor):
         
     def visitTraceBlockCopy(self, ctx: Parser.TraceBlockCopyContext):
         if len(self.state.trace):
-            log.critical(f'The component {self.state.name} is a copied definition, complete with TRACE section')
-            log.critical(f'Now `TRACE COPY {ctx.Identifier()}` would add to the existing copied TRACE')
-            log.critical(f'This is almost certainly not the intended behaviour, so you get only the new copy.')
+            logger.critical(f'The component {self.state.name} is a copied definition, complete with TRACE section')
+            logger.critical(f'Now `TRACE COPY {ctx.Identifier()}` would add to the existing copied TRACE')
+            logger.critical(f'This is almost certainly not the intended behaviour, so you get only the new copy.')
             self.state.trace = ()
         blocks = self.parent.get_component(str(ctx.Identifier())).trace
         if ctx.Extend() is not None:
@@ -140,9 +140,9 @@ class CompVisitor(McCompVisitor):
 
     def visitDeclareBlockCopy(self, ctx: Parser.DeclareBlockCopyContext):
         if len(self.state.declare):
-            log.critical(f'The component {self.state.name} is a copied definition, complete with DECLARE section')
-            log.critical(f'Now `DECLARE COPY {ctx.Identifier()}` would add to the existing copied DECLARE')
-            log.critical(f'This is almost certainly not the intended behaviour, so you get only the new copy.')
+            logger.critical(f'The component {self.state.name} is a copied definition, complete with DECLARE section')
+            logger.critical(f'Now `DECLARE COPY {ctx.Identifier()}` would add to the existing copied DECLARE')
+            logger.critical(f'This is almost certainly not the intended behaviour, so you get only the new copy.')
             self.state.declare = ()
         blocks = self.parent.get_component(str(ctx.Identifier())).declare
         if ctx.Extend() is not None:
@@ -165,9 +165,9 @@ class CompVisitor(McCompVisitor):
 
     def visitInitializeBlockCopy(self, ctx: Parser.InitializeBlockCopyContext):
         if len(self.state.initialize):
-            log.critical(f'The component {self.state.name} is a copied definition, complete with INITIALIZE section')
-            log.critical(f'Now `INITIALIZE COPY {ctx.Identifier()}` would add to the existing copied INITIALIZE')
-            log.critical(f'This is almost certainly not the intended behaviour, so you get only the new copy.')
+            logger.critical(f'The component {self.state.name} is a copied definition, complete with INITIALIZE section')
+            logger.critical(f'Now `INITIALIZE COPY {ctx.Identifier()}` would add to the existing copied INITIALIZE')
+            logger.critical(f'This is almost certainly not the intended behaviour, so you get only the new copy.')
             self.state.initialize = ()
         blocks = self.parent.get_component(str(ctx.Identifier())).initialize
         if ctx.Extend() is not None:
@@ -183,9 +183,9 @@ class CompVisitor(McCompVisitor):
 
     def visitSaveBlockCopy(self, ctx: Parser.SaveBlockCopyContext):
         if len(self.state.save):
-            log.critical(f'The component {self.state.name} is a copied definition, complete with SAVE section')
-            log.critical(f'Now `SAVE COPY {ctx.Identifier()}` would add to the existing copied SAVE')
-            log.critical(f'This is almost certainly not the intended behaviour, so you get only the new copy.')
+            logger.critical(f'The component {self.state.name} is a copied definition, complete with SAVE section')
+            logger.critical(f'Now `SAVE COPY {ctx.Identifier()}` would add to the existing copied SAVE')
+            logger.critical(f'This is almost certainly not the intended behaviour, so you get only the new copy.')
             self.state.save = ()
         blocks = self.parent.get_component(str(ctx.Identifier())).save
         if ctx.Extend() is not None:
@@ -198,9 +198,9 @@ class CompVisitor(McCompVisitor):
 
     def visitFinallyBlockCopy(self, ctx: Parser.FinallyBlockCopyContext):
         if len(self.state.final):
-            log.critical(f'The component {self.state.name} is a copied definition, complete with FINALLY section')
-            log.critical(f'Now `FINALLY COPY {ctx.Identifier()}` would add to the existing copied FINALLY')
-            log.critical(f'This is almost certainly not the intended behaviour, so you get only the new copy.')
+            logger.critical(f'The component {self.state.name} is a copied definition, complete with FINALLY section')
+            logger.critical(f'Now `FINALLY COPY {ctx.Identifier()}` would add to the existing copied FINALLY')
+            logger.critical(f'This is almost certainly not the intended behaviour, so you get only the new copy.')
             self.state.final = ()
         blocks = self.parent.get_component(str(ctx.Identifier())).final
         if ctx.Extend() is not None:
@@ -213,9 +213,9 @@ class CompVisitor(McCompVisitor):
 
     def visitDisplayBlockCopy(self, ctx: Parser.DisplayBlockCopyContext):
         if len(self.state.display):
-            log.critical(f'The component {self.state.name} is a copied definition, complete with DISPLAY section')
-            log.critical(f'Now `DISPLAY COPY {ctx.Identifier()}` would add to the existing copied DISPLAY')
-            log.critical(f'This is almost certainly not the intended behaviour, so you get only the new copy.')
+            logger.critical(f'The component {self.state.name} is a copied definition, complete with DISPLAY section')
+            logger.critical(f'Now `DISPLAY COPY {ctx.Identifier()}` would add to the existing copied DISPLAY')
+            logger.critical(f'This is almost certainly not the intended behaviour, so you get only the new copy.')
             self.state.display = ()
         blocks = self.parent.get_component(str(ctx.Identifier())).display
         if ctx.Extend() is not None:

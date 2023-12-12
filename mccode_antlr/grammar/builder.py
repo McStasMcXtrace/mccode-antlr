@@ -1,4 +1,4 @@
-from zenlog import log
+from loguru import logger
 
 def rebuild_language(grammar_file, verbose=False):
     from pathlib import Path
@@ -44,16 +44,16 @@ def language_present_and_up_to_date(grammar_file, newest, verbose=False):
 
     if not all(x.exists() for x in generated_files):
         if verbose:
-            log.info(f'Not all language files exist for {grammar_file}')
+            logger.info(f'Not all language files exist for {grammar_file}')
         return False
 
     if any(x.stat().st_mtime < newest for x in generated_files):
         if verbose:
-            log.info(f'Not all language files up-to-date for {grammar_file}')
+            logger.info(f'Not all language files up-to-date for {grammar_file}')
         return False
 
     if verbose:
-        log.info(f'Language files for {grammar_file} are up-to-date')
+        logger.info(f'Language files for {grammar_file} are up-to-date')
     return True
 
 

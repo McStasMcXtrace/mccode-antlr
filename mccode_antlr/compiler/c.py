@@ -4,7 +4,7 @@ from typing import Union
 from pathlib import Path
 from mccode_antlr.instr import Instr
 from mccode_antlr.translators.c import CTargetVisitor
-from zenlog import log
+from loguru import logger
 
 
 class CBinaryTarget:
@@ -95,7 +95,7 @@ def compile_instrument(instrument: Instr, target: CBinaryTarget, output: Union[s
     from os import R_OK, access
     from subprocess import run, CalledProcessError
     from mccode_antlr.config import config
-    log.info(f'Compile {instrument.name}')
+    logger.info(f'Compile {instrument.name}')
     # determine a name and location for the binary file
     if output is None:
         # use the current working directory if nothing provided
@@ -112,7 +112,7 @@ def compile_instrument(instrument: Instr, target: CBinaryTarget, output: Union[s
     if output.exists() and not replace:
         return output
 
-    log.info(f'Sort out flags for compilation')
+    logger.info(f'Sort out flags for compilation')
 
     # the type of binary requested determines (some of) the required flags:
     compiler_flags = target.flags + target.extra_flags
@@ -121,8 +121,8 @@ def compile_instrument(instrument: Instr, target: CBinaryTarget, output: Union[s
     # the flags in an instrument *might* contain ENV, CMD, GETPATH directives which need to be expanded via decode:
     linker_flags.extend([word for flag in instrument.decoded_flags() for word in flag.split()])
 
-    log.info(f'{compiler_flags = }')
-    log.info(f'{linker_flags = }')
+    logger.info(f'{compiler_flags = }')
+    logger.info(f'{linker_flags = }')
 
     # Why is this addition necessary?
     if any('OPENACC' in word for word in compiler_flags) and any('NeXus' in word for word in compiler_flags):
@@ -134,7 +134,7 @@ def compile_instrument(instrument: Instr, target: CBinaryTarget, output: Union[s
     source = instrument_source(instrument, **kwargs)
     if dump_source:
         source_file = Path().joinpath(output.parts[-1]).with_suffix('.c')
-        log.info(f'Source written in {source_file}')
+        logger.info(f'Source written in {source_file}')
         with open(source_file, 'w') as cfile:
             cfile.write(source)
     # print(f"Compile using {command}")
@@ -192,7 +192,7 @@ def run_compiled_instrument(binary: Path, target: CBinaryTarget, options: str, c
     command.extend([str(binary), *options.split()])
     # which we then execute:
     if dry_run:
-        log.info(f'Would execute {command}')
+        logger.info(f'Would execute {command}')
         return ""
     result = run(command, capture_output=capture)
     if result.returncode and capture:
