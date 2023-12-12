@@ -1,60 +1,10 @@
 from unittest import TestCase
 from loguru import logger
-
-from mccode_antlr.instr import Instr, Instance
-from mccode_antlr.common.expression import Expr
-from mccode_antlr.instr.orientation import Vector
+from .compiled import compiled, mcpl_compiled, compile_and_run
 
 
-
-def make_mcstas_assembler(name: str):
-    from mccode_antlr.assembler import Assembler
-    from mccode_antlr.reader import MCSTAS_REGISTRY
-    return Assembler(name, registries=[MCSTAS_REGISTRY])
-
-
-class CompiledTest(TestCase):
-    def setUp(self):
-        import subprocess
-        from mccode_antlr.config import config
-        try:
-            subprocess.run([config['cc'].get(str), '--version'], check=True)
-        except FileNotFoundError:
-            logger.info(f'Provide alternate C compiler via MCCODE_ANTLR_CC environment variable')
-            self.skipTest(f"C compiler {config['cc']} not found")
-
-
-class CompiledInstr(CompiledTest):
-    def _compile_and_run(self, instr, parameters, run=True):
-        from mccode_antlr.compiler.c import compile_instrument, CBinaryTarget, run_compiled_instrument
-        from mccode_antlr.translators.target import MCSTAS_GENERATOR
-        from mccode_antlr.loader import read_mccode_dat
-        from mccode_antlr.config import config as module_config
-        from tempfile import TemporaryDirectory
-        from os import R_OK, access
-        from pathlib import Path
-
-        target = CBinaryTarget(mpi=False, acc=False, count=1, nexus=False)
-        config = dict(default_main=True, enable_trace=False, portable=False, include_runtime=True,
-                      embed_instrument_file=False, verbose=False)
-
-        with TemporaryDirectory() as directory:
-            try:
-                compile_instrument(instr, target, directory, generator=MCSTAS_GENERATOR, config=config, dump_source=True)
-            except RuntimeError as e:
-                logger.error(f'Failed to compile instrument: {e}')
-                raise e
-            binary = Path(directory).joinpath(f'{instr.name}{module_config["ext"].get(str)}')
-            self.assertTrue(binary.exists())
-            self.assertTrue(binary.is_file())
-            self.assertTrue(access(binary, R_OK))
-            if run:
-                run_compiled_instrument(binary, target, f"--dir {directory}/instr {parameters}")
-                sim_files = list(Path(directory).glob('**/*.dat'))
-                dats = {file.stem: read_mccode_dat(file) for file in sim_files}
-                return dats
-            return None
-
+class TestCompiledInstr(TestCase):
+    @compiled
     def test_one_axis(self):
         from math import pi, asin, sqrt
         from mccode_antlr.loader import parse_mcstas_instr
@@ -94,7 +44,7 @@ class CompiledInstr(CompiledTest):
         self.assertAlmostEqual(a1, 37.0722, 4)
         parameters = f'a1={a1} a2={2 * a1} -n 1000000'
 
-        dats = self._compile_and_run(instr, parameters)
+        std_output, dats = compile_and_run(instr, parameters)
         self.assertEqual(len(dats), 5)
         self.assertEqual(dats['m0'].data.shape, (3, 160, 100))
         self.assertEqual(dats['m1'].data.shape, (3, 160, 100))
@@ -106,19 +56,24 @@ class CompiledInstr(CompiledTest):
         # The detector has been positioned correctly to collect intensity
         self.assertTrue(dats['detector']['I'] > 0)
 
+    @compiled
     def test_assembled_parameters(self):
         """Check that setting an instance parameter to a value that is an instrument parameter name works"""
-        assembler = make_mcstas_assembler('assembled_parameters_test_instr')
+        from mccode_antlr.assembler import Assembler
+        from mccode_antlr.reader import MCSTAS_REGISTRY
+        assembler = Assembler('assembled_parameters_test_instr', registries=[MCSTAS_REGISTRY])
         assembler.parameter("double par0 = 3.14159")
         origin = assembler.component("origin", "Progress_bar", at=[0, 0, 0])
         left = assembler.component('left', 'Slit', at=([0, 0, 1], origin), rotate=[0, 90, 0],
                                    parameters=dict(xwidth='par0', yheight='2*fmod(par0, 0.1)'))
 
-        self._compile_and_run(assembler.instrument, None, run=False)
+        compile_and_run(assembler.instrument, None, run=False)
 
+    @compiled
     def test_vector_component_parameter(self):
         """Some components can use vector parameters, which must be initialized by initializer lists"""
         from mccode_antlr.common import Value
+        from mccode_antlr.loader import parse_mcstas_instr
         # TODO Update the registry with the new Conics_* components, then update this test (if necessary)
         instr = """
         DEFINE INSTRUMENT test_vector_component_parameter() TRACE
@@ -130,18 +85,20 @@ class CompiledInstr(CompiledTest):
         AT (0,0,1) ABSOLUTE
         END
         """
-        instr = parse_instr_string(instr)
+        instr = parse_mcstas_instr(instr)
         self.assertEqual(instr.components[0].get_parameter('radii').value, Value([0.05236, 0.03, 0.01, 0.0031416]))
 
         try:
-            self._compile_and_run(instr, '-n 1000', run=True)
+            compile_and_run(instr, '-n 1000', run=True)
         except RuntimeError as e:
             logger.error(f'Failed to compile instrument: {e}')
             self.fail(f'Failed to compile instrument {e}')
 
+    @compiled
     def test_split_broken_reference_compiles(self):
+        from mccode_antlr.loader import parse_mcstas_instr
         from textwrap import dedent
-        instr = dedent("""\
+        instr = parse_mcstas_instr(dedent("""\
         DEFINE INSTRUMENT test_tof(phase/"degree"=0, ang/"degree"=0)
         TRACE
         COMPONENT Origin = Progress_bar() AT (0, 0, 0) ABSOLUTE 
@@ -159,31 +116,22 @@ class CompiledInstr(CompiledTest):
             radius=0.005, yheight=0.02, thickness=0.001, focus_ah=2.0, focus_aw=2.0, target_x=1.0, target_y=0.0, 
             target_z=0.0, Etrans=0.0, deltaE=0.2
         ) AT (0, 0, 1) RELATIVE aperture
-        END""")
-        instr = parse_instr_string(instr)
+        END"""))
         _, second = instr.split('split_at', remove_unused_parameters=True)
         try:
-            self._compile_and_run(second, '-n 1000 ang=10', run=True)
+            compile_and_run(second, '-n 1000 ang=10', run=True)
         except RuntimeError as e:
             logger.error(f'Failed to compile instrument: {e}')
             self.fail(f'Failed to compile instrument {e}')
 
-
-class CompiledMCPL(CompiledTest):
-    def setUp(self):
-        import subprocess
-        try:
-            subprocess.run(['mcpl-config', '--version'], check=True)
-        except FileNotFoundError:
-            self.skipTest('mcpl-config not found')
-
+    @mcpl_compiled
     def test_mcpl_split_run(self):
         # Adapted from Test_MCPL_*.instr in ${MCCODE}/mcstas-comps/examples
         from mccode_antlr.instr import Instr
         from mccode_antlr.common import ComponentParameter, Expr
         from mccode_antlr.compiler.c import compile_instrument, run_compiled_instrument, CBinaryTarget
         from mccode_antlr.translators.target import MCSTAS_GENERATOR
-        from mccode_antlr.loader import read_mccode_dat
+        from mccode_antlr.loader import read_mccode_dat, parse_mcstas_instr
         from tempfile import TemporaryDirectory
         from os import R_OK, access
         from pathlib import Path
@@ -215,7 +163,7 @@ class CompiledMCPL(CompiledTest):
         AT (0,0,0) ABSOLUTE
         END
         """
-        instr = parse_instr_string(instr_source)
+        instr = parse_mcstas_instr(instr_source)
         self.assertEqual(instr.name, 'Test_MCPL_output')
 
         flag_params = tuple(ComponentParameter(k, Expr.str(v)) for k, v in [

@@ -61,6 +61,27 @@ def mpi_only(method):
     return compiled(method, 'mpi/cc')
 
 
+@cache
+def mcpl_config_available():
+    try:
+        import subprocess
+        subprocess.run(['mcpl-config', '--version'], check=True)
+    except FileNotFoundError:
+        return False
+    return True
+
+
+def mcpl_compiled(method):
+    def wrapper(*args, **kwargs):
+        if mcpl_config_available() and simple_instr_compiles('cc'):
+            method(*args, **kwargs)
+        elif isinstance(args[0], TestCase):
+            msg = "working compiler" if mcpl_config_available() else "mcpl interface"
+            args[0].skipTest(f'Skipping due to missing {msg}')
+
+    return wrapper
+
+
 def compile_and_run(instr, parameters, run=True, dump_source=True,
                     target: dict | None = None, config: dict | None = None):
     from mccode_antlr.compiler.c import compile_instrument, CBinaryTarget, run_compiled_instrument
