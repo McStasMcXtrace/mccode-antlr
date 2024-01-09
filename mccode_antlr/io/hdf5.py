@@ -103,7 +103,7 @@ class InstanceIO:
         values['at_relative'] = (vec, instances.get(ref) if ref is not None else None)
         # rotate_relative tuple:
         ang = HDF5IO.load(group['rotate_angles'])
-        ref = group.attrs.get('ref')
+        ref = group.attrs.get('rotate_reference')
         if ref is not None and ref not in instances:
             raise ValueError(f"Unknown instance reference {ref}")
         values['rotate_relative'] = (ang, instances.get(ref) if ref is not None else None)
