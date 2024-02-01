@@ -202,14 +202,21 @@ class TestCompiledInstr(TestCase):
             seed = randint(1000, 2**32 - 1)
             common = f'--seed {seed} -n 10000'
             run_compiled_instrument(expected_binaries[0], target, f"--dir {directory}/instr {common}")
-            mcpl_file = Path(directory).joinpath('instr.mcpl')
+            mcpl_file = Path(directory).joinpath('instr')
             run_compiled_instrument(expected_binaries[1], target, f"--dir {directory}/before {common} mcpl_filename={mcpl_file}")
+            # Breaking change in development McStas -- MCPL_output appends the extension even if it's already there
+            # So do not specify it, then add it here.
+            if not mcpl_file.exists() or not mcpl_file.is_file():
+                mcpl_file = Path(directory).joinpath('instr.mcpl')
             # Depending on how MCPL was built, it might have gzipped the output file
-            if not mcpl_file.exists():
+            if not mcpl_file.exists() or not mcpl_file.is_file():
                 mcpl_file = Path(directory).joinpath('instr.mcpl.gz')
             self.assertTrue(mcpl_file.exists())
-            run_compiled_instrument(expected_binaries[2], target,
-                                    f"--dir {directory}/after {common} mcpl_filename={mcpl_file}")
+            try:
+                run_compiled_instrument(expected_binaries[2], target,
+                                        f"--dir {directory}/after {common} mcpl_filename={mcpl_file}")
+            except RuntimeError as ex:
+                self.fail(str(ex))
 
             # Now check that the instr and after outputs are the same
             instr_files = list(Path(directory).joinpath('instr').glob('o*'))

@@ -46,6 +46,11 @@ class TestInstrSplit(TestCase):
         for a, b in zip(Vector(Expr.float(1), Expr.float(10), Expr.float(100)), after.components[-1].at_relative[0]):
             self.assertAlmostEqual(a, b)
 
+        # The relative orientation of components 'first' and 'second' must persist into the 'before' instrument:
+        first = before.get_component('first')
+        self.assertEqual(first.rotate_relative[1], before.get_component('origin'))
+        self.assertEqual(before.get_component('second').rotate_relative[1], first)
+
     def test_split_broken_reference(self):
         from textwrap import dedent
         instr = dedent("""\

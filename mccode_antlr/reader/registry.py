@@ -233,7 +233,7 @@ class GitHubRegistry(RemoteRegistry):
         self.pooch = pooch.create(
             path=pooch.os_cache(self.name),
             base_url=base_url,
-            version=version,
+            version=version if version.startswith('v') else None,
             version_dev="main",
             registry=registry,
         )
@@ -387,8 +387,10 @@ def registry_from_specification(spec: str):
 def _m_reg(name):
     m_url = "https://github.com/McStasMcXtrace/McCode"
     r_url = "https://github.com/g5t/mccode-pooch"
+    # TODO have a configuration switch between stable and development components?
+    return GitHubRegistry(name, m_url, 'main', registry=r_url)
     # TODO update this version with new McStasMcXtrace releases
-    return GitHubRegistry(name, m_url, 'v3.4.0', registry=r_url)
+    # return GitHubRegistry(name, m_url, 'v3.4.0', registry=r_url)
 
 
 # TODO remove this registry once mcstas-d.h and mcxtrace-d.h are in the mccode repo; plus mccode-r.h is not configured
