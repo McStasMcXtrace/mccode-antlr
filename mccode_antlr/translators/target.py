@@ -70,6 +70,46 @@ class TargetVisitor:
     def library_path(self, filename=None):
         return self.locate(filename)
 
+    def configure_file(self, filename: str, flavor: str):
+        """McStasMcXtrace/McCode makes use of CMake configure_file to define runtime-header macros.
+        These file(s) have the extension .h.in and are changed to .h after replacing all "@MCCODE_*@ keys
+        """
+        import re
+        from importlib.resources import as_file
+        from mccode_antlr.config import config, registry_defaults
+        if not filename.endswith(".h.in"):
+            raise RuntimeError(f"Expected to configure only header files, not {filename}")
+        with as_file(self.library_path(filename)) as file_at:
+            not_configured_name = str(file_at)
+            with open(file_at, 'r') as file:
+                contents = file.read()
+
+        # It's not great to do this here. TODO Find a better place for this
+        # FIXME we're (possibly) mixing up McStas/McXtrace and Lib-C versions
+        for reg in self.registries:
+            # updates mccode_antlr.config.config
+            registry_defaults(reg, [reg.name])
+
+        def replacement(match) -> str:
+            name = match.group(1).lower()
+            key = config[flavor][name]
+            if key.exists():
+                return str(key.get())  # key might not represent a string, but we need to return one
+            if 'date' in name:
+                return '1970-01-01'
+            if name == 'version_macro' or 'number' in name:
+                return '0'
+            return "{UNKNOWN}"
+
+        # find all occurances of @MCCODE_([A-Z]*)@, replace them with their equivalent config[flavor][$1].get()
+        contents = re.sub(r'@MCCODE_([A-Z_]*)@', replacement, contents)
+
+        # one could consider writing the configured contents to a (temporary) file for use if the translator
+        # is not set to 'include_runtime'
+        self.out(f'/* embedding configured version of file "{not_configured_name}" */')
+        self.out(contents)
+        self.out(f'/* end of configured version of file "{not_configured_name}" */')
+
     def embed_file(self, filename):
         """Reads the library file, even if embedded in a module archive, writes to the output IO Stream"""
         from importlib.resources import as_file

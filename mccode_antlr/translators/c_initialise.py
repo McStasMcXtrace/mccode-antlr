@@ -10,16 +10,16 @@ double index_getdistance(long first_index, long second_index)
 double getdistance(char* first_component, char* second_component)
 /* Calculate the distance between two named components */
 {
-  long first_index = _getcomp_index(first_component);
-  long second_index = _getcomp_index(second_component);
+  int first_index = _getcomp_index(first_component);
+  int second_index = _getcomp_index(second_component);
   return index_getdistance(first_index, second_index);
 }
 
 double checked_setpos_getdistance(long current_index, char* first_component, char* second_component)
 /* Calculate the distance between two named components at *_setpos() time, with component index checking */
 {
-  long first_index = _getcomp_index(first_component);
-  long second_index = _getcomp_index(second_component);
+  int first_index = _getcomp_index(first_component);
+  int second_index = _getcomp_index(second_component);
   if (first_index >= current_index || second_index >= current_index) {
     printf(\"setpos_getdistance can only be used with the names of components before the current one!\\n\");
     return 0;

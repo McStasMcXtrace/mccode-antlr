@@ -1,4 +1,5 @@
 import confuse
+
 # Try and simplify handling configuration values need for, e.g., compiling different versions of the runtimes
 # under different operating systems, while allowing a user to 'easily' override defaults if necessary.
 #
@@ -30,5 +31,44 @@ def _platform_defaults():
     return platform_configs[system]
 
 
+def _common_defaults():
+    import yaml
+    from importlib.resources import files, as_file
+
+    common_file = files(__name__).joinpath('config_default.yaml')
+    if not common_file.is_file():
+        raise RuntimeError(f"Can not locate config_default.yaml in module files (looking for {common_file})")
+    with as_file(common_file) as file:
+        with open(file, 'r') as data:
+            common_configs = yaml.safe_load(data)
+
+    return common_configs
+
+
+def registry_defaults(libc_registry, projects: list[str]):
+    """Add values for @MCCODE_*@ expansion based on the in-use LIBC registry"""
+    from datetime import datetime
+
+    def version_macro():
+        from packaging.version import Version, InvalidVersion
+        try:
+            v = Version(libc_registry.version)
+            return (v.major * 100 + v.minor) * 1000 + v.micro
+        except InvalidVersion:
+            return 399999  # 3.99.999 to match McCode default (MCVERSION not set)
+
+    configs = {project: {} for project in projects}
+    for project in configs.values():
+        project['string'] = str(libc_registry).replace('\n', '')
+        project['version'] = libc_registry.version
+        project['version_macro'] = version_macro()
+        project['date'] = datetime.utcnow().strftime('%Y-%m-%d')
+
+    # Override any configurations in case this is called more than once with different information
+    config.set(configs)
+
+
 # By using the 'add' method, we set these as the *lowest* priority. Any user/system files will override:
 config.add(_platform_defaults())
+#
+config.add(_common_defaults())
