@@ -102,7 +102,7 @@ class TargetVisitor:
             return "{UNKNOWN}"
 
         # find all occurances of @MCCODE_([A-Z]*)@, replace them with their equivalent config[flavor][$1].get()
-        contenst = re.sub(r'@MCCODE_([A-Z_]*)@', replacement, contents)
+        contents = re.sub(r'@MCCODE_([A-Z_]*)@', replacement, contents)
 
         # one could consider writing the configured contents to a (temporary) file for use if the translator
         # is not set to 'include_runtime'
