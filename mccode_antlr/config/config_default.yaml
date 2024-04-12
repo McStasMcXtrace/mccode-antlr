@@ -1,0 +1,16 @@
+mcstas:
+  name: mcstas
+  particle: neutron
+  particle_code: 2112
+  lib: nlib
+  libenv: MCSTAS
+  prefix: mc
+  project: 1
+mcxtrace:
+  name: mcxtrace
+  particle: xray
+  particle_code: 22
+  lib: xlib
+  libenv: MCXTRACE
+  prefix: mx
+  project: 2

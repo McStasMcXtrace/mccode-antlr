@@ -392,13 +392,12 @@ def _m_reg(name):
     # TODO update this version with new McStasMcXtrace releases
     # return GitHubRegistry(name, m_url, 'v3.4.0', registry=r_url)
 
-
-# TODO remove this registry once mcstas-d.h and mcxtrace-d.h are in the mccode repo; plus mccode-r.h is not configured
-FIXED_LIBC_REGISTRY = ModuleRemoteRegistry(
-    'fixed-libc',
-    'https://github.com/g5t/mccode-files/raw/main/runtime/libc',
-    'libc-registry.txt'
-)
+# # This registry was required when mcstas-d.h and mcxtrace-d.h and pre-configured mccode-r.h were needed:
+# FIXED_LIBC_REGISTRY = ModuleRemoteRegistry(
+#     'fixed-libc',
+#     'https://github.com/g5t/mccode-files/raw/main/runtime/libc',
+#     'libc-registry.txt'
+# )
 
 MCSTAS_REGISTRY, MCXTRACE_REGISTRY, LIBC_REGISTRY = [_m_reg(name) for name in ('mcstas', 'mcxtrace', 'libc')]
 del _m_reg
