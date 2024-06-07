@@ -59,7 +59,9 @@ def cogen_comp_finally_class(comp, declared_parameters):
         return []
 
     lines = [
-        f'_class_{comp.name} *class_{comp.name}_finally(_class_{comp.name} *_comp) {{',
+        # f'_class_{comp.name} *class_{comp.name}_finally(_class_{comp.name} *_comp) {{',
+        # Changed following https://github.com/McStasMcXtrace/McCode/commit/73a32858af1a5193bbb692da49379816cb0f9e38
+        f'void class_{comp.name}_finally(_class_{comp.name} *_comp) {{',
         cogen_parameter_define(comp, declared_parameters)
     ]
     f, n = comp.final[0].fn if len(comp.final) else (comp.name, 0)
@@ -70,7 +72,8 @@ def cogen_comp_finally_class(comp, declared_parameters):
 
     lines.extend([
         cogen_parameter_undef(comp, declared_parameters),
-        '  return(_comp);',
+        # '  return(_comp);',
+        '  return;',
         f'}} /* class_{comp.name}_finally */',
         ''
     ])
