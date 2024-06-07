@@ -40,7 +40,7 @@ def cogen_comp_init_position(index, comp, last, instr):
     var = f'_{comp.name}_var'
     lines = [
         f'  /* component {comp.name}={comp.type.name}() AT ROTATED */',
-        f'  /* {comp} */',
+        f'  // {comp.partial_str()}',
         '  {',
         '    Coords tc1, tc2;',
         '    tc1 = coords_set(0,0,0);',
