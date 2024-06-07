@@ -36,7 +36,7 @@ class Instance:
     def __repr__(self):
         return f'Instance({self.name}, {self.type.name})'
 
-    def to_file(self, output, wrapper=None):
+    def to_file(self, output, wrapper=None, full=True):
         if self.cpu:
             print(wrapper.line('CPU', []), file=output)
 
@@ -56,6 +56,9 @@ class Instance:
         line += rf('ROTATED', self.rotate_relative) + wrapper.br()
         print(line, file=output)
 
+        if not full:
+            return  # Skip the rest of the output
+
         if self.group is not None:
             print(wrapper.line('GROUP', [self.group]), file=output)
         if self.extend:
@@ -66,15 +69,19 @@ class Instance:
         for metadata in self.metadata:
             metadata.to_file(output, wrapper)
 
-    def to_string(self, wrapper):
+    def to_string(self, wrapper, full=True):
         from io import StringIO
         output = StringIO()
-        self.to_file(output, wrapper)
+        self.to_file(output, wrapper=wrapper, full=full)
         return output.getvalue()
 
     def __str__(self):
         from mccode_antlr.common import TextWrapper
         return self.to_string(TextWrapper())
+
+    def partial_str(self):
+        from mccode_antlr.common import TextWrapper
+        return self.to_string(TextWrapper(), full=False)
 
     @classmethod
     def from_instance(cls, name: str, ref: InstanceReference, at: VectorReference, rotate: AnglesReference):

@@ -5,7 +5,9 @@ def cogen_display(source, declared_parameters):
              ]
     macros = dict(magnify='mcdis_magnify', line='mcdis_line', dashed_line='mcdis_dashed_line',
                   multiline='mcdis_multiline', rectangle='mcdis_rectangle', box='mcdis_box',
-                  circle='mcdis_circle', cylinder='mcdis_cylinder', sphere='mcdis_sphere')
+                  circle='mcdis_circle', cylinder='mcdis_cylinder', sphere='mcdis_sphere',
+                  cone='mcdis_cone', polygon='mcdis_polygon', polyhedron='mcdis_polyhedron',
+                  )
 
     for x, v in macros.items():
         lines.append(f'  #define {x} {v}')

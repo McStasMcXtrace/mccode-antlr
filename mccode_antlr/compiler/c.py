@@ -137,10 +137,9 @@ def compile_instrument(instrument: Instr, target: CBinaryTarget, output: Union[s
         logger.info(f'Source written in {source_file}')
         with open(source_file, 'w') as cfile:
             cfile.write(source)
-    # print(f"Compile using {command}")
     result = run(command, input=source, text=True, capture_output=True)
     if result.returncode:
-        raise RuntimeError(f"Compilation failed producing output\n{result.stdout}\n  and error\n{result.stderr}")
+        raise RuntimeError(f"Compilation\n{command}\nfailed with output\n{result.stdout}\nand error\n{result.stderr}")
     #
     # try:
     #     run(command, input=instrument_source(instrument, **kwargs), text=True, check=True)
