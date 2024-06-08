@@ -47,7 +47,7 @@ def _common_defaults():
 
 def registry_defaults(libc_registry, projects: list[str]):
     """Add values for @MCCODE_*@ expansion based on the in-use LIBC registry"""
-    from datetime import datetime, UTC
+    from datetime import datetime, timezone
 
     def version_macro():
         from packaging.version import Version, InvalidVersion
@@ -62,7 +62,7 @@ def registry_defaults(libc_registry, projects: list[str]):
         project['string'] = str(libc_registry).replace('\n', '')
         project['version'] = libc_registry.version
         project['version_macro'] = version_macro()
-        project['date'] = datetime.now(UTC).strftime('%Y-%m-%d')
+        project['date'] = datetime.now(timezone.utc).strftime('%Y-%m-%d')
 
     # Override any configurations in case this is called more than once with different information
     config.set(configs)
