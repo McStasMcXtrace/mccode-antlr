@@ -10,7 +10,7 @@ dependencies = [
     'numpy>=1.25.1',
     'pooch>=1.7.0',
     'confuse>=2.0.1',
-    'loguru>=0.7.2,',
+    'loguru>=0.7.2',
     "importlib_metadata; python_version<'3.8'",
 ]
 description = "ANTLR4 grammars for McStas and McXtrace"
@@ -24,7 +24,7 @@ classifiers = [
 dynamic = ["version"]
 
 [project.optional-dependencies]
-test = ["gputil==1.4.0"]
+test = ["gputil==1.4.0", 'pytest']
 hdf5 = ["h5py==3.10.0"]
 
 [project.urls]

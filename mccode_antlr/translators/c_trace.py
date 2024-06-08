@@ -129,7 +129,10 @@ def cogen_comp_trace_class(is_mcstas, comp, source, declared_parameters, instr_u
     # instr files do not produce a code block to output here.
     pars = _runtime_kv_parameters(is_mcstas)
     lines.extend(["#ifndef NOABSORB_INF_NAN", "  /* Check for nan or inf particle parms */ "])
-    lines.extend([f"  if(isnan({x}) || isinf({x})) ABSORB;" for x in pars])
+    # Change following https://github.com/McStasMcXtrace/McCode/commit/6876e5c6f6618d527c67a01610119fa8b1188084
+    # lines.extend([f"  if(isnan({x}) || isinf({x})) ABSORB;" for x in pars])
+    lines.append(f"  if(isnan({' + '.join(pars)})) ABSORB;")
+    lines.append(f"  if(isinf({' + '.join(f'''fabs({x})''' for x in pars)})) ABSORB;")
     lines.append("#else")
 
     def long(x):

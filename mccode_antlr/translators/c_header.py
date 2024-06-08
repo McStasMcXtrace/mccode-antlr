@@ -65,6 +65,13 @@ def header_pre_runtime(is_mcstas, source, runtime: dict, config: dict, typedefs:
  * CFLAGS={' '.join(set(source.flags))}
  */
  
+/* In case of cl.exe on Windows, suppress warnings about #pragma acc
+   Transferred from https://github.com/McStasMcXtrace/McCode/commit/0e2785a2d3fd742d46597139234dbc47e56344bb 
+*/
+#ifdef _MSC_EXTENSIONS
+#pragma warning(disable: 4068)
+#endif
+ 
 #define MCCODE_STRING "{runtime.get("fancy")}"
 #define FLAVOR "{runtime.get("name", "none")}"
 #define FLAVOR_UPPER "{runtime.get("name", "none").upper()}"
@@ -100,7 +107,6 @@ struct _struct_particle {{
   unsigned long randstate[7];
   double t, p;    /* time, event weight */
   long long _uid;  /* Unique event ID */
-  long long _loopid; /* inner-loop event ID */
   long _index;     /* component index where to send this event */
   long _absorbed;  /* flag set to TRUE when this event is to be removed/ignored */
   long _scattered; /* flag set to TRUE when this event has interacted with the last component instance */

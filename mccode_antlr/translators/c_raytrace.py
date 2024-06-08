@@ -13,7 +13,12 @@ def cogen_raytrace(source, ok_to_skip):
         #  // we need this override, since "comp" is not defined in raytrace() - see section-wide define
         "  #undef ABSORB0",
         "  #undef ABSORB",
+        "  #ifndef OPENACC",
         "  #define ABSORB0 do { DEBUG_ABSORB(); MAGNET_OFF; ABSORBED++; return(ABSORBED);} while(0)",
+        "  #else",
+        "  #define ABSORB0 do { DEBUG_ABSORB(); MAGNET_OFF; ABSORBED++;} while(0)",
+        "  #endif",
+
         "  #define ABSORB ABSORB0",
         #  /* Debugging (initial state). */
         "  DEBUG_ENTER();",
@@ -44,6 +49,8 @@ def cogen_raytrace(source, ok_to_skip):
                 '    if (!ABSORBED) {',
                 f'    _class_particle Split_{comp.name}_particle = *_particle;',
                 f'    int SplitS_{comp.name} = {comp.split:p};',
+                # following https://github.com/McStasMcXtrace/McCode/commit/72cb740d465e2780b228bd937cf62429a96f64d5
+                '    #pragma acc loop independent',
                 f'    for (int SplitN_{comp.name}=0; SplitN_{comp.name} < SplitS_{comp.name}; SplitN_{comp.name}++) {{',
                 '    randstate_t randbackup = *_particle->randstate;',
                 f'    *_particle=Split_{comp.name}_particle;',
@@ -201,7 +208,7 @@ def cogen_raytrace(source, ok_to_skip):
         "    for (unsigned long pidx=0 ; pidx < gpu_innerloop ; pidx++) {",
         "      _class_particle particleN = mcgenstate(); // initial particle",
         "      _class_particle* _particle = &particleN;",
-        "      particleN._uid = particleN._loopid = pidx;",
+        "      particleN._uid = pidx;",
         "      #ifdef USE_MPI",
         "      particleN._uid += mpi_node_rank * ncount;",
         "      #endif",
@@ -300,7 +307,7 @@ def cogen_funnel(source, ok_to_skip):
         "      // generate particle state, set loop index and seed",
         "      particles[pidx] = mcgenstate();",
         "      _class_particle* _particle = particles + pidx;",
-        "      _particle->_uid = _particle->_loopid = pidx;",
+        "      _particle->_uid = pidx;",
         "      #ifdef USE_MPI",
         "      _particle->_uid += mpi_node_rank * ncount;",
         "      #endif",
