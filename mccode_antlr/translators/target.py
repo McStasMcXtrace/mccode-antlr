@@ -85,10 +85,11 @@ class TargetVisitor:
                 contents = file.read()
 
         # It's not great to do this here. TODO Find a better place for this
-        # FIXME we're (possibly) mixing up McStas/McXtrace and Lib-C versions
-        for reg in self.registries:
-            # updates mccode_antlr.config.config
-            registry_defaults(reg, [reg.name])
+        reg = [reg for reg in self.registries if reg.unique(filename)]
+        if len(reg) != 1:
+            raise RuntimeError(f"Expected exactly one registry for file {filename}")
+        # updates mccode_antlr.config.config
+        registry_defaults(reg[0], [reg[0].name])
 
         def replacement(match) -> str:
             name = match.group(1).lower()

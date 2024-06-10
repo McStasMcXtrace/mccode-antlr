@@ -40,6 +40,7 @@ class Registry:
     name = None
     root = None
     pooch = None
+    version = None
 
     def __str__(self):
         from mccode_antlr.common import TextWrapper
@@ -256,6 +257,7 @@ class LocalRegistry(Registry):
     def __init__(self, name: str, root: str):
         self.name = name
         self.root = Path(root)
+        self.version = mccode_antlr_version()
 
     def to_file(self, output, wrapper):
         contents = '(' + ', '.join([
@@ -398,6 +400,7 @@ def _m_reg(name):
 #     'https://github.com/g5t/mccode-files/raw/main/runtime/libc',
 #     'libc-registry.txt'
 # )
+
 
 MCSTAS_REGISTRY, MCXTRACE_REGISTRY, LIBC_REGISTRY = [_m_reg(name) for name in ('mcstas', 'mcxtrace', 'libc')]
 del _m_reg
