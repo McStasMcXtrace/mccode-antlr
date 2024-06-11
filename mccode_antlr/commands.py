@@ -1,24 +1,25 @@
 from mccode_antlr.reader import Registry
 
+
 def mccode_script_parse(prog: str):
     from argparse import ArgumentParser
     from pathlib import Path
 
     def resolvable(name: str):
-        return Path(name).resolve()
+        return None if name is None else Path(name).resolve()
 
     parser = ArgumentParser(prog=prog, description=f'Convert mccode_antlr-3 instr and comp files to {prog} runtime in C')
-    parser.add_argument('filename', type=resolvable, help='.instr file name to be converted')
+    parser.add_argument('filename', type=resolvable, nargs='?', help='.instr file name to be converted')
 
     parser.add_argument('-o', '--output-file', type=str, help='Output filename for C runtime file')
     parser.add_argument('-I', '--search-dir', action='append', type=resolvable, help='Extra component search directory')
-    parser.add_argument('-t', '--trace', action='store', help="Enable 'trace' mode for instrument display")
-    parser.add_argument('-p', '--portable', action='store', help='No idea. Your guess is better than mine.')
-    parser.add_argument('-v', '--version', action='store', help='Print the McCode version')
-    parser.add_argument('--source', action='store', help='Embed the instrument source code in the executable')
-    parser.add_argument('--no-main', action='store', help='Do not create main(), for external embedding')
-    parser.add_argument('--no-runtime', action='store', help='Do not embed run-time libraries')
-    parser.add_argument('--verbose', action='store', help='Verbose output during conversion')
+    parser.add_argument('-t', '--trace', action='store_true', help="Enable 'trace' mode for instrument display")
+    parser.add_argument('-p', '--portable', action='store_true', help='No idea. Your guess is better than mine.')
+    parser.add_argument('-v', '--version', action='store_true', help='Print the McCode version')
+    parser.add_argument('--source', action='store_true', help='Embed the instrument source code in the executable')
+    parser.add_argument('--no-main', action='store_true', help='Do not create main(), for external embedding')
+    parser.add_argument('--no-runtime', action='store_true', help='Do not embed run-time libraries')
+    parser.add_argument('--verbose', action='store_true', help='Verbose output during conversion')
 
     args = parser.parse_args()
 
@@ -26,12 +27,15 @@ def mccode_script_parse(prog: str):
         from sys import exit
         from mccode_antlr.version import version
         print(f'mccode_antlr code generator version {version()}')
-        print(' Copyright (c) European Spallation Source ERIC, 2023')
+        print(' Copyright (c) European Spallation Source ERIC, 2023-2024')
         print('Based on McStas/McXtrace version 3')
         print(' Copyright (c) DTU Physics and Risoe National Laboratory, 1997-2023')
         print(' Additions (c) Institut Laue Langevin, 2003-2019')
         print('All rights reserved\n\nComponents are (c) their authors, see component headers.')
         exit(1)
+
+    if args.filename is None:
+        parser.error('No input file provided')
 
     return args
 
@@ -55,7 +59,8 @@ def mccode(flavor: str, registry: Registry, generator: dict):
     # McCode always requires access to a remote Pooch repository:
     registries = [registry]
     # A user can specify extra (local) directories to search for included files using -I or --search-dir
-    registries.extend([LocalRegistry(d.stem, d) for d in args.search_dir])
+    if args.search_dir is not None and len(args.search_dir):
+        registries.extend([LocalRegistry(d.stem, d) for d in args.search_dir])
     # And McCode-3 users expect to always have access to files in the current working directory
     registries.append(LocalRegistry('working_directory', f'{Path().resolve()}'))
 

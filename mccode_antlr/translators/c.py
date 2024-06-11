@@ -11,6 +11,10 @@ from .c_listener import extract_c_declared_variables
 CDeclaration = namedtuple("CDeclaration", "name type init is_pointer is_array orig")
 
 
+def append_cdeclaration_name(decl: CDeclaration, suffix):
+    return CDeclaration(f'{decl.name}_{suffix}', decl.type, decl.init, decl.is_pointer, decl.is_array, decl.orig)
+
+
 def extract_declaration(dec, c_type, init):
     is_pointer = '*' in dec
     is_array = '[' in dec and ']' in dec
@@ -225,13 +229,21 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
             if len(set([d.name for d in comp_declares[component.name]])) != len(comp_declares[component.name]):
                 raise RuntimeError(f"One or more component USERVARS repeated in {component.name}")
 
-        # Check for name clashes *between* components
-        nd = set([x for dec in comp_declares.values() for x in dec])
-        if len(set([x.name for x in nd])) != len(nd):
-            culprits = [x.name for x in self.source.component_types() if len(comp_declares[x.name])]
-            raise RuntimeError(f'One or more component USERVARS repeated between components {culprits}')
+        # Go through all components with uservars, then through the instances of that type
+        # and append the instance index to the name of the uservar
+        inst_declares = dict()
+        for comp_name, a_declares in comp_declares.items():
+            i_declares = []
+            for index, instance in enumerate(self.source.components):
+                if instance.type.name == comp_name:
+                    for dec in a_declares:
+                        i_declares.append(append_cdeclaration_name(dec, index+1))
+            inst_declares[comp_name] = i_declares
+        # Replace the component definition 'base' uservar declares with the 'real' ones:
+        comp_declares = inst_declares
+
         # And between all components and the instrument
-        nd = nd.union(declares)
+        nd = set([x for dec in comp_declares.values() for x in dec]).union(declares)
         if len(set([x.name for x in nd])) != len(nd):
             culprits = [x.name for x in self.source.component_types() if len(comp_declares[x.name])]
             raise RuntimeError(f'Conflicting USERVAR declarations between instrument {self.source.name} and {culprits}')
