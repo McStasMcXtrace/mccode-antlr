@@ -25,7 +25,7 @@ dynamic = ["version"]
 
 [project.optional-dependencies]
 test = ["gputil==1.4.0", 'pytest']
-hdf5 = ["h5py==3.10.0"]
+hdf5 = ["h5py>=3.11.0"]
 
 [project.urls]
 "Homepage" = "https://github.com/McStasMcXtrace/mccode-antlr"
