@@ -82,39 +82,16 @@ def mcpl_compiled(method):
     return wrapper
 
 
-def compile_and_run(instr, parameters, run=True, dump_source=True,
-                    target: dict | None = None, config: dict | None = None):
-    from mccode_antlr.compiler.c import compile_instrument, CBinaryTarget, run_compiled_instrument
-    from mccode_antlr.translators.target import MCSTAS_GENERATOR
-    from mccode_antlr.loader import read_mccode_dat
-    from mccode_antlr.config import config as module_config
-    from tempfile import TemporaryDirectory
-    from os import R_OK, access
+def compile_and_run(instr, parameters, run=True, dump_source=True, target: dict | None = None, config: dict | None = None):
     from pathlib import Path
-    from loguru import logger
+    from tempfile import TemporaryDirectory
+    from mccode_antlr.translators.target import MCSTAS_GENERATOR
+    from mccode_antlr.run import mccode_compile, mccode_run_compiled
 
-    def_target = CBinaryTarget(mpi=False, acc=False, count=1, nexus=False)
-    def_config = dict(default_main=True, enable_trace=False, portable=False, include_runtime=True,
-                      embed_instrument_file=False, verbose=False)
-    def_config.update(config or {})
-    def_target.update(target or {})
+    kwargs = dict(generator=MCSTAS_GENERATOR, target=target, config=config, dump_source=dump_source)
 
     with TemporaryDirectory() as directory:
-        try:
-            compile_instrument(instr, def_target, directory,
-                               generator=MCSTAS_GENERATOR, config=def_config, dump_source=dump_source)
-        except RuntimeError as e:
-            logger.error(f'Failed to compile instrument: {e}')
-            raise e
-        binary = Path(directory).joinpath(f'{instr.name}{module_config["ext"].get(str)}')
-
-        if not binary.exists() or not binary.is_file() or not access(binary, R_OK):
-            raise FileNotFoundError(f"No executable binary, {binary}, produced")
-
-        if run:
-            result = run_compiled_instrument(binary, def_target, f"--dir {directory}/instr {parameters}",
-                                             capture=True)
-            sim_files = list(Path(directory).glob('**/*.dat'))
-            dats = {file.stem: read_mccode_dat(file) for file in sim_files}
-            return result, dats
-        return None, None
+        binary, target = mccode_compile(instr, directory, **kwargs)
+        # The runtime output directory used *can not* exist for McStas/McXtrace to work properly.
+        # So find a name inside this directory that doesn't exist (any name should work)
+        return mccode_run_compiled(binary, target, Path(directory).joinpath('t'), parameters) if run else (None, None)
