@@ -386,21 +386,31 @@ def registry_from_specification(spec: str):
     return None
 
 
-def _m_reg(name):
-    m_url = "https://github.com/McStasMcXtrace/McCode"
-    r_url = "https://github.com/g5t/mccode-pooch"
-    # TODO have a configuration switch between stable and development components?
-    return GitHubRegistry(name, m_url, 'main', registry=r_url)
-    # TODO update this version with new McStasMcXtrace releases
-    # return GitHubRegistry(name, m_url, 'v3.4.0', registry=r_url)
+def _mccode_pooch_registries():
+    def get_remote_repository_version_tags(url):
+        import re
+        import git
+        g = git.cmd.Git()
+        res = g.ls_remote(url, sort='-v:refname', tags=True)
+        ex = re.compile(r'v\d+(?:\.\d+(?:\.\d+)?)?')
+        return ex.findall(res)
 
-# # This registry was required when mcstas-d.h and mcxtrace-d.h and pre-configured mccode-r.h were needed:
-# FIXED_LIBC_REGISTRY = ModuleRemoteRegistry(
-#     'fixed-libc',
-#     'https://github.com/g5t/mccode-files/raw/main/runtime/libc',
-#     'libc-registry.txt'
-# )
+    def source_registry_tag():
+        from mccode_antlr.config import config
+        requested_tag = config['mccode_pooch']['tag'].as_str_expanded()
+        registry_url = config['mccode_pooch']['registry'].as_str_expanded()
+        source_url = config['mccode_pooch']['source'].as_str_expanded()
 
+        known_tags = get_remote_repository_version_tags(registry_url)
+        if requested_tag.lower() == 'latest':
+            requested_tag = known_tags[0]
+        elif requested_tag not in known_tags:
+            raise RuntimeError(f"The specified version tag, {requested_tag}, is not available in {registry_url}")
+        return source_url, registry_url, requested_tag
 
-MCSTAS_REGISTRY, MCXTRACE_REGISTRY, LIBC_REGISTRY = [_m_reg(name) for name in ('mcstas', 'mcxtrace', 'libc')]
-del _m_reg
+    src, reg, tag = source_registry_tag()
+
+    mc, mx, lib = [GitHubRegistry(name, src, tag, registry=reg) for name in ('mcstas', 'mcxtrace', 'libc')]
+    return mc, mx, lib
+
+MCSTAS_REGISTRY, MCXTRACE_REGISTRY, LIBC_REGISTRY = _mccode_pooch_registries()

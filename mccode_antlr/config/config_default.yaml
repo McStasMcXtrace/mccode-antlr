@@ -14,3 +14,7 @@ mcxtrace:
   libenv: MCXTRACE
   prefix: mx
   project: 2
+mccode_pooch:
+  source: https://github.com/McStasMcXtrace/McCode
+  registry: https://github.com/g5t/mccode-pooch
+  tag: latest
