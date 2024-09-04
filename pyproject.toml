@@ -34,8 +34,8 @@ hdf5 = ["h5py>=3.11.0"]
 [project.scripts]
 mcstas-antlr = "mccode_antlr.commands:mcstas"
 mcxtrace-antlr = "mccode_antlr.commands:mcxtrace"
-mcrun-antlr = "mccode_antlr.run.runner:mcstas"
-mxrun-antlr = "mccode_antlr.run.runner:mcxtrace"
+mcrun-antlr = "mccode_antlr.run.runner:mcstas_cmd"
+mxrun-antlr = "mccode_antlr.run.runner:mcxtrace_cmd"
 
 [tool.setuptools_scm]
 
