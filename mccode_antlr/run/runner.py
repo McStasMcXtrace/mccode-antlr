@@ -192,7 +192,45 @@ def mccode_run_scan(name: str, binary, target, parameters, directory, grid: bool
         return mccode_run_compiled(binary, target, directory, pars, capture=capture, dry_run=dry_run)
 
 
-def mccode_run(flavor: str, registry: Registry, generator: dict):
+def mccode_run(instrument, generator, parameters, directory: str | Path, binary_name: str | None = None,
+               trace: bool = False, source: bool = False, verbose: bool = False,
+               parallel: bool = False, gpu: bool = False, process_count: int = 0,
+               mesh: bool = False, seed: int | None = None, ncount: int | None = None,
+               gravitation: bool | None = None, bufsize: int | None = None, dryrun: bool = False, fmt: str | None = None,
+               ):
+    from os import access, R_OK
+    from datetime import datetime
+    if not isinstance(directory, Path):
+        directory = Path(directory)
+    if binary_name is not None:
+        binary_path = directory.joinpath(binary_name)
+    else:
+        binary_path = directory.joinpath(instrument.name)
+
+    if binary_path.exists() and not access(binary_path, R_OK):
+        raise ValueError(f"{binary_path} exists but is not an executable")
+
+    target = {'mpi': parallel, 'acc': gpu, 'count': process_count, 'nexus': False}
+    if not binary_path.exists():
+        config = {'enable_trace': trace, 'embed_instrument_file': source, 'verbose': verbose}
+        binary_path, target = mccode_compile(instrument, binary_path, generator, target=target, config=config)
+
+    runtime = dict(
+        seed=seed,
+        ncount=ncount,
+        trace=trace,
+        gravitation=gravitation,
+        bufsiz=bufsize,
+        format=fmt,
+        dry_run=dryrun,
+        capture=(not verbose) if verbose is not None else False,
+    )
+    out_dir = directory.joinpath(f'{instrument.name}{datetime.now().strftime("%Y%m%d_%H%M%S")}')
+
+    mccode_run_scan(instrument.name, binary_path, target, parameters, out_dir, mesh, **runtime)
+
+
+def mccode_run_cmd(flavor: str, registry: Registry, generator: dict):
     from pathlib import Path
     from mccode_antlr.reader import Reader
     from mccode_antlr.reader import LocalRegistry
@@ -245,13 +283,25 @@ def mccode_run(flavor: str, registry: Registry, generator: dict):
     mccode_run_scan(name, binary, target, parameters, args.directory, args.mesh, **runtime)
 
 
-def mcstas():
+def mcstas_cmd():
     from mccode_antlr.reader import MCSTAS_REGISTRY
     from mccode_antlr.translators.target import MCSTAS_GENERATOR
-    mccode_run('mcstas', MCSTAS_REGISTRY, MCSTAS_GENERATOR)
+    mccode_run_cmd('mcstas', MCSTAS_REGISTRY, MCSTAS_GENERATOR)
 
 
-def mcxtrace():
+def mcxtrace_cmd():
     from mccode_antlr.reader import MCXTRACE_REGISTRY
     from mccode_antlr.translators.target import MCXTRACE_GENERATOR
-    mccode_run('mcxtrace', MCXTRACE_REGISTRY, MCXTRACE_GENERATOR)
+    mccode_run_cmd('mcxtrace', MCXTRACE_REGISTRY, MCXTRACE_GENERATOR)
+
+
+def mcstas_run(instrument, directory):
+    from mccode_antlr.reader import MCSTAS_REGISTRY
+    from mccode_antlr.translators.target import MCSTAS_GENERATOR
+    mccode_run(instrument, directory, MCSTAS_REGISTRY, MCSTAS_GENERATOR)
+
+
+def mcxtrace_run(instrument, directory):
+    from mccode_antlr.reader import MCXTRACE_REGISTRY
+    from mccode_antlr.translators.target import MCXTRACE_GENERATOR
+    mccode_run(instrument,  directory, MCXTRACE_REGISTRY, MCXTRACE_GENERATOR)
