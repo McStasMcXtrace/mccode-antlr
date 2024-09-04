@@ -232,3 +232,35 @@ class TestCompiledInstr(TestCase):
                 instr_data = read_mccode_dat(instr_file)
                 after_data = read_mccode_dat(after_file)
                 self.assertTrue(allclose(instr_data.data, after_data.data))
+
+
+    def test_assemble_a3_rotation(self):
+        from mccode_antlr.assembler import Assembler
+        from mccode_antlr.reader import MCSTAS_REGISTRY
+        a = Assembler('test_a3_angle', registries=[MCSTAS_REGISTRY])
+        a.parameter('phase/"degree" = 0')
+        a.parameter('a3/"degree" = 0')
+        a.component('origin', 'Progress_bar')
+        a.component('source', 'ESS_butterfly', at=[(0, 0, 0), 'origin'],
+                    parameters={'sector': '"W"', 'beamline': 4, 'yheight': 0.03, 'cold_frac': 0.5,
+                                'dist': 1, 'focus_xw': 0.01, 'focus_yh': 0.01, 'c_performance': 1.0,
+                                't_performance': 1.0, 'Lmin': 1, 'Lmax': 2, 'tmax_multiplier': 1.5,
+                                'n_pulses': 1, 'acc_power': 2.0})
+        a.component('guide', 'Guide_gravity', at=[(0, 0, 1), 'origin'],
+                    parameters={'w1': 0.01, 'w2': 0.05, 'h1': 0.01, 'h2': 0.05, 'l': 8.0, 'm': 3.5, 'G':-9.82})
+        a.component('guide_end', 'Arm', at=[(0, 0, 8.0), 'guide'])
+        a.component('chopper', 'DiskChopper', at=([0, 0, 0.01], 'guide_end'),
+                    parameters={'radius':0.35, 'nu': 14, 'phase': 'phase', 'theta_0': 115.0})
+        a.component('rotate', 'Arm', at=([0, 0, 0], 'chopper'), rotate=([0, 'a3', 0], 'chopper'))
+        a.component('aperture', 'Slit', at=([0, 0, 1], 'rotate'),
+                    parameters={'xwidth': 0.05, 'yheight': 0.05})
+        a.component('sample', 'Incoherent', at=([0, 0, 1], 'aperture'),
+                    parameters={'radius': 0.005, 'yheight': 0.02, 'thickness': 0.001, 'focus_ah': 2.0,
+                                'focus_aw': 2.0, 'target_x': 1.0, 'target_y': 0.0, 'target_z': 0.0,
+                                'Etrans': 0.0, 'deltaE': 0.1})
+        instr = a.instrument
+        try:
+            compile_and_run(instr, '-n 1000 a3=10', run=True)
+        except RuntimeError as e:
+            logger.error(f'Failed to compile instrument: {e}')
+            self.fail(f'Failed to compile instrument {e}')
