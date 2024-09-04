@@ -132,7 +132,7 @@ class TextWrapper(BaseWrapper):
         return '*/'
 
     def block(self, name: str, content: str) -> str:
-        return '\n'.join([name + ' %{', content + '\n%} '])
+        return '\n'.join([name + '\n%{\n', content + '\n%}\n'])
 
     def line(self, name: str, items: list[str], sep: str = ' ') -> str:
         items = [item or 'None' for item in items]
@@ -147,7 +147,7 @@ class TextWrapper(BaseWrapper):
 
     @staticmethod
     def metadata_group(name: str, mimetype: str, item: str, value: str) -> str:
-        return f'{name} "{mimetype}" {item} %{{{value}%}}'
+        return f'{name} "{mimetype}" {item} \n%{{\n{value}\n%}}\n'
 
     @staticmethod
     def datatype(data_type: str) -> str:

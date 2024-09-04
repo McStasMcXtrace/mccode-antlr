@@ -1,8 +1,10 @@
 """Data structures required for representing the contents of a McCode instr file"""
+from __future__ import annotations
+
 from io import StringIO
 from dataclasses import dataclass, field
 from typing import Union
-from ..common import InstrumentParameter, MetaData, parameter_name_present, RawC, blocks_to_raw_c
+from ..common import InstrumentParameter, MetaData, parameter_name_present, RawC, blocks_to_raw_c, Expr, Value
 from ..reader import Registry
 from .instance import Instance
 from .group import Group
@@ -461,6 +463,16 @@ class Instr:
         instrument parameter names are flagged as such"""
         for instance in self.components:
             instance.verify_parameters(self.parameters)
+
+    def check_expr(self, expr: int | float | str | Expr | Value):
+        if not isinstance(expr, Expr):
+            expr = Expr.best(expr)
+        # check whether the expression contains any identifiers which are actually InstrumentParameters
+        expr.verify_parameters([x.name for x in self.parameters])
+        # We then verify that no as-of-yet undefined identifiers exist, but can't in case they're defined in
+        # an initalize or share block
+        return expr
+
 
 
 

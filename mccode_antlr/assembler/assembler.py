@@ -35,7 +35,7 @@ class Assembler:
                 raise RuntimeError(f'No logic pathway for instance reference {ref}')
         if not hasattr(v, '__len__') or len(v) != 3:
             raise RuntimeError('Position/orientation must have three elements')
-        v = tuple(x if isinstance(x, Expr) else Expr.best(x) for x in v)
+        v = tuple(self.instrument.check_expr(x) for x in v)
         return (v[0], v[1], v[2]), ref
 
     def _handle_at(self, a=None) -> tuple[Vector, Union[Instance, None]]:
@@ -96,7 +96,7 @@ class Assembler:
         if isinstance(par, str):
             par = InstrumentParameter.parse(par)
         if not isinstance(par, InstrumentParameter):
-            logger.warninging(f'Unhandled parameter {par}')
+            logger.warning(f'Unhandled parameter {par}')
         self.instrument.add_parameter(par, ignore_repeated=ignore_repeated)
 
     def parameters(self, *pars, **pairs):
@@ -104,7 +104,7 @@ class Assembler:
             if isinstance(par, str):
                 par = InstrumentParameter.parse(par)
             if not isinstance(par, InstrumentParameter):
-                logger.warninging(f'Unhandled parameter(s) {par}')
+                logger.warning(f'Unhandled parameter(s) {par}')
             self.instrument.add_parameter(par)
 
         for name, value in pairs.items():

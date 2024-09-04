@@ -91,7 +91,7 @@ def instrument_source(instrument: Instr, generator: dict, config: dict, verbose:
 
 
 def compile_instrument(instrument: Instr, target: CBinaryTarget, output: Union[str, Path] = None,
-                       recompile: bool = False, replace: bool = True, dump_source: bool = True, **kwargs):
+                       recompile: bool = False, replace: bool = True, dump_source: bool = False, **kwargs):
     from os import R_OK, access
     from subprocess import run, CalledProcessError
     from mccode_antlr.config import config
