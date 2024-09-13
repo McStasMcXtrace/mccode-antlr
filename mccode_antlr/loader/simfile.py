@@ -247,19 +247,23 @@ class SimFileData:
         first_keywords = ['Date', 'type', 'Source', 'component', 'position', 'title', 'Ncount']
         second_keywords = ['statistics', 'signal', 'values']
         file_keyword = []
-        if len(lines) == len(first_keywords) + len(second_keywords) + 2:
-            nd = 0
+        if len(lines) == 12:
+            # 0-D -- old style
+            last_keywords = ['xylimits', 'variables']
+        elif len(lines) == 13:
+            # 0-D -- new style (as of when?)
+            file_keyword = ['filename']
             last_keywords = ['xylimits', 'variables']
         elif len(lines) == 17:
-            nd = 1
+            # 1-D
             file_keyword = ['filename']
             last_keywords = ['xvar', 'yvar', 'xlabel', 'ylabel', 'xlimits', 'variables']
         elif len(lines) == 19:
-            nd = 2
+            # 2-D
             file_keyword = ['filename']
             last_keywords = ['xvar', 'yvar', 'xlabel', 'ylabel', 'zvar', 'zlabel', 'xylimits', 'variables']
         else:
-            raise RuntimeError(f"Expected 12, 17 or 19 lines in data, got {len(lines)}")
+            raise RuntimeError(f"Expected 12, 13, 17 or 19 lines in data, got {len(lines)}")
         keywords = first_keywords + file_keyword + second_keywords + last_keywords
         values = list(read_keywords(lines, keywords))
         collected = {k: v for k, v in zip(keywords, values)}
