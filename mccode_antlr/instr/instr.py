@@ -375,7 +375,15 @@ class Instr:
         self.components += (Instance(name, component, at_relative, rotate_relative, orientation,
                                      parameters, group, removable),)
 
-    def mcpl_split(self, after, filename=None, output_parameters=None, input_parameters=None, remove_unused_parameters=False):
+    def mcpl_split(self,
+                   after,
+                   filename=None,
+                   output_component=None,
+                   output_parameters=None,
+                   input_component=None,
+                   input_parameters=None,
+                   remove_unused_parameters=False
+                   ):
         from ..common import ComponentParameter
         from ..common import Expr, Value, ObjectType
         from .orientation import Vector, Angles
@@ -394,6 +402,8 @@ class Instr:
         if fc.type.name != 'Arm':
             logger.info(f'Component {after} is a {fc.type.name} instead of an Arm -- using MCPL file may cause problems')
 
+        if output_component is None:
+            output_component = 'MCPL_output'
         if output_parameters is None:
             output_parameters = (filename_parameter,)
         elif not any(p.name == 'filename' for p in output_parameters):
@@ -401,9 +411,11 @@ class Instr:
         # remove the last component, since we're going to re-use its name:
         first.components = first.components[:-1]
         # automatically adds the component at the end of the list:
-        first.make_instance(fc.name, 'MCPL_output', fc.at_relative, fc.rotate_relative, fc.orientation,
+        first.make_instance(fc.name, output_component, fc.at_relative, fc.rotate_relative, fc.orientation,
                             output_parameters)
 
+        if input_component is None:
+            input_component = 'MCPL_input'
         if input_parameters is None:
             input_parameters = (filename_parameter,)
         elif not any(p.name == 'filename' for p in input_parameters):
@@ -421,7 +433,7 @@ class Instr:
             logger.error("The split-at point should be positioned absolutely in the second instrument")
         # remove the first component before adding an-equal named one:
         second.components = second.components[1:]
-        second.make_instance(sc.name, 'MCPL_input', sc.at_relative, sc.rotate_relative, parameters=input_parameters)
+        second.make_instance(sc.name, input_component, sc.at_relative, sc.rotate_relative, parameters=input_parameters)
         # move the newly added component to the front of the list:
         second.components = (second.components[-1],) + second.components[:-1]
 
