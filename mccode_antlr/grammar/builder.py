@@ -11,8 +11,13 @@ def rebuild_language(grammar_file, verbose=False):
     from importlib_metadata import version
     if version('antlr4-tools') == '0.2':
         from antlr4_tool_runner import get_version_arg
+        def antlr4_version():
+            return get_version_arg()[1]
+
     elif version('antlr4-tools') == '0.2.1':
-        from antlr4_tool_runner import process_args as get_version_arg
+        from antlr4_tool_runner import process_args
+        def antlr4_version():
+            return process_args()[1]
     else:
         raise RuntimeError('Unknown version of antlr4-tools')
 
@@ -29,7 +34,7 @@ def rebuild_language(grammar_file, verbose=False):
     # The following copies the implementation of antlr4_tool_runner.tool, which pulls `args` from the system argv list
     # Setup:
     initialize_paths()
-    args, version = get_version_arg(args)
+    version = antlr4_version()
     jar, java = install_jre_and_antlr(version)
     # Call antlr4
     p = Popen([java, '-cp', jar, 'org.antlr.v4.Tool'] + args, stdout=PIPE, stderr=PIPE)
@@ -83,3 +88,19 @@ def _ensure_antlr_files_up_to_date_on_import(grammar, deps=None, verbose=False):
 
     if not language_present_and_up_to_date(grammar_file, newest, verbose=verbose):
         rebuild_language(grammar_file, verbose=verbose)
+
+
+def main():
+    from argparse import ArgumentParser
+
+    parser = ArgumentParser(prog="mccode-antlr-build", description='Ensure ANTLR files are up-to-date')
+    parser.add_argument('--verbose', action='store_true', help='Print out more information')
+    args = parser.parse_args()
+    verbose = args.verbose
+
+    _ensure_antlr_files_up_to_date_on_import('McComp', deps=('McCommon', 'cpp'), verbose=verbose)
+    _ensure_antlr_files_up_to_date_on_import('McInstr', deps=('McCommon', 'cpp'), verbose=verbose)
+    _ensure_antlr_files_up_to_date_on_import('C', verbose=verbose)
+
+if __name__ == '__main__':
+    main()
