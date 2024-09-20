@@ -1,4 +1,4 @@
-# Generated from /home/g/Code/mccode_antlr-antlr/mccode_antlr/grammar/C.g4 by ANTLR 4.13.0
+# Generated from /home/g/Code/mccode-antlr/src/grammar/C.g4 by ANTLR 4.13.2
 from antlr4 import *
 from io import StringIO
 import sys
@@ -721,7 +721,7 @@ class CLexer(Lexer):
 
     def __init__(self, input=None, output:TextIO = sys.stdout):
         super().__init__(input, output)
-        self.checkVersion("4.13.0")
+        self.checkVersion("4.13.2")
         self._interp = LexerATNSimulator(self, self.atn, self.decisionsToDFA, PredictionContextCache())
         self._actions = None
         self._predicates = None

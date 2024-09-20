@@ -1,4 +1,4 @@
-# Generated from /home/g/PycharmProjects/mccode-antlr/mccode_antlr/grammar/McInstr.g4 by ANTLR 4.13.1
+# Generated from /home/g/Code/mccode-antlr/src/grammar/McInstr.g4 by ANTLR 4.13.2
 # encoding: utf-8
 from antlr4 import *
 from io import StringIO
@@ -541,7 +541,7 @@ class McInstrParser ( Parser ):
 
     def __init__(self, input:TokenStream, output:TextIO = sys.stdout):
         super().__init__(input, output)
-        self.checkVersion("4.13.1")
+        self.checkVersion("4.13.2")
         self._interp = ParserATNSimulator(self, self.atn, self.decisionsToDFA, self.sharedContextCache)
         self._predicates = None
 
@@ -564,20 +564,6 @@ class McInstrParser ( Parser ):
 
         def getRuleIndex(self):
             return McInstrParser.RULE_prog
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterProg" ):
-                listener.enterProg(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitProg" ):
-                listener.exitProg(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitProg" ):
-                return visitor.visitProg(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -666,20 +652,6 @@ class McInstrParser ( Parser ):
 
         def getRuleIndex(self):
             return McInstrParser.RULE_instrument_definition
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterInstrument_definition" ):
-                listener.enterInstrument_definition(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitInstrument_definition" ):
-                listener.exitInstrument_definition(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitInstrument_definition" ):
-                return visitor.visitInstrument_definition(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -815,20 +787,6 @@ class McInstrParser ( Parser ):
         def getRuleIndex(self):
             return McInstrParser.RULE_instrument_parameters
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterInstrument_parameters" ):
-                listener.enterInstrument_parameters(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitInstrument_parameters" ):
-                listener.exitInstrument_parameters(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitInstrument_parameters" ):
-                return visitor.visitInstrument_parameters(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -910,20 +868,6 @@ class McInstrParser ( Parser ):
             return self.getTypedRuleContext(McInstrParser.ExprContext,0)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterInstrumentParameterInteger" ):
-                listener.enterInstrumentParameterInteger(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitInstrumentParameterInteger" ):
-                listener.exitInstrumentParameterInteger(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitInstrumentParameterInteger" ):
-                return visitor.visitInstrumentParameterInteger(self)
-            else:
-                return visitor.visitChildren(self)
-
 
     class InstrumentParameterDoubleContext(Instrument_parameterContext):
 
@@ -943,20 +887,6 @@ class McInstrParser ( Parser ):
         def expr(self):
             return self.getTypedRuleContext(McInstrParser.ExprContext,0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterInstrumentParameterDouble" ):
-                listener.enterInstrumentParameterDouble(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitInstrumentParameterDouble" ):
-                listener.exitInstrumentParameterDouble(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitInstrumentParameterDouble" ):
-                return visitor.visitInstrumentParameterDouble(self)
-            else:
-                return visitor.visitChildren(self)
 
 
     class InstrumentParameterStringContext(Instrument_parameterContext):
@@ -982,20 +912,6 @@ class McInstrParser ( Parser ):
             return self.getToken(McInstrParser.StringLiteral, 0)
         def Null(self):
             return self.getToken(McInstrParser.Null, 0)
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterInstrumentParameterString" ):
-                listener.enterInstrumentParameterString(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitInstrumentParameterString" ):
-                listener.exitInstrumentParameterString(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitInstrumentParameterString" ):
-                return visitor.visitInstrumentParameterString(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -1139,20 +1055,6 @@ class McInstrParser ( Parser ):
         def getRuleIndex(self):
             return McInstrParser.RULE_instrument_parameter_unit
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterInstrument_parameter_unit" ):
-                listener.enterInstrument_parameter_unit(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitInstrument_parameter_unit" ):
-                listener.exitInstrument_parameter_unit(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitInstrument_parameter_unit" ):
-                return visitor.visitInstrument_parameter_unit(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -1208,20 +1110,6 @@ class McInstrParser ( Parser ):
 
         def getRuleIndex(self):
             return McInstrParser.RULE_instrument_trace
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterInstrument_trace" ):
-                listener.enterInstrument_trace(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitInstrument_trace" ):
-                listener.exitInstrument_trace(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitInstrument_trace" ):
-                return visitor.visitInstrument_trace(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -1295,20 +1183,6 @@ class McInstrParser ( Parser ):
         def getRuleIndex(self):
             return McInstrParser.RULE_instrument_metadata
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterInstrument_metadata" ):
-                listener.enterInstrument_metadata(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitInstrument_metadata" ):
-                listener.exitInstrument_metadata(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitInstrument_metadata" ):
-                return visitor.visitInstrument_metadata(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -1355,20 +1229,6 @@ class McInstrParser ( Parser ):
 
         def getRuleIndex(self):
             return McInstrParser.RULE_instrument_trace_include
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterInstrument_trace_include" ):
-                listener.enterInstrument_trace_include(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitInstrument_trace_include" ):
-                listener.exitInstrument_trace_include(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitInstrument_trace_include" ):
-                return visitor.visitInstrument_trace_include(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -1460,20 +1320,6 @@ class McInstrParser ( Parser ):
 
         def getRuleIndex(self):
             return McInstrParser.RULE_component_instance
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterComponent_instance" ):
-                listener.enterComponent_instance(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitComponent_instance" ):
-                listener.exitComponent_instance(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitComponent_instance" ):
-                return visitor.visitComponent_instance(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -1618,20 +1464,6 @@ class McInstrParser ( Parser ):
         def RightParen(self):
             return self.getToken(McInstrParser.RightParen, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterInstanceNameCopyIdentifier" ):
-                listener.enterInstanceNameCopyIdentifier(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitInstanceNameCopyIdentifier" ):
-                listener.exitInstanceNameCopyIdentifier(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitInstanceNameCopyIdentifier" ):
-                return visitor.visitInstanceNameCopyIdentifier(self)
-            else:
-                return visitor.visitChildren(self)
-
 
     class InstanceNameCopyContext(Instance_nameContext):
 
@@ -1644,20 +1476,6 @@ class McInstrParser ( Parser ):
         def Copy(self):
             return self.getToken(McInstrParser.Copy, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterInstanceNameCopy" ):
-                listener.enterInstanceNameCopy(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitInstanceNameCopy" ):
-                listener.exitInstanceNameCopy(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitInstanceNameCopy" ):
-                return visitor.visitInstanceNameCopy(self)
-            else:
-                return visitor.visitChildren(self)
-
 
     class InstanceNameIdentifierContext(Instance_nameContext):
 
@@ -1667,20 +1485,6 @@ class McInstrParser ( Parser ):
 
         def Identifier(self):
             return self.getToken(McInstrParser.Identifier, 0)
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterInstanceNameIdentifier" ):
-                listener.enterInstanceNameIdentifier(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitInstanceNameIdentifier" ):
-                listener.exitInstanceNameIdentifier(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitInstanceNameIdentifier" ):
-                return visitor.visitInstanceNameIdentifier(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -1761,20 +1565,6 @@ class McInstrParser ( Parser ):
         def Identifier(self):
             return self.getToken(McInstrParser.Identifier, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterComponentTypeIdentifier" ):
-                listener.enterComponentTypeIdentifier(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitComponentTypeIdentifier" ):
-                listener.exitComponentTypeIdentifier(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitComponentTypeIdentifier" ):
-                return visitor.visitComponentTypeIdentifier(self)
-            else:
-                return visitor.visitChildren(self)
-
 
     class ComponentTypeCopyContext(Component_typeContext):
 
@@ -1791,20 +1581,6 @@ class McInstrParser ( Parser ):
 
         def RightParen(self):
             return self.getToken(McInstrParser.RightParen, 0)
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterComponentTypeCopy" ):
-                listener.enterComponentTypeCopy(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitComponentTypeCopy" ):
-                listener.exitComponentTypeCopy(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitComponentTypeCopy" ):
-                return visitor.visitComponentTypeCopy(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -1876,20 +1652,6 @@ class McInstrParser ( Parser ):
 
         def getRuleIndex(self):
             return McInstrParser.RULE_instance_parameters
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterInstance_parameters" ):
-                listener.enterInstance_parameters(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitInstance_parameters" ):
-                listener.exitInstance_parameters(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitInstance_parameters" ):
-                return visitor.visitInstance_parameters(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -1967,20 +1729,6 @@ class McInstrParser ( Parser ):
             return self.getTypedRuleContext(McInstrParser.ExprContext,0)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterInstanceParameterExpr" ):
-                listener.enterInstanceParameterExpr(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitInstanceParameterExpr" ):
-                listener.exitInstanceParameterExpr(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitInstanceParameterExpr" ):
-                return visitor.visitInstanceParameterExpr(self)
-            else:
-                return visitor.visitChildren(self)
-
 
     class InstanceParameterNullContext(Instance_parameterContext):
 
@@ -1994,20 +1742,6 @@ class McInstrParser ( Parser ):
             return self.getToken(McInstrParser.Assign, 0)
         def Null(self):
             return self.getToken(McInstrParser.Null, 0)
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterInstanceParameterNull" ):
-                listener.enterInstanceParameterNull(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitInstanceParameterNull" ):
-                listener.exitInstanceParameterNull(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitInstanceParameterNull" ):
-                return visitor.visitInstanceParameterNull(self)
-            else:
-                return visitor.visitChildren(self)
 
 
     class InstanceParameterVectorContext(Instance_parameterContext):
@@ -2023,20 +1757,6 @@ class McInstrParser ( Parser ):
         def initializerlist(self):
             return self.getTypedRuleContext(McInstrParser.InitializerlistContext,0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterInstanceParameterVector" ):
-                listener.enterInstanceParameterVector(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitInstanceParameterVector" ):
-                listener.exitInstanceParameterVector(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitInstanceParameterVector" ):
-                return visitor.visitInstanceParameterVector(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -2108,20 +1828,6 @@ class McInstrParser ( Parser ):
         def getRuleIndex(self):
             return McInstrParser.RULE_split
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterSplit" ):
-                listener.enterSplit(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitSplit" ):
-                listener.exitSplit(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitSplit" ):
-                return visitor.visitSplit(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -2171,20 +1877,6 @@ class McInstrParser ( Parser ):
         def getRuleIndex(self):
             return McInstrParser.RULE_when
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterWhen" ):
-                listener.enterWhen(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitWhen" ):
-                listener.exitWhen(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitWhen" ):
-                return visitor.visitWhen(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -2227,20 +1919,6 @@ class McInstrParser ( Parser ):
 
         def getRuleIndex(self):
             return McInstrParser.RULE_place
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterPlace" ):
-                listener.enterPlace(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitPlace" ):
-                listener.exitPlace(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitPlace" ):
-                return visitor.visitPlace(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -2287,20 +1965,6 @@ class McInstrParser ( Parser ):
         def getRuleIndex(self):
             return McInstrParser.RULE_orientation
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterOrientation" ):
-                listener.enterOrientation(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitOrientation" ):
-                listener.exitOrientation(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitOrientation" ):
-                return visitor.visitOrientation(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -2341,20 +2005,6 @@ class McInstrParser ( Parser ):
         def getRuleIndex(self):
             return McInstrParser.RULE_groupref
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterGroupref" ):
-                listener.enterGroupref(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitGroupref" ):
-                listener.exitGroupref(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitGroupref" ):
-                return visitor.visitGroupref(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -2393,20 +2043,6 @@ class McInstrParser ( Parser ):
 
         def getRuleIndex(self):
             return McInstrParser.RULE_jumps
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterJumps" ):
-                listener.enterJumps(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitJumps" ):
-                listener.exitJumps(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitJumps" ):
-                return visitor.visitJumps(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -2465,20 +2101,6 @@ class McInstrParser ( Parser ):
 
         def getRuleIndex(self):
             return McInstrParser.RULE_jump
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterJump" ):
-                listener.enterJump(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitJump" ):
-                listener.exitJump(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitJump" ):
-                return visitor.visitJump(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -2544,20 +2166,6 @@ class McInstrParser ( Parser ):
         def RightParen(self):
             return self.getToken(McInstrParser.RightParen, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterJumpPrevious" ):
-                listener.enterJumpPrevious(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitJumpPrevious" ):
-                listener.exitJumpPrevious(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitJumpPrevious" ):
-                return visitor.visitJumpPrevious(self)
-            else:
-                return visitor.visitChildren(self)
-
 
     class JumpMyselfContext(JumpnameContext):
 
@@ -2568,20 +2176,6 @@ class McInstrParser ( Parser ):
         def Myself(self):
             return self.getToken(McInstrParser.Myself, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterJumpMyself" ):
-                listener.enterJumpMyself(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitJumpMyself" ):
-                listener.exitJumpMyself(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitJumpMyself" ):
-                return visitor.visitJumpMyself(self)
-            else:
-                return visitor.visitChildren(self)
-
 
     class JumpIdentifierContext(JumpnameContext):
 
@@ -2591,20 +2185,6 @@ class McInstrParser ( Parser ):
 
         def Identifier(self):
             return self.getToken(McInstrParser.Identifier, 0)
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterJumpIdentifier" ):
-                listener.enterJumpIdentifier(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitJumpIdentifier" ):
-                listener.exitJumpIdentifier(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitJumpIdentifier" ):
-                return visitor.visitJumpIdentifier(self)
-            else:
-                return visitor.visitChildren(self)
 
 
     class JumpNextContext(JumpnameContext):
@@ -2621,20 +2201,6 @@ class McInstrParser ( Parser ):
             return self.getToken(McInstrParser.IntegerLiteral, 0)
         def RightParen(self):
             return self.getToken(McInstrParser.RightParen, 0)
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterJumpNext" ):
-                listener.enterJumpNext(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitJumpNext" ):
-                listener.exitJumpNext(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitJumpNext" ):
-                return visitor.visitJumpNext(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -2724,20 +2290,6 @@ class McInstrParser ( Parser ):
         def getRuleIndex(self):
             return McInstrParser.RULE_extend
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterExtend" ):
-                listener.enterExtend(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitExtend" ):
-                listener.exitExtend(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitExtend" ):
-                return visitor.visitExtend(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -2784,20 +2336,6 @@ class McInstrParser ( Parser ):
 
         def getRuleIndex(self):
             return McInstrParser.RULE_component_ref
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterComponent_ref" ):
-                listener.enterComponent_ref(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitComponent_ref" ):
-                listener.exitComponent_ref(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitComponent_ref" ):
-                return visitor.visitComponent_ref(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -2874,20 +2412,6 @@ class McInstrParser ( Parser ):
         def getRuleIndex(self):
             return McInstrParser.RULE_coords
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterCoords" ):
-                listener.enterCoords(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitCoords" ):
-                listener.exitCoords(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitCoords" ):
-                return visitor.visitCoords(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -2939,20 +2463,6 @@ class McInstrParser ( Parser ):
 
         def getRuleIndex(self):
             return McInstrParser.RULE_reference
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterReference" ):
-                listener.enterReference(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitReference" ):
-                listener.exitReference(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitReference" ):
-                return visitor.visitReference(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -3017,20 +2527,6 @@ class McInstrParser ( Parser ):
         def getRuleIndex(self):
             return McInstrParser.RULE_dependency
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterDependency" ):
-                listener.enterDependency(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitDependency" ):
-                listener.exitDependency(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitDependency" ):
-                return visitor.visitDependency(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -3082,20 +2578,6 @@ class McInstrParser ( Parser ):
             return self.getTypedRuleContext(McInstrParser.Unparsed_blockContext,0)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterDeclareBlock" ):
-                listener.enterDeclareBlock(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitDeclareBlock" ):
-                listener.exitDeclareBlock(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitDeclareBlock" ):
-                return visitor.visitDeclareBlock(self)
-            else:
-                return visitor.visitChildren(self)
-
 
     class DeclareBlockCopyContext(DeclareContext):
 
@@ -3114,20 +2596,6 @@ class McInstrParser ( Parser ):
         def unparsed_block(self):
             return self.getTypedRuleContext(McInstrParser.Unparsed_blockContext,0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterDeclareBlockCopy" ):
-                listener.enterDeclareBlockCopy(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitDeclareBlockCopy" ):
-                listener.exitDeclareBlockCopy(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitDeclareBlockCopy" ):
-                return visitor.visitDeclareBlockCopy(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -3197,20 +2665,6 @@ class McInstrParser ( Parser ):
         def getRuleIndex(self):
             return McInstrParser.RULE_uservars
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterUservars" ):
-                listener.enterUservars(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitUservars" ):
-                listener.exitUservars(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitUservars" ):
-                return visitor.visitUservars(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -3262,20 +2716,6 @@ class McInstrParser ( Parser ):
             return self.getTypedRuleContext(McInstrParser.Unparsed_blockContext,0)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterInitializeBlock" ):
-                listener.enterInitializeBlock(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitInitializeBlock" ):
-                listener.exitInitializeBlock(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitInitializeBlock" ):
-                return visitor.visitInitializeBlock(self)
-            else:
-                return visitor.visitChildren(self)
-
 
     class InitializeBlockCopyContext(InitializeContext):
 
@@ -3294,20 +2734,6 @@ class McInstrParser ( Parser ):
         def unparsed_block(self):
             return self.getTypedRuleContext(McInstrParser.Unparsed_blockContext,0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterInitializeBlockCopy" ):
-                listener.enterInitializeBlockCopy(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitInitializeBlockCopy" ):
-                listener.exitInitializeBlockCopy(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitInitializeBlockCopy" ):
-                return visitor.visitInitializeBlockCopy(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -3395,20 +2821,6 @@ class McInstrParser ( Parser ):
             return self.getTypedRuleContext(McInstrParser.Unparsed_blockContext,0)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterSaveBlockCopy" ):
-                listener.enterSaveBlockCopy(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitSaveBlockCopy" ):
-                listener.exitSaveBlockCopy(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitSaveBlockCopy" ):
-                return visitor.visitSaveBlockCopy(self)
-            else:
-                return visitor.visitChildren(self)
-
 
     class SaveBlockContext(SaveContext):
 
@@ -3421,20 +2833,6 @@ class McInstrParser ( Parser ):
         def unparsed_block(self):
             return self.getTypedRuleContext(McInstrParser.Unparsed_blockContext,0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterSaveBlock" ):
-                listener.enterSaveBlock(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitSaveBlock" ):
-                listener.exitSaveBlock(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitSaveBlock" ):
-                return visitor.visitSaveBlock(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -3516,20 +2914,6 @@ class McInstrParser ( Parser ):
             return self.getTypedRuleContext(McInstrParser.Unparsed_blockContext,0)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterFinallyBlock" ):
-                listener.enterFinallyBlock(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitFinallyBlock" ):
-                listener.exitFinallyBlock(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitFinallyBlock" ):
-                return visitor.visitFinallyBlock(self)
-            else:
-                return visitor.visitChildren(self)
-
 
     class FinallyBlockCopyContext(Finally_Context):
 
@@ -3548,20 +2932,6 @@ class McInstrParser ( Parser ):
         def unparsed_block(self):
             return self.getTypedRuleContext(McInstrParser.Unparsed_blockContext,0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterFinallyBlockCopy" ):
-                listener.enterFinallyBlockCopy(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitFinallyBlockCopy" ):
-                listener.exitFinallyBlockCopy(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitFinallyBlockCopy" ):
-                return visitor.visitFinallyBlockCopy(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -3645,20 +3015,6 @@ class McInstrParser ( Parser ):
         def getRuleIndex(self):
             return McInstrParser.RULE_metadata
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterMetadata" ):
-                listener.enterMetadata(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitMetadata" ):
-                listener.exitMetadata(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitMetadata" ):
-                return visitor.visitMetadata(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -3716,20 +3072,6 @@ class McInstrParser ( Parser ):
 
         def getRuleIndex(self):
             return McInstrParser.RULE_category
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterCategory" ):
-                listener.enterCategory(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitCategory" ):
-                listener.exitCategory(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitCategory" ):
-                return visitor.visitCategory(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -3790,20 +3132,6 @@ class McInstrParser ( Parser ):
         def getRuleIndex(self):
             return McInstrParser.RULE_initializerlist
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterInitializerlist" ):
-                listener.enterInitializerlist(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitInitializerlist" ):
-                listener.exitInitializerlist(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitInitializerlist" ):
-                return visitor.visitInitializerlist(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -3863,20 +3191,6 @@ class McInstrParser ( Parser ):
         def getRuleIndex(self):
             return McInstrParser.RULE_assignment
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterAssignment" ):
-                listener.enterAssignment(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitAssignment" ):
-                listener.exitAssignment(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitAssignment" ):
-                return visitor.visitAssignment(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -3934,20 +3248,6 @@ class McInstrParser ( Parser ):
                 return self.getTypedRuleContext(McInstrParser.ExprContext,i)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterExpressionBinaryMod" ):
-                listener.enterExpressionBinaryMod(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitExpressionBinaryMod" ):
-                listener.exitExpressionBinaryMod(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitExpressionBinaryMod" ):
-                return visitor.visitExpressionBinaryMod(self)
-            else:
-                return visitor.visitChildren(self)
-
 
     class ExpressionBinaryLessContext(ExprContext):
 
@@ -3965,20 +3265,6 @@ class McInstrParser ( Parser ):
             else:
                 return self.getTypedRuleContext(McInstrParser.ExprContext,i)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterExpressionBinaryLess" ):
-                listener.enterExpressionBinaryLess(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitExpressionBinaryLess" ):
-                listener.exitExpressionBinaryLess(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitExpressionBinaryLess" ):
-                return visitor.visitExpressionBinaryLess(self)
-            else:
-                return visitor.visitChildren(self)
 
 
     class ExpressionBinaryGreaterContext(ExprContext):
@@ -3998,20 +3284,6 @@ class McInstrParser ( Parser ):
                 return self.getTypedRuleContext(McInstrParser.ExprContext,i)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterExpressionBinaryGreater" ):
-                listener.enterExpressionBinaryGreater(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitExpressionBinaryGreater" ):
-                listener.exitExpressionBinaryGreater(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitExpressionBinaryGreater" ):
-                return visitor.visitExpressionBinaryGreater(self)
-            else:
-                return visitor.visitChildren(self)
-
 
     class ExpressionBinaryLessEqualContext(ExprContext):
 
@@ -4030,20 +3302,6 @@ class McInstrParser ( Parser ):
                 return self.getTypedRuleContext(McInstrParser.ExprContext,i)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterExpressionBinaryLessEqual" ):
-                listener.enterExpressionBinaryLessEqual(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitExpressionBinaryLessEqual" ):
-                listener.exitExpressionBinaryLessEqual(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitExpressionBinaryLessEqual" ):
-                return visitor.visitExpressionBinaryLessEqual(self)
-            else:
-                return visitor.visitChildren(self)
-
 
     class ExpressionArrayAccessContext(ExprContext):
 
@@ -4060,20 +3318,6 @@ class McInstrParser ( Parser ):
 
         def RightBracket(self):
             return self.getToken(McInstrParser.RightBracket, 0)
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterExpressionArrayAccess" ):
-                listener.enterExpressionArrayAccess(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitExpressionArrayAccess" ):
-                listener.exitExpressionArrayAccess(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitExpressionArrayAccess" ):
-                return visitor.visitExpressionArrayAccess(self)
-            else:
-                return visitor.visitChildren(self)
 
 
     class ExpressionBinaryLogicContext(ExprContext):
@@ -4095,20 +3339,6 @@ class McInstrParser ( Parser ):
         def OrOr(self):
             return self.getToken(McInstrParser.OrOr, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterExpressionBinaryLogic" ):
-                listener.enterExpressionBinaryLogic(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitExpressionBinaryLogic" ):
-                listener.exitExpressionBinaryLogic(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitExpressionBinaryLogic" ):
-                return visitor.visitExpressionBinaryLogic(self)
-            else:
-                return visitor.visitChildren(self)
-
 
     class ExpressionIntegerContext(ExprContext):
 
@@ -4118,20 +3348,6 @@ class McInstrParser ( Parser ):
 
         def IntegerLiteral(self):
             return self.getToken(McInstrParser.IntegerLiteral, 0)
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterExpressionInteger" ):
-                listener.enterExpressionInteger(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitExpressionInteger" ):
-                listener.exitExpressionInteger(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitExpressionInteger" ):
-                return visitor.visitExpressionInteger(self)
-            else:
-                return visitor.visitChildren(self)
 
 
     class ExpressionBinaryRightShiftContext(ExprContext):
@@ -4149,20 +3365,6 @@ class McInstrParser ( Parser ):
                 return self.getTypedRuleContext(McInstrParser.ExprContext,i)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterExpressionBinaryRightShift" ):
-                listener.enterExpressionBinaryRightShift(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitExpressionBinaryRightShift" ):
-                listener.exitExpressionBinaryRightShift(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitExpressionBinaryRightShift" ):
-                return visitor.visitExpressionBinaryRightShift(self)
-            else:
-                return visitor.visitChildren(self)
-
 
     class ExpressionMyselfContext(ExprContext):
 
@@ -4172,20 +3374,6 @@ class McInstrParser ( Parser ):
 
         def Myself(self):
             return self.getToken(McInstrParser.Myself, 0)
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterExpressionMyself" ):
-                listener.enterExpressionMyself(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitExpressionMyself" ):
-                listener.exitExpressionMyself(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitExpressionMyself" ):
-                return visitor.visitExpressionMyself(self)
-            else:
-                return visitor.visitChildren(self)
 
 
     class ExpressionPreviousContext(ExprContext):
@@ -4197,20 +3385,6 @@ class McInstrParser ( Parser ):
         def Previous(self):
             return self.getToken(McInstrParser.Previous, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterExpressionPrevious" ):
-                listener.enterExpressionPrevious(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitExpressionPrevious" ):
-                listener.exitExpressionPrevious(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitExpressionPrevious" ):
-                return visitor.visitExpressionPrevious(self)
-            else:
-                return visitor.visitChildren(self)
-
 
     class ExpressionIdentifierContext(ExprContext):
 
@@ -4220,20 +3394,6 @@ class McInstrParser ( Parser ):
 
         def Identifier(self):
             return self.getToken(McInstrParser.Identifier, 0)
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterExpressionIdentifier" ):
-                listener.enterExpressionIdentifier(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitExpressionIdentifier" ):
-                listener.exitExpressionIdentifier(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitExpressionIdentifier" ):
-                return visitor.visitExpressionIdentifier(self)
-            else:
-                return visitor.visitChildren(self)
 
 
     class ExpressionStructAccessContext(ExprContext):
@@ -4249,20 +3409,6 @@ class McInstrParser ( Parser ):
         def expr(self):
             return self.getTypedRuleContext(McInstrParser.ExprContext,0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterExpressionStructAccess" ):
-                listener.enterExpressionStructAccess(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitExpressionStructAccess" ):
-                listener.exitExpressionStructAccess(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitExpressionStructAccess" ):
-                return visitor.visitExpressionStructAccess(self)
-            else:
-                return visitor.visitChildren(self)
 
 
     class ExpressionFunctionCallContext(ExprContext):
@@ -4291,20 +3437,6 @@ class McInstrParser ( Parser ):
             else:
                 return self.getToken(McInstrParser.Comma, i)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterExpressionFunctionCall" ):
-                listener.enterExpressionFunctionCall(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitExpressionFunctionCall" ):
-                listener.exitExpressionFunctionCall(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitExpressionFunctionCall" ):
-                return visitor.visitExpressionFunctionCall(self)
-            else:
-                return visitor.visitChildren(self)
-
 
     class ExpressionBinaryMDContext(ExprContext):
 
@@ -4325,20 +3457,6 @@ class McInstrParser ( Parser ):
         def Div(self):
             return self.getToken(McInstrParser.Div, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterExpressionBinaryMD" ):
-                listener.enterExpressionBinaryMD(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitExpressionBinaryMD" ):
-                listener.exitExpressionBinaryMD(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitExpressionBinaryMD" ):
-                return visitor.visitExpressionBinaryMD(self)
-            else:
-                return visitor.visitChildren(self)
-
 
     class ExpressionStringContext(ExprContext):
 
@@ -4354,20 +3472,6 @@ class McInstrParser ( Parser ):
             else:
                 return self.getToken(McInstrParser.StringLiteral, i)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterExpressionString" ):
-                listener.enterExpressionString(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitExpressionString" ):
-                listener.exitExpressionString(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitExpressionString" ):
-                return visitor.visitExpressionString(self)
-            else:
-                return visitor.visitChildren(self)
-
 
     class ExpressionGroupingContext(ExprContext):
 
@@ -4382,20 +3486,6 @@ class McInstrParser ( Parser ):
 
         def RightParen(self):
             return self.getToken(McInstrParser.RightParen, 0)
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterExpressionGrouping" ):
-                listener.enterExpressionGrouping(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitExpressionGrouping" ):
-                listener.exitExpressionGrouping(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitExpressionGrouping" ):
-                return visitor.visitExpressionGrouping(self)
-            else:
-                return visitor.visitChildren(self)
 
 
     class ExpressionExponentiationContext(ExprContext):
@@ -4415,20 +3505,6 @@ class McInstrParser ( Parser ):
                 return self.getTypedRuleContext(McInstrParser.ExprContext,i)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterExpressionExponentiation" ):
-                listener.enterExpressionExponentiation(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitExpressionExponentiation" ):
-                listener.exitExpressionExponentiation(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitExpressionExponentiation" ):
-                return visitor.visitExpressionExponentiation(self)
-            else:
-                return visitor.visitChildren(self)
-
 
     class ExpressionBinaryLeftShiftContext(ExprContext):
 
@@ -4444,20 +3520,6 @@ class McInstrParser ( Parser ):
             else:
                 return self.getTypedRuleContext(McInstrParser.ExprContext,i)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterExpressionBinaryLeftShift" ):
-                listener.enterExpressionBinaryLeftShift(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitExpressionBinaryLeftShift" ):
-                listener.exitExpressionBinaryLeftShift(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitExpressionBinaryLeftShift" ):
-                return visitor.visitExpressionBinaryLeftShift(self)
-            else:
-                return visitor.visitChildren(self)
 
 
     class ExpressionBinaryGreaterEqualContext(ExprContext):
@@ -4477,20 +3539,6 @@ class McInstrParser ( Parser ):
                 return self.getTypedRuleContext(McInstrParser.ExprContext,i)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterExpressionBinaryGreaterEqual" ):
-                listener.enterExpressionBinaryGreaterEqual(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitExpressionBinaryGreaterEqual" ):
-                listener.exitExpressionBinaryGreaterEqual(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitExpressionBinaryGreaterEqual" ):
-                return visitor.visitExpressionBinaryGreaterEqual(self)
-            else:
-                return visitor.visitChildren(self)
-
 
     class ExpressionZeroContext(ExprContext):
 
@@ -4498,20 +3546,6 @@ class McInstrParser ( Parser ):
             super().__init__(parser)
             self.copyFrom(ctx)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterExpressionZero" ):
-                listener.enterExpressionZero(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitExpressionZero" ):
-                listener.exitExpressionZero(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitExpressionZero" ):
-                return visitor.visitExpressionZero(self)
-            else:
-                return visitor.visitChildren(self)
 
 
     class ExpressionUnaryPMContext(ExprContext):
@@ -4527,20 +3561,6 @@ class McInstrParser ( Parser ):
             return self.getToken(McInstrParser.Plus, 0)
         def Minus(self):
             return self.getToken(McInstrParser.Minus, 0)
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterExpressionUnaryPM" ):
-                listener.enterExpressionUnaryPM(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitExpressionUnaryPM" ):
-                listener.exitExpressionUnaryPM(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitExpressionUnaryPM" ):
-                return visitor.visitExpressionUnaryPM(self)
-            else:
-                return visitor.visitChildren(self)
 
 
     class ExpressionTrinaryLogicContext(ExprContext):
@@ -4563,20 +3583,6 @@ class McInstrParser ( Parser ):
                 return self.getTypedRuleContext(McInstrParser.ExprContext,i)
 
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterExpressionTrinaryLogic" ):
-                listener.enterExpressionTrinaryLogic(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitExpressionTrinaryLogic" ):
-                listener.exitExpressionTrinaryLogic(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitExpressionTrinaryLogic" ):
-                return visitor.visitExpressionTrinaryLogic(self)
-            else:
-                return visitor.visitChildren(self)
-
 
     class ExpressionFloatContext(ExprContext):
 
@@ -4586,20 +3592,6 @@ class McInstrParser ( Parser ):
 
         def FloatingLiteral(self):
             return self.getToken(McInstrParser.FloatingLiteral, 0)
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterExpressionFloat" ):
-                listener.enterExpressionFloat(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitExpressionFloat" ):
-                listener.exitExpressionFloat(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitExpressionFloat" ):
-                return visitor.visitExpressionFloat(self)
-            else:
-                return visitor.visitChildren(self)
 
 
     class ExpressionPointerAccessContext(ExprContext):
@@ -4615,20 +3607,6 @@ class McInstrParser ( Parser ):
         def expr(self):
             return self.getTypedRuleContext(McInstrParser.ExprContext,0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterExpressionPointerAccess" ):
-                listener.enterExpressionPointerAccess(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitExpressionPointerAccess" ):
-                listener.exitExpressionPointerAccess(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitExpressionPointerAccess" ):
-                return visitor.visitExpressionPointerAccess(self)
-            else:
-                return visitor.visitChildren(self)
 
 
     class ExpressionBinaryEqualContext(ExprContext):
@@ -4647,20 +3625,6 @@ class McInstrParser ( Parser ):
             else:
                 return self.getTypedRuleContext(McInstrParser.ExprContext,i)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterExpressionBinaryEqual" ):
-                listener.enterExpressionBinaryEqual(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitExpressionBinaryEqual" ):
-                listener.exitExpressionBinaryEqual(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitExpressionBinaryEqual" ):
-                return visitor.visitExpressionBinaryEqual(self)
-            else:
-                return visitor.visitChildren(self)
 
 
     class ExpressionBinaryPMContext(ExprContext):
@@ -4682,20 +3646,6 @@ class McInstrParser ( Parser ):
         def Minus(self):
             return self.getToken(McInstrParser.Minus, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterExpressionBinaryPM" ):
-                listener.enterExpressionBinaryPM(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitExpressionBinaryPM" ):
-                listener.exitExpressionBinaryPM(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitExpressionBinaryPM" ):
-                return visitor.visitExpressionBinaryPM(self)
-            else:
-                return visitor.visitChildren(self)
-
 
     class ExpressionUnaryLogicContext(ExprContext):
 
@@ -4708,20 +3658,6 @@ class McInstrParser ( Parser ):
         def expr(self):
             return self.getTypedRuleContext(McInstrParser.ExprContext,0)
 
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterExpressionUnaryLogic" ):
-                listener.enterExpressionUnaryLogic(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitExpressionUnaryLogic" ):
-                listener.exitExpressionUnaryLogic(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitExpressionUnaryLogic" ):
-                return visitor.visitExpressionUnaryLogic(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -5152,20 +4088,6 @@ class McInstrParser ( Parser ):
         def getRuleIndex(self):
             return McInstrParser.RULE_shell
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterShell" ):
-                listener.enterShell(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitShell" ):
-                listener.exitShell(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitShell" ):
-                return visitor.visitShell(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -5216,20 +4138,6 @@ class McInstrParser ( Parser ):
         def StringLiteral(self):
             return self.getToken(McInstrParser.StringLiteral, 0)
 
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterSearchPath" ):
-                listener.enterSearchPath(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitSearchPath" ):
-                listener.exitSearchPath(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitSearchPath" ):
-                return visitor.visitSearchPath(self)
-            else:
-                return visitor.visitChildren(self)
-
 
     class SearchShellContext(SearchContext):
 
@@ -5243,20 +4151,6 @@ class McInstrParser ( Parser ):
             return self.getToken(McInstrParser.Shell, 0)
         def StringLiteral(self):
             return self.getToken(McInstrParser.StringLiteral, 0)
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterSearchShell" ):
-                listener.enterSearchShell(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitSearchShell" ):
-                listener.exitSearchShell(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitSearchShell" ):
-                return visitor.visitSearchShell(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -5310,20 +4204,6 @@ class McInstrParser ( Parser ):
 
         def getRuleIndex(self):
             return McInstrParser.RULE_unparsed_block
-
-        def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterUnparsed_block" ):
-                listener.enterUnparsed_block(self)
-
-        def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitUnparsed_block" ):
-                listener.exitUnparsed_block(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitUnparsed_block" ):
-                return visitor.visitUnparsed_block(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 

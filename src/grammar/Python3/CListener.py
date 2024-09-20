@@ -1,4 +1,4 @@
-# Generated from /home/g/Code/mccode_antlr-antlr/mccode_antlr/grammar/C.g4 by ANTLR 4.13.0
+# Generated from /home/g/Code/mccode-antlr/src/grammar/C.g4 by ANTLR 4.13.2
 from antlr4 import *
 if "." in __name__:
     from .CParser import CParser

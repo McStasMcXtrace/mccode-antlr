@@ -1,4 +1,4 @@
-# Generated from /home/g/PycharmProjects/mccode-antlr/mccode_antlr/grammar/McComp.g4 by ANTLR 4.13.1
+# Generated from /home/g/Code/mccode-antlr/src/grammar/McInstr.g4 by ANTLR 4.13.2
 from antlr4 import *
 from io import StringIO
 import sys
@@ -999,7 +999,7 @@ def serializedATN():
         0,0
     ]
 
-class McCompLexer(Lexer):
+class McInstrLexer(Lexer):
 
     atn = ATNDeserializer().deserialize(serializedATN())
 
@@ -1306,11 +1306,11 @@ class McCompLexer(Lexer):
                   "UserDefinedStringLiteral", "UserDefinedCharacterLiteral", 
                   "Udsuffix", "Whitespace", "Newline", "BlockComment", "LineComment" ]
 
-    grammarFileName = "McComp.g4"
+    grammarFileName = "McInstr.g4"
 
     def __init__(self, input=None, output:TextIO = sys.stdout):
         super().__init__(input, output)
-        self.checkVersion("4.13.1")
+        self.checkVersion("4.13.2")
         self._interp = LexerATNSimulator(self, self.atn, self.decisionsToDFA, PredictionContextCache())
         self._actions = None
         self._predicates = None

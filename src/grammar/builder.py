@@ -26,23 +26,11 @@ def rebuild_language(grammar_file,
                      ):
     from pathlib import Path
     from subprocess import Popen, PIPE
-    # Version 0.2 of antlr4-tools provides the following imports:
-    #   initialize_paths, get_version_arg, install_jre_and_antlr
-    # Version 0.2.1 of antlr4-tools provides the following imports:
-    #   initialize_paths, process_args, install_jre_and_antlr
     from antlr4_tool_runner import initialize_paths, install_jre_and_antlr
-    from importlib_metadata import version
-    if version('antlr4-tools') == '0.2':
-        from antlr4_tool_runner import get_version_arg
-        def antlr4_version():
-            return get_version_arg()[1]
+    from antlr4_tool_runner import process_args
 
-    elif version('antlr4-tools') == '0.2.1':
-        from antlr4_tool_runner import process_args
-        def antlr4_version():
-            return process_args()[1]
-    else:
-        raise RuntimeError('Unknown version of antlr4-tools')
+    def antlr4_version():
+        return process_args()[1]
 
     if not isinstance(grammar_file, Path):
         grammar_file = Path(grammar_file)
@@ -51,7 +39,7 @@ def rebuild_language(grammar_file,
         f'-Dlanguage={target}',
         '-visitor' if Feature.visitor in features else '-no-visitor',
         '-listener' if Feature.listener in features else '-no-listener',
-        '-o', str(grammar_file.parent),
+        '-o', str(grammar_file.parent / str(target)),
         str(grammar_file)
     ]
 
@@ -103,15 +91,27 @@ def language_present_and_up_to_date(grammar_file, newest, verbose=False):
     return True
 
 
-def _ensure_antlr_files_up_to_date_on_import(
+def rebuild_speedy_language(grammar_file, features: list[Feature], verbose=False):
+    from speedy_antlr_tool import generate
+
+    rebuild_language(grammar_file, Target.cpp, features, verbose=verbose)
+    rebuild_language(grammar_file, Target.python, [], verbose=verbose)
+
+    py_parser_path = grammar_file.parent / str(Target.python) / f'{grammar_file.stem}Parser.py'
+    cpp_output_dir = grammar_file.parent / str(Target.cpp)
+    generate(py_parser_path, cpp_output_dir)
+
+
+def ensure_language_up_to_date(
         grammar: str,
         *,
         target: Target,
         features: list[Feature],
         deps=None,
-        verbose=False
+        verbose=False,
+        speed=False,
 ):
-    """Run on import of this (sub)module. Ensure the ANTLR parsed language files are up-to-date."""
+    """Ensure the ANTLR parsed language files are up-to-date."""
     from pathlib import Path
     grammar_file = Path(__file__).parent.joinpath(f'{grammar}.g4')
 
@@ -121,7 +121,10 @@ def _ensure_antlr_files_up_to_date_on_import(
             newest = max(newest, Path(__file__).parent.joinpath(f'{dep}.g4').stat().st_mtime)
 
     if not language_present_and_up_to_date(grammar_file, newest, verbose=verbose):
-        rebuild_language(grammar_file, target, features, verbose=verbose)
+        if speed:
+            rebuild_speedy_language(grammar_file, features, verbose=verbose)
+        else:
+            rebuild_language(grammar_file, target, features, verbose=verbose)
 
 
 def main():
@@ -132,9 +135,9 @@ def main():
     args = parser.parse_args()
     verbose = args.verbose
 
-    _ensure_antlr_files_up_to_date_on_import('McComp', target=Target.python, features=[Feature.visitor], deps=('McCommon', 'cpp'), verbose=verbose)
-    _ensure_antlr_files_up_to_date_on_import('McInstr', target=Target.python, features=[Feature.visitor], deps=('McCommon', 'cpp'), verbose=verbose)
-    _ensure_antlr_files_up_to_date_on_import('C', target=Target.python, features=[Feature.visitor, Feature.listener], verbose=verbose)
+    ensure_language_up_to_date('McComp', target=Target.python, features=[Feature.visitor], deps=('McCommon', 'cpp'), verbose=verbose, speed=True)
+    ensure_language_up_to_date('McInstr', target=Target.python, features=[Feature.visitor], deps=('McCommon', 'cpp'), verbose=verbose, speed=True)
+    ensure_language_up_to_date('C', target=Target.python, features=[Feature.visitor, Feature.listener], verbose=verbose)
 
 if __name__ == '__main__':
     main()
