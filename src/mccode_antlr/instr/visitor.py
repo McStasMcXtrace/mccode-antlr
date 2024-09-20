@@ -467,7 +467,7 @@ class InstrVisitor(McInstrVisitor):
 
     def visitExpressionTrinaryLogic(self, ctx: McInstrParser.ExpressionTrinaryLogicContext):
         from ..common import TrinaryOp
-        test, true, false = [self.visit(x) for x in (ctx.test, ctx.true, ctx.false)]
+        test, true, false = [self.visit(x) for x in (ctx.test, ctx.true_, ctx.false_)]
         return Expr(TrinaryOp('__trinary__', test, true, false))
 
     def visitExpressionBinaryEqual(self, ctx: McInstrParser.ExpressionBinaryEqualContext):

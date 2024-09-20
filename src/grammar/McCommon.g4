@@ -61,7 +61,7 @@ expr
   | left=expr '>' right=expr                        #ExpressionBinaryGreater
   | Not expr                                        #ExpressionUnaryLogic
   | left=expr (AndAnd | OrOr) right=expr            #ExpressionBinaryLogic
-  | test=expr '?' true=expr ':' false=expr          #ExpressionTrinaryLogic
+  | test=expr '?' true_=expr ':' false_=expr          #ExpressionTrinaryLogic
   | Previous                                        #ExpressionPrevious
   | Myself                                          #ExpressionMyself
   ;

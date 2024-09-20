@@ -3568,8 +3568,8 @@ class McInstrParser ( Parser ):
         def __init__(self, parser, ctx:ParserRuleContext): # actually a McInstrParser.ExprContext
             super().__init__(parser)
             self.test = None # ExprContext
-            self.true = None # ExprContext
-            self.false = None # ExprContext
+            self.true_ = None # ExprContext
+            self.false_ = None # ExprContext
             self.copyFrom(ctx)
 
         def Question(self):
@@ -4051,11 +4051,11 @@ class McInstrParser ( Parser ):
                         self.state = 491
                         self.match(McInstrParser.Question)
                         self.state = 492
-                        localctx.true = self.expr(0)
+                        localctx.true_ = self.expr(0)
                         self.state = 493
                         self.match(McInstrParser.Colon)
                         self.state = 494
-                        localctx.false = self.expr(4)
+                        localctx.false_ = self.expr(4)
                         pass
 
              

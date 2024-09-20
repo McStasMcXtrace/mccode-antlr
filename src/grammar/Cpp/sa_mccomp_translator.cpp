@@ -484,8 +484,8 @@ antlrcpp::Any SA_McCompTranslator::visitExpressionUnaryPM(McCompParser::Expressi
 antlrcpp::Any SA_McCompTranslator::visitExpressionTrinaryLogic(McCompParser::ExpressionTrinaryLogicContext *ctx){
     speedy_antlr::LabelMap labels[] = {
         {"test", static_cast<void*>(ctx->test)},
-        {"true", static_cast<void*>(ctx->true)},
-        {"false", static_cast<void*>(ctx->false)}
+        {"true_", static_cast<void*>(ctx->true_)},
+        {"false_", static_cast<void*>(ctx->false_)}
     };
     if(!ExpressionTrinaryLogicContext_cls) ExpressionTrinaryLogicContext_cls = PyObject_GetAttrString(translator->parser_cls, "ExpressionTrinaryLogicContext");
     PyObject *py_ctx = translator->convert_ctx(this, ctx, ExpressionTrinaryLogicContext_cls, labels, 3);
