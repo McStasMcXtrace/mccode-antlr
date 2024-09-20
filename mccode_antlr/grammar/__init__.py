@@ -1,7 +1,6 @@
 def _import_component_language():
     from .McCompLexer import McCompLexer
     from .McCompParser import McCompParser
-    from .McCompListener import McCompListener
     from .McCompVisitor import McCompVisitor
     return McCompLexer, McCompParser, McCompListener, McCompVisitor
 
@@ -9,7 +8,6 @@ def _import_component_language():
 def _import_instrument_language():
     from .McInstrLexer import McInstrLexer
     from .McInstrParser import McInstrParser
-    from .McInstrListener import McInstrListener
     from .McInstrVisitor import McInstrVisitor
     return McInstrLexer, McInstrParser, McInstrListener, McInstrVisitor
 
