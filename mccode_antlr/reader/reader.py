@@ -1,4 +1,4 @@
-from typing import Union
+from __future__ import annotations
 from pathlib import Path
 from loguru import logger
 from dataclasses import dataclass, field
@@ -119,7 +119,7 @@ class Reader:
             self.add_component(name, current_instance_name=current_instance_name)
         return self.components[name]
 
-    def get_instrument(self, name: Union[str, Path], destination=None, mode: Mode | None = None):
+    def get_instrument(self, name: str | Path, destination=None, mode: Mode | None = None):
         """Load and parse an instr Instrument definition file
 
         In McCode3 fashion, the instrument file *should* be in the current working directory.
