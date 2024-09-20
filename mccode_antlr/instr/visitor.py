@@ -1,3 +1,4 @@
+from __future__ import annotations
 from ..grammar import McInstrParser, McInstrVisitor
 from ..common import InstrumentParameter, MetaData, Expr, Mode
 from .instr import Instr
@@ -13,7 +14,7 @@ def literal_string(ctx):
 
 
 class InstrVisitor(McInstrVisitor):
-    def __init__(self, parent, filename, destination=None, allow_assignment=False, mode: Mode | None =None):
+    def __init__(self, parent, filename, destination=None, allow_assignment=False, mode: Mode | None = None):
         self.parent = parent
         self.filename = filename
         self.state = Instr()
