@@ -1,5 +1,5 @@
 
-// Generated from /home/g/Code/mccode-antlr/src/grammar/McInstr.g4 by ANTLR 4.13.2
+// Generated from /home/g/PycharmProjects/mccode-antlr/src/grammar/McInstr.g4 by ANTLR 4.13.2
 
 
 #include "McInstrVisitor.h"
@@ -58,7 +58,7 @@ void mcinstrParserInitialize() {
       "component_type", "instance_parameters", "instance_parameter", "split", 
       "when", "place", "orientation", "groupref", "jumps", "jump", "jumpname", 
       "extend", "component_ref", "coords", "reference", "dependency", "declare", 
-      "uservars", "initialize", "save", "finally_", "metadata", "category", 
+      "uservars", "initialise", "save", "finally_", "metadata", "category", 
       "initializerlist", "assignment", "expr", "shell", "search", "unparsed_block"
     },
     std::vector<std::string>{
@@ -457,8 +457,8 @@ McInstrParser::UservarsContext* McInstrParser::Instrument_definitionContext::use
   return getRuleContext<McInstrParser::UservarsContext>(0);
 }
 
-McInstrParser::InitializeContext* McInstrParser::Instrument_definitionContext::initialize() {
-  return getRuleContext<McInstrParser::InitializeContext>(0);
+McInstrParser::InitialiseContext* McInstrParser::Instrument_definitionContext::initialise() {
+  return getRuleContext<McInstrParser::InitialiseContext>(0);
 }
 
 McInstrParser::SaveContext* McInstrParser::Instrument_definitionContext::save() {
@@ -558,7 +558,7 @@ McInstrParser::Instrument_definitionContext* McInstrParser::instrument_definitio
     _la = _input->LA(1);
     if (_la == McInstrParser::Initialize) {
       setState(103);
-      initialize();
+      initialise();
     }
     setState(106);
     instrument_trace();
@@ -3129,18 +3129,18 @@ McInstrParser::UservarsContext* McInstrParser::uservars() {
   return _localctx;
 }
 
-//----------------- InitializeContext ------------------------------------------------------------------
+//----------------- InitialiseContext ------------------------------------------------------------------
 
-McInstrParser::InitializeContext::InitializeContext(ParserRuleContext *parent, size_t invokingState)
+McInstrParser::InitialiseContext::InitialiseContext(ParserRuleContext *parent, size_t invokingState)
   : ParserRuleContext(parent, invokingState) {
 }
 
 
-size_t McInstrParser::InitializeContext::getRuleIndex() const {
-  return McInstrParser::RuleInitialize;
+size_t McInstrParser::InitialiseContext::getRuleIndex() const {
+  return McInstrParser::RuleInitialise;
 }
 
-void McInstrParser::InitializeContext::copyFrom(InitializeContext *ctx) {
+void McInstrParser::InitialiseContext::copyFrom(InitialiseContext *ctx) {
   ParserRuleContext::copyFrom(ctx);
 }
 
@@ -3154,7 +3154,7 @@ McInstrParser::Unparsed_blockContext* McInstrParser::InitializeBlockContext::unp
   return getRuleContext<McInstrParser::Unparsed_blockContext>(0);
 }
 
-McInstrParser::InitializeBlockContext::InitializeBlockContext(InitializeContext *ctx) { copyFrom(ctx); }
+McInstrParser::InitializeBlockContext::InitializeBlockContext(InitialiseContext *ctx) { copyFrom(ctx); }
 
 
 std::any McInstrParser::InitializeBlockContext::accept(tree::ParseTreeVisitor *visitor) {
@@ -3185,7 +3185,7 @@ McInstrParser::Unparsed_blockContext* McInstrParser::InitializeBlockCopyContext:
   return getRuleContext<McInstrParser::Unparsed_blockContext>(0);
 }
 
-McInstrParser::InitializeBlockCopyContext::InitializeBlockCopyContext(InitializeContext *ctx) { copyFrom(ctx); }
+McInstrParser::InitializeBlockCopyContext::InitializeBlockCopyContext(InitialiseContext *ctx) { copyFrom(ctx); }
 
 
 std::any McInstrParser::InitializeBlockCopyContext::accept(tree::ParseTreeVisitor *visitor) {
@@ -3194,9 +3194,9 @@ std::any McInstrParser::InitializeBlockCopyContext::accept(tree::ParseTreeVisito
   else
     return visitor->visitChildren(this);
 }
-McInstrParser::InitializeContext* McInstrParser::initialize() {
-  InitializeContext *_localctx = _tracker.createInstance<InitializeContext>(_ctx, getState());
-  enterRule(_localctx, 56, McInstrParser::RuleInitialize);
+McInstrParser::InitialiseContext* McInstrParser::initialise() {
+  InitialiseContext *_localctx = _tracker.createInstance<InitialiseContext>(_ctx, getState());
+  enterRule(_localctx, 56, McInstrParser::RuleInitialise);
   size_t _la = 0;
 
 #if __cplusplus > 201703L

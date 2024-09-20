@@ -1,5 +1,5 @@
 
-// Generated from /home/g/Code/mccode-antlr/src/grammar/McInstr.g4 by ANTLR 4.13.2
+// Generated from /home/g/PycharmProjects/mccode-antlr/src/grammar/McInstr.g4 by ANTLR 4.13.2
 
 #pragma once
 
@@ -62,7 +62,7 @@ public:
     RuleOrientation = 16, RuleGroupref = 17, RuleJumps = 18, RuleJump = 19, 
     RuleJumpname = 20, RuleExtend = 21, RuleComponent_ref = 22, RuleCoords = 23, 
     RuleReference = 24, RuleDependency = 25, RuleDeclare = 26, RuleUservars = 27, 
-    RuleInitialize = 28, RuleSave = 29, RuleFinally_ = 30, RuleMetadata = 31, 
+    RuleInitialise = 28, RuleSave = 29, RuleFinally_ = 30, RuleMetadata = 31, 
     RuleCategory = 32, RuleInitializerlist = 33, RuleAssignment = 34, RuleExpr = 35, 
     RuleShell = 36, RuleSearch = 37, RuleUnparsed_block = 38
   };
@@ -112,7 +112,7 @@ public:
   class DependencyContext;
   class DeclareContext;
   class UservarsContext;
-  class InitializeContext;
+  class InitialiseContext;
   class SaveContext;
   class Finally_Context;
   class MetadataContext;
@@ -154,7 +154,7 @@ public:
     DependencyContext *dependency();
     DeclareContext *declare();
     UservarsContext *uservars();
-    InitializeContext *initialize();
+    InitialiseContext *initialise();
     SaveContext *save();
     Finally_Context *finally_();
 
@@ -771,12 +771,12 @@ public:
 
   UservarsContext* uservars();
 
-  class  InitializeContext : public antlr4::ParserRuleContext {
+  class  InitialiseContext : public antlr4::ParserRuleContext {
   public:
-    InitializeContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    InitialiseContext(antlr4::ParserRuleContext *parent, size_t invokingState);
    
-    InitializeContext() = default;
-    void copyFrom(InitializeContext *context);
+    InitialiseContext() = default;
+    void copyFrom(InitialiseContext *context);
     using antlr4::ParserRuleContext::copyFrom;
 
     virtual size_t getRuleIndex() const override;
@@ -784,9 +784,9 @@ public:
    
   };
 
-  class  InitializeBlockContext : public InitializeContext {
+  class  InitializeBlockContext : public InitialiseContext {
   public:
-    InitializeBlockContext(InitializeContext *ctx);
+    InitializeBlockContext(InitialiseContext *ctx);
 
     antlr4::tree::TerminalNode *Initialize();
     Unparsed_blockContext *unparsed_block();
@@ -794,9 +794,9 @@ public:
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
-  class  InitializeBlockCopyContext : public InitializeContext {
+  class  InitializeBlockCopyContext : public InitialiseContext {
   public:
-    InitializeBlockCopyContext(InitializeContext *ctx);
+    InitializeBlockCopyContext(InitialiseContext *ctx);
 
     antlr4::tree::TerminalNode *Initialize();
     antlr4::tree::TerminalNode *Copy();
@@ -807,7 +807,7 @@ public:
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
-  InitializeContext* initialize();
+  InitialiseContext* initialise();
 
   class  SaveContext : public antlr4::ParserRuleContext {
   public:

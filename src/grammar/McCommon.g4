@@ -14,7 +14,7 @@ declare
   | Declare Copy Identifier (Extend unparsed_block)? #DeclareBlockCopy
   ;
 uservars: UserVars unparsed_block;
-initialize
+initialise  // Avoid a name clash with C++ Parser 'initialize' function
   : Initialize unparsed_block                           #InitializeBlock
   | Initialize Copy Identifier (Extend unparsed_block)? #InitializeBlockCopy
   ;

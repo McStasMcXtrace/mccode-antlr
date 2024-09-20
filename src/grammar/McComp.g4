@@ -42,11 +42,11 @@ END
 component_definition
     : Define Component Identifier component_parameter_set
       category?
-      metadata* shell? dependency? NoAcc? share? uservars? declare? initialize?
+      metadata* shell? dependency? NoAcc? share? uservars? declare? initialise?
       component_trace? save? finally_? display? End                               #ComponentDefineNew
     | Define Component Identifier Copy Identifier component_parameter_set
       category?
-      metadata* shell? dependency? NoAcc? share? uservars? declare? initialize?
+      metadata* shell? dependency? NoAcc? share? uservars? declare? initialise?
       component_trace? save? finally_? display? End                               #ComponentDefineCopy
     ;
 
@@ -72,7 +72,7 @@ component_parameter
     | Int '*' Identifier (Assign (Identifier | initializerlist | Null | '0'))?     #ComponentParameterIntegerArray
     ;
 
-// Similar to `declare`, `uservars`, `initialize`, `save`, `finally_`, but only used in Comp(onent) definitions
+// Similar to `declare`, `uservars`, `initialise`, `save`, `finally_`, but only used in Comp(onent) definitions
 share
   : Share unparsed_block                           #ShareBlock
   | Share Copy Identifier (Extend unparsed_block)?  #ShareBlockCopy

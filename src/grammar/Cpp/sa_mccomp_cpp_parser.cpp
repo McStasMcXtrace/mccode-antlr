@@ -32,7 +32,7 @@ antlr4::tree::ParseTree* get_parse_tree_reference(McCompParser *parser) {return 
 antlr4::tree::ParseTree* get_parse_tree_dependency(McCompParser *parser) {return parser->dependency();}
 antlr4::tree::ParseTree* get_parse_tree_declare(McCompParser *parser) {return parser->declare();}
 antlr4::tree::ParseTree* get_parse_tree_uservars(McCompParser *parser) {return parser->uservars();}
-antlr4::tree::ParseTree* get_parse_tree_initialize(McCompParser *parser) {return parser->initialize();}
+antlr4::tree::ParseTree* get_parse_tree_initialise(McCompParser *parser) {return parser->initialise();}
 antlr4::tree::ParseTree* get_parse_tree_save(McCompParser *parser) {return parser->save();}
 antlr4::tree::ParseTree* get_parse_tree_finally_(McCompParser *parser) {return parser->finally_();}
 antlr4::tree::ParseTree* get_parse_tree_metadata(McCompParser *parser) {return parser->metadata();}
@@ -64,7 +64,7 @@ antlr4::tree::ParseTree* get_parse_tree(McCompParser *parser, const char *entry_
         {"dependency", &get_parse_tree_dependency},
         {"declare", &get_parse_tree_declare},
         {"uservars", &get_parse_tree_uservars},
-        {"initialize", &get_parse_tree_initialize},
+        {"initialise", &get_parse_tree_initialise},
         {"save", &get_parse_tree_save},
         {"finally_", &get_parse_tree_finally_},
         {"metadata", &get_parse_tree_metadata},

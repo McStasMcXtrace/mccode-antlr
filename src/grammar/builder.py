@@ -1,6 +1,7 @@
 from __future__ import annotations
 from loguru import logger
 from enum import Enum
+from pathlib import Path
 
 
 class Target(Enum):
@@ -23,6 +24,7 @@ def rebuild_language(grammar_file,
                      target: Target,
                      features: list[Feature],
                      verbose=False,
+                     output=None
                      ):
     from pathlib import Path
     from subprocess import Popen, PIPE
@@ -39,7 +41,7 @@ def rebuild_language(grammar_file,
         f'-Dlanguage={target}',
         '-visitor' if Feature.visitor in features else '-no-visitor',
         '-listener' if Feature.listener in features else '-no-listener',
-        '-o', str(grammar_file.parent / str(target)),
+        '-o', output or str(grammar_file.parent / str(target)),
         str(grammar_file)
     ]
 
@@ -60,7 +62,7 @@ def rebuild_language(grammar_file,
         print(out, end='')
 
 
-def language_present_and_up_to_date(grammar_file, newest, verbose=False):
+def language_present_and_up_to_date(grammar_file, newest, features, path, verbose=False):
     from pathlib import Path
     if not isinstance(grammar_file, Path):
         grammar_file = Path(grammar_file)
@@ -68,13 +70,16 @@ def language_present_and_up_to_date(grammar_file, newest, verbose=False):
     if not grammar_file.exists():
         raise RuntimeError(f"The grammar file {grammar_file} does not exist.")
 
-    root = grammar_file.parent
-    lexer_file = root.joinpath(f'{grammar_file.stem}Lexer.py')
-    parser_file = root.joinpath(f'{grammar_file.stem}Parser.py')
-    listener_file = root.joinpath(f'{grammar_file.stem}Listener.py')
-    visitor_file = root.joinpath(f'{grammar_file.stem}Visitor.py')
+    lexer_file = path.joinpath(f'{grammar_file.stem}Lexer.py')
+    parser_file = path.joinpath(f'{grammar_file.stem}Parser.py')
+    listener_file = path.joinpath(f'{grammar_file.stem}Listener.py')
+    visitor_file = path.joinpath(f'{grammar_file.stem}Visitor.py')
 
-    generated_files = lexer_file, parser_file, listener_file, visitor_file
+    generated_files = (lexer_file, parser_file)
+    if Feature.visitor in features:
+        generated_files += (visitor_file, )
+    if Feature.listener in features:
+        generated_files += (listener_file, )
 
     if not all(x.exists() for x in generated_files):
         if verbose:
@@ -91,15 +96,16 @@ def language_present_and_up_to_date(grammar_file, newest, verbose=False):
     return True
 
 
-def rebuild_speedy_language(grammar_file, features: list[Feature], verbose=False):
+def rebuild_speedy_language(grammar_file, features: list[Feature], output: Path, verbose=False):
     from speedy_antlr_tool import generate
 
-    rebuild_language(grammar_file, Target.cpp, features, verbose=verbose)
-    rebuild_language(grammar_file, Target.python, [], verbose=verbose)
-
-    py_parser_path = grammar_file.parent / str(Target.python) / f'{grammar_file.stem}Parser.py'
     cpp_output_dir = grammar_file.parent / str(Target.cpp)
-    generate(py_parser_path, cpp_output_dir)
+
+    rebuild_language(grammar_file, Target.cpp, features, verbose=verbose, output=cpp_output_dir)
+    rebuild_language(grammar_file, Target.python, [], verbose=verbose, output=output)
+
+    py_parser_path = output / f'{grammar_file.stem}Parser.py'
+    generate(str(py_parser_path), cpp_output_dir)
 
 
 def ensure_language_up_to_date(
@@ -113,18 +119,22 @@ def ensure_language_up_to_date(
 ):
     """Ensure the ANTLR parsed language files are up-to-date."""
     from pathlib import Path
-    grammar_file = Path(__file__).parent.joinpath(f'{grammar}.g4')
+    # This file is at src/grammar/builder.py, it's parent is src/grammar
+    # which the grammar defining files are under
+    grammar_file = Path(__file__).parent / f'{grammar}.g4'
+    # and we want to put Python files under src/mccode_antlr/grammar
+    output_path = Path(__file__).parent.parent / "mccode_antlr" / "grammar"
 
     newest = grammar_file.stat().st_mtime
     if deps:
         for dep in deps:
             newest = max(newest, Path(__file__).parent.joinpath(f'{dep}.g4').stat().st_mtime)
 
-    if not language_present_and_up_to_date(grammar_file, newest, verbose=verbose):
+    if not language_present_and_up_to_date(grammar_file, newest, features, output_path, verbose=verbose):
         if speed:
-            rebuild_speedy_language(grammar_file, features, verbose=verbose)
+            rebuild_speedy_language(grammar_file, features, output=output_path, verbose=verbose)
         else:
-            rebuild_language(grammar_file, target, features, verbose=verbose)
+            rebuild_language(grammar_file, target, features, output=output_path, verbose=verbose)
 
 
 def main():

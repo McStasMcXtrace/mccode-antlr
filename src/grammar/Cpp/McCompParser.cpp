@@ -1,5 +1,5 @@
 
-// Generated from /home/g/Code/mccode-antlr/src/grammar/McComp.g4 by ANTLR 4.13.2
+// Generated from /home/g/PycharmProjects/mccode-antlr/src/grammar/McComp.g4 by ANTLR 4.13.2
 
 
 #include "McCompVisitor.h"
@@ -56,7 +56,7 @@ void mccompParserInitialize() {
       "component_define_parameters", "component_set_parameters", "component_out_parameters", 
       "component_parameters", "component_parameter", "share", "display", 
       "component_ref", "coords", "reference", "dependency", "declare", "uservars", 
-      "initialize", "save", "finally_", "metadata", "category", "initializerlist", 
+      "initialise", "save", "finally_", "metadata", "category", "initializerlist", 
       "assignment", "expr", "shell", "search", "unparsed_block"
     },
     std::vector<std::string>{
@@ -474,8 +474,8 @@ McCompParser::DeclareContext* McCompParser::ComponentDefineNewContext::declare()
   return getRuleContext<McCompParser::DeclareContext>(0);
 }
 
-McCompParser::InitializeContext* McCompParser::ComponentDefineNewContext::initialize() {
-  return getRuleContext<McCompParser::InitializeContext>(0);
+McCompParser::InitialiseContext* McCompParser::ComponentDefineNewContext::initialise() {
+  return getRuleContext<McCompParser::InitialiseContext>(0);
 }
 
 McCompParser::Component_traceContext* McCompParser::ComponentDefineNewContext::component_trace() {
@@ -569,8 +569,8 @@ McCompParser::DeclareContext* McCompParser::ComponentDefineCopyContext::declare(
   return getRuleContext<McCompParser::DeclareContext>(0);
 }
 
-McCompParser::InitializeContext* McCompParser::ComponentDefineCopyContext::initialize() {
-  return getRuleContext<McCompParser::InitializeContext>(0);
+McCompParser::InitialiseContext* McCompParser::ComponentDefineCopyContext::initialise() {
+  return getRuleContext<McCompParser::InitialiseContext>(0);
 }
 
 McCompParser::Component_traceContext* McCompParser::ComponentDefineCopyContext::component_trace() {
@@ -697,7 +697,7 @@ McCompParser::Component_definitionContext* McCompParser::component_definition() 
       _la = _input->LA(1);
       if (_la == McCompParser::Initialize) {
         setState(90);
-        initialize();
+        initialise();
       }
       setState(94);
       _errHandler->sync(this);
@@ -823,7 +823,7 @@ McCompParser::Component_definitionContext* McCompParser::component_definition() 
       _la = _input->LA(1);
       if (_la == McCompParser::Initialize) {
         setState(140);
-        initialize();
+        initialise();
       }
       setState(144);
       _errHandler->sync(this);
@@ -2700,18 +2700,18 @@ McCompParser::UservarsContext* McCompParser::uservars() {
   return _localctx;
 }
 
-//----------------- InitializeContext ------------------------------------------------------------------
+//----------------- InitialiseContext ------------------------------------------------------------------
 
-McCompParser::InitializeContext::InitializeContext(ParserRuleContext *parent, size_t invokingState)
+McCompParser::InitialiseContext::InitialiseContext(ParserRuleContext *parent, size_t invokingState)
   : ParserRuleContext(parent, invokingState) {
 }
 
 
-size_t McCompParser::InitializeContext::getRuleIndex() const {
-  return McCompParser::RuleInitialize;
+size_t McCompParser::InitialiseContext::getRuleIndex() const {
+  return McCompParser::RuleInitialise;
 }
 
-void McCompParser::InitializeContext::copyFrom(InitializeContext *ctx) {
+void McCompParser::InitialiseContext::copyFrom(InitialiseContext *ctx) {
   ParserRuleContext::copyFrom(ctx);
 }
 
@@ -2725,7 +2725,7 @@ McCompParser::Unparsed_blockContext* McCompParser::InitializeBlockContext::unpar
   return getRuleContext<McCompParser::Unparsed_blockContext>(0);
 }
 
-McCompParser::InitializeBlockContext::InitializeBlockContext(InitializeContext *ctx) { copyFrom(ctx); }
+McCompParser::InitializeBlockContext::InitializeBlockContext(InitialiseContext *ctx) { copyFrom(ctx); }
 
 
 std::any McCompParser::InitializeBlockContext::accept(tree::ParseTreeVisitor *visitor) {
@@ -2756,7 +2756,7 @@ McCompParser::Unparsed_blockContext* McCompParser::InitializeBlockCopyContext::u
   return getRuleContext<McCompParser::Unparsed_blockContext>(0);
 }
 
-McCompParser::InitializeBlockCopyContext::InitializeBlockCopyContext(InitializeContext *ctx) { copyFrom(ctx); }
+McCompParser::InitializeBlockCopyContext::InitializeBlockCopyContext(InitialiseContext *ctx) { copyFrom(ctx); }
 
 
 std::any McCompParser::InitializeBlockCopyContext::accept(tree::ParseTreeVisitor *visitor) {
@@ -2765,9 +2765,9 @@ std::any McCompParser::InitializeBlockCopyContext::accept(tree::ParseTreeVisitor
   else
     return visitor->visitChildren(this);
 }
-McCompParser::InitializeContext* McCompParser::initialize() {
-  InitializeContext *_localctx = _tracker.createInstance<InitializeContext>(_ctx, getState());
-  enterRule(_localctx, 34, McCompParser::RuleInitialize);
+McCompParser::InitialiseContext* McCompParser::initialise() {
+  InitialiseContext *_localctx = _tracker.createInstance<InitialiseContext>(_ctx, getState());
+  enterRule(_localctx, 34, McCompParser::RuleInitialise);
   size_t _la = 0;
 
 #if __cplusplus > 201703L

@@ -2,6 +2,8 @@ import sys
 import os
 import fnmatch
 import setuptools
+from setuptools.command.build_ext import build_ext
+
 
 def get_target():
     from platform import system
@@ -29,9 +31,14 @@ def get_files(directory, pattern):
             yield os.path.join(root, filename)
 
 
-def all_files(pattern):
-    directory = 'src/grammar/Cpp'
-    return list(get_files(directory, pattern))
+def all_files(name, ext):
+    src = 'src/grammar/Cpp'
+    lib = 'lib/antlr4-cpp-runtime'
+    antlr_src = list(get_files(lib, f"*.{ext}"))
+    antlr_gen = list(get_files(src, f"{name}*.{ext}"))
+    speed_gen = list(get_files(src, f"sa_{name.lower()}*.{ext}"))
+    speed_src = list(get_files(src, f"speedy*.{ext}"))
+    return antlr_src + antlr_gen + speed_gen + speed_src
 
 
 def run_setup(with_binary):
@@ -40,8 +47,8 @@ def run_setup(with_binary):
             setuptools.Extension(
                 name=f'mccode_antlr.grammar.sa_{name.lower()}_cpp_parser',
                 include_dirs=['lib/antlr4-cpp-runtime'],
-                sources=all_files(f'{name}*.cpp') + all_files(f'sa_{name.lower()}*.cpp') + all_files('speedy*.cpp'),
-                depends=all_files(f'{name}*.h') + all_files(f'sa_{name.lower()}*.h') + all_files('speedy*.h'),
+                sources=all_files(name, 'cpp'),
+                depends=all_files(name, 'h'),
                 extra_compile_args=get_target_args()
             )
             for name in ('McComp', 'McInstr')
@@ -50,19 +57,27 @@ def run_setup(with_binary):
         ext_modules = []
 
     setuptools.setup(
-        name='mccode-antlr',
-        packages=setuptools.find_packages('mccode_antlr'),
-        package_dir={'': 'src'},
         ext_modules=ext_modules,
-        python_requires='>=3.8',
-        install_requires=[
-            'antlr4-python3-runtime==4.9.2',
-            'speedy-antlr-tool==0.1.0'
-        ],
-        entry_points={
-            'console_scripts': [
-                'mccode-antlr-build = grammar.builder:main'
-            ]
-        }
+        cmdclass={"build_ext": build_ext},
     )
 
+
+
+#===============================================================================
+
+
+# Detect if an alternate interpreter is being used
+is_jython = "java" in sys.platform
+is_pypy = hasattr(sys, "pypy_version_info")
+
+# Force using fallback if using an alternate interpreter
+using_fallback = is_jython or is_pypy
+
+if not using_fallback:
+    try:
+        run_setup(with_binary=True)
+    except Exception:
+        using_fallback = True
+
+if using_fallback:
+    run_setup(with_binary=False)

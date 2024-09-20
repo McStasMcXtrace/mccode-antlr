@@ -1,4 +1,4 @@
-# Generated from /home/g/Code/mccode-antlr/src/grammar/McInstr.g4 by ANTLR 4.13.2
+# Generated from /home/g/PycharmProjects/mccode-antlr/src/grammar/McInstr.g4 by ANTLR 4.13.2
 # encoding: utf-8
 from antlr4 import *
 from io import StringIO
@@ -322,7 +322,7 @@ class McInstrParser ( Parser ):
     RULE_dependency = 25
     RULE_declare = 26
     RULE_uservars = 27
-    RULE_initialize = 28
+    RULE_initialise = 28
     RULE_save = 29
     RULE_finally_ = 30
     RULE_metadata = 31
@@ -341,7 +341,7 @@ class McInstrParser ( Parser ):
                    "instance_parameters", "instance_parameter", "split", 
                    "when", "place", "orientation", "groupref", "jumps", 
                    "jump", "jumpname", "extend", "component_ref", "coords", 
-                   "reference", "dependency", "declare", "uservars", "initialize", 
+                   "reference", "dependency", "declare", "uservars", "initialise", 
                    "save", "finally_", "metadata", "category", "initializerlist", 
                    "assignment", "expr", "shell", "search", "unparsed_block" ]
 
@@ -638,8 +638,8 @@ class McInstrParser ( Parser ):
             return self.getTypedRuleContext(McInstrParser.UservarsContext,0)
 
 
-        def initialize(self):
-            return self.getTypedRuleContext(McInstrParser.InitializeContext,0)
+        def initialise(self):
+            return self.getTypedRuleContext(McInstrParser.InitialiseContext,0)
 
 
         def save(self):
@@ -724,7 +724,7 @@ class McInstrParser ( Parser ):
             _la = self._input.LA(1)
             if _la==15:
                 self.state = 103
-                self.initialize()
+                self.initialise()
 
 
             self.state = 106
@@ -2687,7 +2687,7 @@ class McInstrParser ( Parser ):
         return localctx
 
 
-    class InitializeContext(ParserRuleContext):
+    class InitialiseContext(ParserRuleContext):
         __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -2696,7 +2696,7 @@ class McInstrParser ( Parser ):
 
 
         def getRuleIndex(self):
-            return McInstrParser.RULE_initialize
+            return McInstrParser.RULE_initialise
 
      
         def copyFrom(self, ctx:ParserRuleContext):
@@ -2704,9 +2704,9 @@ class McInstrParser ( Parser ):
 
 
 
-    class InitializeBlockContext(InitializeContext):
+    class InitializeBlockContext(InitialiseContext):
 
-        def __init__(self, parser, ctx:ParserRuleContext): # actually a McInstrParser.InitializeContext
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a McInstrParser.InitialiseContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -2717,9 +2717,9 @@ class McInstrParser ( Parser ):
 
 
 
-    class InitializeBlockCopyContext(InitializeContext):
+    class InitializeBlockCopyContext(InitialiseContext):
 
-        def __init__(self, parser, ctx:ParserRuleContext): # actually a McInstrParser.InitializeContext
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a McInstrParser.InitialiseContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -2737,10 +2737,10 @@ class McInstrParser ( Parser ):
 
 
 
-    def initialize(self):
+    def initialise(self):
 
-        localctx = McInstrParser.InitializeContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 56, self.RULE_initialize)
+        localctx = McInstrParser.InitialiseContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 56, self.RULE_initialise)
         self._la = 0 # Token type
         try:
             self.state = 361

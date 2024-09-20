@@ -19,7 +19,7 @@ prog: instrument_definition EOF;
 
 instrument_definition
   : Define Instrument Identifier instrument_parameters
-    shell? search? instrument_metadata? dependency? declare? uservars? initialize?
+    shell? search? instrument_metadata? dependency? declare? uservars? initialise?
     instrument_trace
     save? finally_?
     End

@@ -1,4 +1,4 @@
-# Generated from /home/g/Code/mccode-antlr/src/grammar/McComp.g4 by ANTLR 4.13.2
+# Generated from /home/g/PycharmProjects/mccode-antlr/src/grammar/McComp.g4 by ANTLR 4.13.2
 # encoding: utf-8
 from antlr4 import *
 from io import StringIO
@@ -311,7 +311,7 @@ class McCompParser ( Parser ):
     RULE_dependency = 14
     RULE_declare = 15
     RULE_uservars = 16
-    RULE_initialize = 17
+    RULE_initialise = 17
     RULE_save = 18
     RULE_finally_ = 19
     RULE_metadata = 20
@@ -327,7 +327,7 @@ class McCompParser ( Parser ):
                    "component_define_parameters", "component_set_parameters", 
                    "component_out_parameters", "component_parameters", "component_parameter", 
                    "share", "display", "component_ref", "coords", "reference", 
-                   "dependency", "declare", "uservars", "initialize", "save", 
+                   "dependency", "declare", "uservars", "initialise", "save", 
                    "finally_", "metadata", "category", "initializerlist", 
                    "assignment", "expr", "shell", "search", "unparsed_block" ]
 
@@ -633,8 +633,8 @@ class McCompParser ( Parser ):
         def declare(self):
             return self.getTypedRuleContext(McCompParser.DeclareContext,0)
 
-        def initialize(self):
-            return self.getTypedRuleContext(McCompParser.InitializeContext,0)
+        def initialise(self):
+            return self.getTypedRuleContext(McCompParser.InitialiseContext,0)
 
         def component_trace(self):
             return self.getTypedRuleContext(McCompParser.Component_traceContext,0)
@@ -698,8 +698,8 @@ class McCompParser ( Parser ):
         def declare(self):
             return self.getTypedRuleContext(McCompParser.DeclareContext,0)
 
-        def initialize(self):
-            return self.getTypedRuleContext(McCompParser.InitializeContext,0)
+        def initialise(self):
+            return self.getTypedRuleContext(McCompParser.InitialiseContext,0)
 
         def component_trace(self):
             return self.getTypedRuleContext(McCompParser.Component_traceContext,0)
@@ -807,7 +807,7 @@ class McCompParser ( Parser ):
                 _la = self._input.LA(1)
                 if _la==15:
                     self.state = 90
-                    self.initialize()
+                    self.initialise()
 
 
                 self.state = 94
@@ -932,7 +932,7 @@ class McCompParser ( Parser ):
                 _la = self._input.LA(1)
                 if _la==15:
                     self.state = 140
-                    self.initialize()
+                    self.initialise()
 
 
                 self.state = 144
@@ -2352,7 +2352,7 @@ class McCompParser ( Parser ):
         return localctx
 
 
-    class InitializeContext(ParserRuleContext):
+    class InitialiseContext(ParserRuleContext):
         __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -2361,7 +2361,7 @@ class McCompParser ( Parser ):
 
 
         def getRuleIndex(self):
-            return McCompParser.RULE_initialize
+            return McCompParser.RULE_initialise
 
      
         def copyFrom(self, ctx:ParserRuleContext):
@@ -2369,9 +2369,9 @@ class McCompParser ( Parser ):
 
 
 
-    class InitializeBlockContext(InitializeContext):
+    class InitializeBlockContext(InitialiseContext):
 
-        def __init__(self, parser, ctx:ParserRuleContext): # actually a McCompParser.InitializeContext
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a McCompParser.InitialiseContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -2382,9 +2382,9 @@ class McCompParser ( Parser ):
 
 
 
-    class InitializeBlockCopyContext(InitializeContext):
+    class InitializeBlockCopyContext(InitialiseContext):
 
-        def __init__(self, parser, ctx:ParserRuleContext): # actually a McCompParser.InitializeContext
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a McCompParser.InitialiseContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
@@ -2402,10 +2402,10 @@ class McCompParser ( Parser ):
 
 
 
-    def initialize(self):
+    def initialise(self):
 
-        localctx = McCompParser.InitializeContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 34, self.RULE_initialize)
+        localctx = McCompParser.InitialiseContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 34, self.RULE_initialise)
         self._la = 0 # Token type
         try:
             self.state = 348
