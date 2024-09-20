@@ -1,6 +1,3 @@
-from .builder import _ensure_antlr_files_up_to_date_on_import
-
-
 def _import_component_language():
     from .McCompLexer import McCompLexer
     from .McCompParser import McCompParser
@@ -24,11 +21,6 @@ def _import_c_language():
     from .CVisitor import CVisitor
     return CLexer, CParser, CListener, CVisitor
 
-
-# Run the language file check and (re)build the files if necessary
-_ensure_antlr_files_up_to_date_on_import('McComp', deps=('McCommon', 'cpp'))
-_ensure_antlr_files_up_to_date_on_import('McInstr', deps=('McCommon', 'cpp'))
-_ensure_antlr_files_up_to_date_on_import('C')
 
 # Import the classes defined in the language files
 McCompLexer, McCompParser, McCompListener, McCompVisitor = _import_component_language()

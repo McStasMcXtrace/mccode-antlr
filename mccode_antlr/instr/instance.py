@@ -2,7 +2,7 @@ from loguru import logger
 from dataclasses import dataclass, field
 from typing import TypeVar, Union
 from ..comp import Comp
-from ..common import Expr, Value, DataType
+from ..common import Expr, Value, Mode
 from ..common import InstrumentParameter, ComponentParameter, MetaData, parameter_name_present, RawC, blocks_to_raw_c
 from .orientation import Orient, Vector, Angles
 from .jump import Jump
@@ -23,15 +23,16 @@ class Instance:
     at_relative: VectorReference
     rotate_relative: AnglesReference
     orientation: Orient = None
-    parameters: tuple[ComponentParameter] = field(default_factory=tuple)
+    parameters: tuple[ComponentParameter, ...] = field(default_factory=tuple)
     removable: bool = False
     cpu: bool = False
     split: Expr = None
     when: Expr = None
     group: str = None
-    extend: tuple[RawC] = field(default_factory=tuple)
-    jump: tuple[Jump] = field(default_factory=tuple)
-    metadata: tuple[MetaData] = field(default_factory=tuple)
+    extend: tuple[RawC, ...] = field(default_factory=tuple)
+    jump: tuple[Jump, ...] = field(default_factory=tuple)
+    metadata: tuple[MetaData, ...] = field(default_factory=tuple)
+    mode: Mode = Mode.normal
 
     def __repr__(self):
         return f'Instance({self.name}, {self.type.name})'
@@ -92,10 +93,11 @@ class Instance:
                    when=ref.when, group=ref.group,
                    extend=tuple([ext for ext in ref.extend]),
                    jump=tuple([jmp for jmp in ref.jump]),
-                   metadata=tuple([md for md in ref.metadata]))
+                   metadata=tuple([md for md in ref.metadata]),
+                   mode=ref.mode)
 
     def __post_init__(self):
-        if self.orientation is None:
+        if self.mode != Mode.minimal and self.orientation is None:
             ar, rr = self.at_relative, self.rotate_relative
             if not isinstance(ar[0], Vector) or not isinstance(rr[0], Angles):
                 logger.warning(f'Expected {ar=} and {rr=} to be Vector and Angles respectively')

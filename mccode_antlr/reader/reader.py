@@ -1,10 +1,11 @@
-from typing import Union
+from __future__ import annotations
 from pathlib import Path
 from loguru import logger
 from dataclasses import dataclass, field
 from antlr4.error.ErrorListener import ErrorListener
 from .registry import Registry, MCSTAS_REGISTRY, registries_match, registry_from_specification
 from ..comp import Comp
+from ..common import Mode
 
 
 class ReaderErrorListener(ErrorListener):
@@ -118,7 +119,7 @@ class Reader:
             self.add_component(name, current_instance_name=current_instance_name)
         return self.components[name]
 
-    def get_instrument(self, name: Union[str, Path], destination=None):
+    def get_instrument(self, name: str | Path, destination=None, mode: Mode | None = None):
         """Load and parse an instr Instrument definition file
 
         In McCode3 fashion, the instrument file *should* be in the current working directory.
@@ -141,7 +142,7 @@ class Reader:
         tokens = CommonTokenStream(lexer)
         parser = McInstrParser(tokens)
         parser.addErrorListener(ReaderErrorListener('Instrument', name, source))
-        visitor = InstrVisitor(self, filename, destination=destination)
+        visitor = InstrVisitor(self, filename, destination=destination, mode=mode)
         res = visitor.visitProg(parser.prog())
         if not isinstance(res, Instr):
             raise RuntimeError(f'Parsing instrument file {filename} did not produce an Instr object')

@@ -78,6 +78,6 @@ class ComponentParameter:
         return self.value == other
 
 
-def parameter_name_present(parameters: tuple[Union[InstrumentParameter, ComponentParameter]],
+def parameter_name_present(parameters: tuple[Union[InstrumentParameter, ComponentParameter], ...],
                            name: str) -> bool:
     return any(name == x.name for x in parameters)
