@@ -5,7 +5,6 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "mccode-antlr"
 dependencies = [
-    'antlr4-tools==0.2',
     'antlr4-python3-runtime==4.13.0',
     'numpy>=1.25.1',
     'pooch>=1.7.0',
@@ -26,11 +25,13 @@ dynamic = ["version"]
 [project.optional-dependencies]
 test = ["gputil==1.4.0", 'pytest']
 hdf5 = ["h5py>=3.11.0"]
+antlr = ['antlr4-tools>=0.2']
 
 [project.urls]
 "Homepage" = "https://github.com/McStasMcXtrace/mccode-antlr"
 
 [project.scripts]
+mccode-antlr-build = "mccode_antlr.grammer:main"
 mcstas-antlr = "mccode_antlr.commands:mcstas"
 mcxtrace-antlr = "mccode_antlr.commands:mcxtrace"
 mcrun-antlr = "mccode_antlr.run.runner:mcstas"

@@ -3,7 +3,18 @@ from loguru import logger
 def rebuild_language(grammar_file, verbose=False):
     from pathlib import Path
     from subprocess import Popen, PIPE
-    from antlr4_tool_runner import initialize_paths, get_version_arg, install_jre_and_antlr
+    # Version 0.2 of antlr4-tools provides the following imports:
+    #   initialize_paths, get_version_arg, install_jre_and_antlr
+    # Version 0.2.1 of antlr4-tools provides the following imports:
+    #   initialize_paths, process_args, install_jre_and_antlr
+    from antlr4_tool_runner import initialize_paths, install_jre_and_antlr
+    from importlib_metadata import version
+    if version('antlr4-tools') == '0.2':
+        from antlr4_tool_runner import get_version_arg
+    elif version('antlr4-tools') == '0.2.1':
+        from antlr4_tool_runner import process_args as get_version_arg
+    else:
+        raise RuntimeError('Unknown version of antlr4-tools')
 
     if not isinstance(grammar_file, Path):
         grammar_file = Path(grammar_file)
