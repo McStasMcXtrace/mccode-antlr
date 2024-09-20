@@ -1,6 +1,29 @@
+from __future__ import annotations
 from loguru import logger
+from enum import Enum
 
-def rebuild_language(grammar_file, verbose=False):
+
+class Target(Enum):
+    python = 0
+    cpp = 1
+    def __str__(self):
+        if self == Target.python:
+            return 'Python3'
+        elif self == Target.cpp:
+            return 'Cpp'
+        raise ValueError(f'Unknown target {self}')
+
+
+class Feature(Enum):
+    listener = 0
+    visitor = 1
+
+
+def rebuild_language(grammar_file,
+                     target: Target,
+                     features: list[Feature],
+                     verbose=False,
+                     ):
     from pathlib import Path
     from subprocess import Popen, PIPE
     # Version 0.2 of antlr4-tools provides the following imports:
@@ -24,9 +47,13 @@ def rebuild_language(grammar_file, verbose=False):
     if not isinstance(grammar_file, Path):
         grammar_file = Path(grammar_file)
 
-    # Do the McCode*.py files not exist? Or are they older than McCode.g4?
-    # Then build them using ANTLR4:
-    args = ['-Dlanguage=Python3', str(grammar_file), '-listener', '-visitor', '-o', str(grammar_file.parent)]
+    args =[
+        f'-Dlanguage={target}',
+        '-visitor' if Feature.visitor in features else '-no-visitor',
+        '-listener' if Feature.listener in features else '-no-listener',
+        '-o', str(grammar_file.parent),
+        str(grammar_file)
+    ]
 
     if verbose:
         logger.info(f'Building language files for {grammar_file}')
@@ -76,7 +103,14 @@ def language_present_and_up_to_date(grammar_file, newest, verbose=False):
     return True
 
 
-def _ensure_antlr_files_up_to_date_on_import(grammar, deps=None, verbose=False):
+def _ensure_antlr_files_up_to_date_on_import(
+        grammar: str,
+        *,
+        target: Target,
+        features: list[Feature],
+        deps=None,
+        verbose=False
+):
     """Run on import of this (sub)module. Ensure the ANTLR parsed language files are up-to-date."""
     from pathlib import Path
     grammar_file = Path(__file__).parent.joinpath(f'{grammar}.g4')
@@ -87,20 +121,20 @@ def _ensure_antlr_files_up_to_date_on_import(grammar, deps=None, verbose=False):
             newest = max(newest, Path(__file__).parent.joinpath(f'{dep}.g4').stat().st_mtime)
 
     if not language_present_and_up_to_date(grammar_file, newest, verbose=verbose):
-        rebuild_language(grammar_file, verbose=verbose)
+        rebuild_language(grammar_file, target, features, verbose=verbose)
 
 
 def main():
     from argparse import ArgumentParser
 
     parser = ArgumentParser(prog="mccode-antlr-build", description='Ensure ANTLR files are up-to-date')
-    parser.add_argument('--verbose', action='store_true', help='Print out more information')
+    parser.add_argument('-v ', '--verbose', action='store_true', help='Print out more information')
     args = parser.parse_args()
     verbose = args.verbose
 
-    _ensure_antlr_files_up_to_date_on_import('McComp', deps=('McCommon', 'cpp'), verbose=verbose)
-    _ensure_antlr_files_up_to_date_on_import('McInstr', deps=('McCommon', 'cpp'), verbose=verbose)
-    _ensure_antlr_files_up_to_date_on_import('C', verbose=verbose)
+    _ensure_antlr_files_up_to_date_on_import('McComp', target=Target.python, features=[Feature.visitor], deps=('McCommon', 'cpp'), verbose=verbose)
+    _ensure_antlr_files_up_to_date_on_import('McInstr', target=Target.python, features=[Feature.visitor], deps=('McCommon', 'cpp'), verbose=verbose)
+    _ensure_antlr_files_up_to_date_on_import('C', target=Target.python, features=[Feature.visitor, Feature.listener], verbose=verbose)
 
 if __name__ == '__main__':
     main()
