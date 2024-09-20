@@ -12,6 +12,9 @@ def rebuild_language(grammar_file, verbose=False):
     # Then build them using ANTLR4:
     args = ['-Dlanguage=Python3', str(grammar_file), '-listener', '-visitor', '-o', str(grammar_file.parent)]
 
+    if verbose:
+        logger.info(f'Building language files for {grammar_file}')
+
     # The following copies the implementation of antlr4_tool_runner.tool, which pulls `args` from the system argv list
     # Setup:
     initialize_paths()

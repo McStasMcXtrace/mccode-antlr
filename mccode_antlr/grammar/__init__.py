@@ -26,9 +26,10 @@ def _import_c_language():
 
 
 # Run the language file check and (re)build the files if necessary
-_ensure_antlr_files_up_to_date_on_import('McComp', deps=('McCommon', 'cpp'))
-_ensure_antlr_files_up_to_date_on_import('McInstr', deps=('McCommon', 'cpp'))
-_ensure_antlr_files_up_to_date_on_import('C')
+verbose = False
+_ensure_antlr_files_up_to_date_on_import('McComp', deps=('McCommon', 'cpp'), verbose=verbose)
+_ensure_antlr_files_up_to_date_on_import('McInstr', deps=('McCommon', 'cpp'), verbose=verbose)
+_ensure_antlr_files_up_to_date_on_import('C', verbose=verbose)
 
 # Import the classes defined in the language files
 McCompLexer, McCompParser, McCompListener, McCompVisitor = _import_component_language()
