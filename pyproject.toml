@@ -43,3 +43,12 @@ mxrun-antlr = "mccode_antlr.run.runner:mcxtrace_cmd"
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["mccode_antlr*"]
+
+
+[tool.cibuildwheel]
+archs = ["auto64"]
+test-requires = ["numpy", "pytest", "h5py>=3.11.0"]
+test-command = "pytest {package}/tests"
+build-verbosity = 1
+skip = ["cp36-*", "cp37-*", "pp*"]
+test-skip = "cp38-musllinux*"

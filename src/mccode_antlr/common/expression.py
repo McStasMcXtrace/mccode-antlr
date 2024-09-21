@@ -1,6 +1,4 @@
-import ast
-from dataclasses import dataclass
-from typing import Union
+from __future__ import annotations
 from enum import Enum
 from loguru import logger
 
