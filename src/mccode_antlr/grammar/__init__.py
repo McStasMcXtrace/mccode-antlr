@@ -8,7 +8,7 @@ def _import_component_language():
 
 def _import_instrument_language():
     # from .sa_mcinstr import parse, SA_ErrorListener
-    from mcinstr_parse import parse, ErrorListener
+    from .mcinstr_parse import parse, ErrorListener
     from .McInstrVisitor import McInstrVisitor
     from .McInstrParser import McInstrParser
     return parse, ErrorListener, McInstrVisitor, McInstrParser
