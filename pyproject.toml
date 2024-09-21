@@ -39,7 +39,6 @@ antlr = ['antlr4-tools==0.2.1', 'speedy-antlr-tool']
 "Homepage" = "https://github.com/McStasMcXtrace/mccode-antlr"
 
 [project.scripts]
-mccode-antlr-build = "mccode_antlr.grammer.builder:main"
 mcstas-antlr = "mccode_antlr.commands:mcstas"
 mcxtrace-antlr = "mccode_antlr.commands:mcxtrace"
 mcrun-antlr = "mccode_antlr.run.runner:mcstas_cmd"
@@ -50,12 +49,4 @@ mxrun-antlr = "mccode_antlr.run.runner:mcxtrace_cmd"
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["mccode_antlr*"]
-
-
-[tool.cibuildwheel]
-archs = ["auto64"]
-test-requires = ["numpy", "pytest"]
-test-command = "pytest {package}/tests"
-build-verbosity = 1
-skip = ["cp36-*", "cp37-*", "cp38-*", "cp39-*", "pp*"]
 

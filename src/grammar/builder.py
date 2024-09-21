@@ -96,16 +96,16 @@ def language_present_and_up_to_date(grammar_file, newest, features, path, verbos
     return True
 
 
-def rebuild_speedy_language(grammar_file, features: list[Feature], output: Path, verbose=False):
-    from speedy_antlr_tool import generate
-
-    cpp_output_dir = grammar_file.parent / str(Target.cpp)
-
-    rebuild_language(grammar_file, Target.cpp, features, verbose=verbose, output=cpp_output_dir)
-    rebuild_language(grammar_file, Target.python, features, verbose=verbose, output=output)
-
-    py_parser_path = output / f'{grammar_file.stem}Parser.py'
-    generate(str(py_parser_path), cpp_output_dir)
+# def rebuild_speedy_language(grammar_file, features: list[Feature], output: Path, verbose=False):
+#     from speedy_antlr_tool import generate
+#
+#     cpp_output_dir = grammar_file.parent / str(Target.cpp)
+#
+#     rebuild_language(grammar_file, Target.cpp, features, verbose=verbose, output=cpp_output_dir)
+#     rebuild_language(grammar_file, Target.python, features, verbose=verbose, output=output)
+#
+#     py_parser_path = output / f'{grammar_file.stem}Parser.py'
+#     generate(str(py_parser_path), cpp_output_dir)
 
 
 def ensure_language_up_to_date(
@@ -115,7 +115,6 @@ def ensure_language_up_to_date(
         features: list[Feature],
         deps=None,
         verbose=False,
-        speed=False,
 ):
     """Ensure the ANTLR parsed language files are up-to-date."""
     from pathlib import Path
@@ -131,10 +130,7 @@ def ensure_language_up_to_date(
             newest = max(newest, Path(__file__).parent.joinpath(f'{dep}.g4').stat().st_mtime)
 
     if not language_present_and_up_to_date(grammar_file, newest, features, output_path, verbose=verbose):
-        if speed:
-            rebuild_speedy_language(grammar_file, features, output=output_path, verbose=verbose)
-        else:
-            rebuild_language(grammar_file, target, features, output=output_path, verbose=verbose)
+        rebuild_language(grammar_file, target, features, output=output_path, verbose=verbose)
 
 
 def main():
@@ -145,8 +141,8 @@ def main():
     args = parser.parse_args()
     verbose = args.verbose
 
-    ensure_language_up_to_date('McComp', target=Target.python, features=[Feature.visitor], deps=('McCommon', 'cpp'), verbose=verbose, speed=True)
-    ensure_language_up_to_date('McInstr', target=Target.python, features=[Feature.visitor], deps=('McCommon', 'cpp'), verbose=verbose, speed=True)
+    ensure_language_up_to_date('McComp', target=Target.python, features=[Feature.visitor], deps=('McCommon', 'cpp'), verbose=verbose)
+    ensure_language_up_to_date('McInstr', target=Target.python, features=[Feature.visitor], deps=('McCommon', 'cpp'), verbose=verbose)
     ensure_language_up_to_date('C', target=Target.python, features=[Feature.visitor, Feature.listener], verbose=verbose)
 
 if __name__ == '__main__':
