@@ -54,7 +54,7 @@ include = ["mccode_antlr*"]
 
 [tool.cibuildwheel]
 archs = ["auto64"]
-test-requires = ["numpy", "pytest", "h5py>=3.11.0"]
+test-requires = ["numpy", "pytest"]
 test-command = "pytest {package}/tests"
 build-verbosity = 1
 skip = ["cp36-*", "cp37-*", "cp38-*", "cp39-*", "pp*"]
