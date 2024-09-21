@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "mccode-antlr"
 dependencies = [
     'antlr4-python3-runtime==4.13.2',  # should match the version of antlr4 used
-    'numpy>=1.25.1',
+    'numpy>=2',
     'pooch>=1.7.0',
     'confuse>=2.0.1',
     'loguru>=0.7.2',
@@ -15,11 +15,18 @@ dependencies = [
 ]
 description = "ANTLR4 grammars for McStas and McXtrace"
 readme = "README.md"
+requires-python = ">=3.10"
 authors = [
     { name = "Gregory Tucker", email = "gregory.tucker@ess.eu" },
 ]
 classifiers = [
     "License :: OSI Approved :: BSD License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
 ]
 dynamic = ["version"]
 
@@ -50,5 +57,5 @@ archs = ["auto64"]
 test-requires = ["numpy", "pytest", "h5py>=3.11.0"]
 test-command = "pytest {package}/tests"
 build-verbosity = 1
-skip = ["cp36-*", "cp37-*", "pp*"]
-test-skip = "cp38-musllinux*"
+skip = ["cp36-*", "cp37-*", "cp38-*", "cp39-*", "pp*"]
+
