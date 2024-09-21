@@ -1,15 +1,13 @@
 def _import_component_language():
-    from .McCompLexer import McCompLexer
-    from .McCompParser import McCompParser
-    from .McCompVisitor import McCompVisitor
-    return McCompLexer, McCompParser, McCompListener, McCompVisitor
+    from .sa_mccomp import parse, SA_ErrorListener
+    from .McCompVisitor import McCompVisitor, McCompParser
+    return parse, SA_ErrorListener, McCompVisitor, McCompParser
 
 
 def _import_instrument_language():
-    from .McInstrLexer import McInstrLexer
-    from .McInstrParser import McInstrParser
-    from .McInstrVisitor import McInstrVisitor
-    return McInstrLexer, McInstrParser, McInstrListener, McInstrVisitor
+    from .sa_mcinstr import parse, SA_ErrorListener
+    from McInstrVisitor import McInstrVisitor, McInstrParser
+    return parse, SA_ErrorListener, McInstrVisitor, McInstrParser
 
 
 def _import_c_language():
@@ -21,19 +19,19 @@ def _import_c_language():
 
 
 # Import the classes defined in the language files
-McCompLexer, McCompParser, McCompListener, McCompVisitor = _import_component_language()
-McInstrLexer, McInstrParser, McInstrListener, McInstrVisitor = _import_instrument_language()
+McComp_parse, McComp_ErrorListener, McCompVisitor, McCompParser = _import_component_language()
+McInstr_parse, McInstr_ErrorListener, McInstrVisitor, McInstrParser = _import_instrument_language()
 CLexer, CParser, CListener, CVisitor = _import_c_language()
 
 # And set only their names to be exported:
 __all__ = [
-    'McCompLexer',
+    'McComp_parse',
+    'McComp_ErrorListener',
     'McCompParser',
-    'McCompListener',
     'McCompVisitor',
-    'McInstrLexer',
+    'McInstr_parse',
+    'McInstr_ErrorListener',
     'McInstrParser',
-    'McInstrListener',
     'McInstrVisitor',
     'CLexer',
     'CParser',

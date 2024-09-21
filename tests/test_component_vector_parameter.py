@@ -92,27 +92,27 @@ class ComponentVectorParameterTestCase(unittest.TestCase):
             return [float(x.split('=')[-1].strip()) for x in filtered]
 
     def _parse_comp(self, comp_name: str, contents: str, instance_name: str = 'instance'):
-        from antlr4 import CommonTokenStream, InputStream
-        from mccode_antlr.grammar import McCompLexer, McCompParser
+        from antlr4 import InputStream
+        from mccode_antlr.grammar import McComp_parse, McComp_ErrorListener
         from mccode_antlr.comp import CompVisitor
-        from mccode_antlr.reader.reader import ReaderErrorListener
-        lexer = McCompLexer(InputStream(contents))
-        tokens = CommonTokenStream(lexer)
-        parser = McCompParser(tokens)
-        parser.addErrorListener(ReaderErrorListener('Component', comp_name, contents))
+        from mccode_antlr.reader.reader import make_reader_error_listener
+        error_listener = make_reader_error_listener(
+            McComp_ErrorListener, 'Component', comp_name, contents
+        )
+        tree = McComp_parse(InputStream(contents), 'prog', error_listener)
         # no need to call back to the reader, so we can use a dummy visitor
         visitor = CompVisitor(self.assembler.reader, __file__, instance_name=instance_name)
-        res = visitor.visitProg(parser.prog())
+        res = visitor.visitProg(tree)
         self.assembler.reader.components[comp_name] = res
         return res
 
     def _parse_instr(self, contents: str):
-        from antlr4 import CommonTokenStream, InputStream
-        from mccode_antlr.grammar import McInstrParser, McInstrLexer
+        from antlr4 import InputStream
+        from mccode_antlr.grammar import McInstr_parse
         from mccode_antlr.instr import InstrVisitor
-        parser = McInstrParser(CommonTokenStream(McInstrLexer(InputStream(contents))))
+        tree = McInstr_parse(InputStream(contents), 'prog')
         visitor = InstrVisitor(self.assembler.reader, 'no source')
-        instr = visitor.visitProg(parser.prog())
+        instr = visitor.visitProg(tree)
         instr.flags = tuple(self.assembler.reader.c_flags)
         instr.registries = tuple(self.assembler.reader.registries)
         return instr

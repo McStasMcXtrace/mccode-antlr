@@ -5,24 +5,22 @@ from mccode_antlr.reader import Registry
 
 
 def parse_mccode_instr_parameters(contents: str):
-    from antlr4 import CommonTokenStream, InputStream
-    from mccode_antlr.grammar import McInstrParser, McInstrLexer
+    from antlr4 import InputStream
+    from mccode_antlr.grammar import McInstr_parse
     from mccode_antlr.instr import InstrParametersVisitor
-    parser = McInstrParser(CommonTokenStream(McInstrLexer(InputStream(contents))))
     visitor = InstrParametersVisitor()
-    return visitor.visitProg(parser.prog())
+    return visitor.visitProg(McInstr_parse(InputStream(contents), 'prog'))
 
 
 def parse_mccode_instr(contents: str, registry: Registry, source: str = None) -> Instr:
-    from antlr4 import CommonTokenStream, InputStream
-    from mccode_antlr.grammar import McInstrParser, McInstrLexer
+    from antlr4 import InputStream
+    from mccode_antlr.grammar import McInstr_parse
     from mccode_antlr.instr import InstrVisitor
     from mccode_antlr.reader import Reader
-    parser = McInstrParser(CommonTokenStream(McInstrLexer(InputStream(contents))))
     registries = [registry]
     reader = Reader(registries=registries)
     visitor = InstrVisitor(reader, source or '<string>')
-    instr = visitor.visitProg(parser.prog())
+    instr = visitor.visitProg(McInstr_parse(InputStream(contents), 'prog'))
     instr.flags = tuple(reader.c_flags)
     instr.registries = tuple(registries)
     return instr

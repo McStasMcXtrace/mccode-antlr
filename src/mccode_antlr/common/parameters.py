@@ -37,15 +37,12 @@ class InstrumentParameter:
 
     @staticmethod
     def parse(s: str):
-        from antlr4 import CommonTokenStream, InputStream
-        from ..grammar import McInstrParser, McInstrLexer
+        from antlr4 import InputStream
+        from ..grammar import McInstr_parse
         from ..instr import InstrVisitor
-        stream = InputStream(s)
-        lexer = McInstrLexer(stream)
-        tokens = CommonTokenStream(lexer)
-        parser = McInstrParser(tokens)
         visitor = InstrVisitor(None, None)
-        return visitor.getInstrument_parameter(parser.instrument_parameter())
+        tree = McInstr_parse(InputStream(s), 'instrument_parameter')
+        return visitor.getInstrument_parameter(tree)
 
     def copy(self):
         return InstrumentParameter(self.name, self.unit, self.value.copy())

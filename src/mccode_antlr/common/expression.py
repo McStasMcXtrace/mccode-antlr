@@ -1031,12 +1031,11 @@ class Expr:
 
     @staticmethod
     def parse(s: str):
-        from antlr4 import CommonTokenStream, InputStream
-        from ..grammar import McInstrParser, McInstrLexer
+        from antlr4 import InputStream
+        from ..grammar import McInstr_parse
         from ..instr import InstrVisitor
-        parser = McInstrParser(CommonTokenStream(McInstrLexer(InputStream(s))))
         visitor = InstrVisitor(None, None)
-        return visitor.getExpr(parser.expr())
+        return visitor.getExpr(McInstr_parse(InputStream(s), 'expr'))
 
     @classmethod
     def float(cls, value):

@@ -551,6 +551,12 @@ class McCompParser ( Parser ):
         def getRuleIndex(self):
             return McCompParser.RULE_prog
 
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitProg" ):
+                return visitor.visitProg(self)
+            else:
+                return visitor.visitChildren(self)
+
 
 
 
@@ -649,6 +655,12 @@ class McCompParser ( Parser ):
             return self.getTypedRuleContext(McCompParser.DisplayContext,0)
 
 
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitComponentDefineNew" ):
+                return visitor.visitComponentDefineNew(self)
+            else:
+                return visitor.visitChildren(self)
+
 
     class ComponentDefineCopyContext(Component_definitionContext):
 
@@ -713,6 +725,12 @@ class McCompParser ( Parser ):
         def display(self):
             return self.getTypedRuleContext(McCompParser.DisplayContext,0)
 
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitComponentDefineCopy" ):
+                return visitor.visitComponentDefineCopy(self)
+            else:
+                return visitor.visitChildren(self)
 
 
 
@@ -1010,6 +1028,12 @@ class McCompParser ( Parser ):
             return self.getTypedRuleContext(McCompParser.Unparsed_blockContext,0)
 
 
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitTraceBlock" ):
+                return visitor.visitTraceBlock(self)
+            else:
+                return visitor.visitChildren(self)
+
 
     class TraceBlockCopyContext(Component_traceContext):
 
@@ -1028,6 +1052,12 @@ class McCompParser ( Parser ):
         def unparsed_block(self):
             return self.getTypedRuleContext(McCompParser.Unparsed_blockContext,0)
 
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitTraceBlockCopy" ):
+                return visitor.visitTraceBlockCopy(self)
+            else:
+                return visitor.visitChildren(self)
 
 
 
@@ -1102,6 +1132,12 @@ class McCompParser ( Parser ):
         def getRuleIndex(self):
             return McCompParser.RULE_component_parameter_set
 
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitComponent_parameter_set" ):
+                return visitor.visitComponent_parameter_set(self)
+            else:
+                return visitor.visitChildren(self)
+
 
 
 
@@ -1165,6 +1201,12 @@ class McCompParser ( Parser ):
         def getRuleIndex(self):
             return McCompParser.RULE_component_define_parameters
 
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitComponent_define_parameters" ):
+                return visitor.visitComponent_define_parameters(self)
+            else:
+                return visitor.visitChildren(self)
+
 
 
 
@@ -1208,6 +1250,12 @@ class McCompParser ( Parser ):
 
         def getRuleIndex(self):
             return McCompParser.RULE_component_set_parameters
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitComponent_set_parameters" ):
+                return visitor.visitComponent_set_parameters(self)
+            else:
+                return visitor.visitChildren(self)
 
 
 
@@ -1255,6 +1303,12 @@ class McCompParser ( Parser ):
 
         def getRuleIndex(self):
             return McCompParser.RULE_component_out_parameters
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitComponent_out_parameters" ):
+                return visitor.visitComponent_out_parameters(self)
+            else:
+                return visitor.visitChildren(self)
 
 
 
@@ -1314,6 +1368,12 @@ class McCompParser ( Parser ):
 
         def getRuleIndex(self):
             return McCompParser.RULE_component_parameters
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitComponent_parameters" ):
+                return visitor.visitComponent_parameters(self)
+            else:
+                return visitor.visitChildren(self)
 
 
 
@@ -1391,6 +1451,12 @@ class McCompParser ( Parser ):
             return self.getTypedRuleContext(McCompParser.ExprContext,0)
 
 
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitComponentParameterSymbol" ):
+                return visitor.visitComponentParameterSymbol(self)
+            else:
+                return visitor.visitChildren(self)
+
 
     class ComponentParameterDoubleArrayContext(Component_parameterContext):
 
@@ -1415,6 +1481,12 @@ class McCompParser ( Parser ):
         def Null(self):
             return self.getToken(McCompParser.Null, 0)
 
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitComponentParameterDoubleArray" ):
+                return visitor.visitComponentParameterDoubleArray(self)
+            else:
+                return visitor.visitChildren(self)
+
 
     class ComponentParameterDoubleContext(Component_parameterContext):
 
@@ -1431,6 +1503,12 @@ class McCompParser ( Parser ):
         def expr(self):
             return self.getTypedRuleContext(McCompParser.ExprContext,0)
 
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitComponentParameterDouble" ):
+                return visitor.visitComponentParameterDouble(self)
+            else:
+                return visitor.visitChildren(self)
 
 
     class ComponentParameterVectorContext(Component_parameterContext):
@@ -1454,6 +1532,12 @@ class McCompParser ( Parser ):
         def Null(self):
             return self.getToken(McCompParser.Null, 0)
 
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitComponentParameterVector" ):
+                return visitor.visitComponentParameterVector(self)
+            else:
+                return visitor.visitChildren(self)
+
 
     class ComponentParameterIntegerContext(Component_parameterContext):
 
@@ -1470,6 +1554,12 @@ class McCompParser ( Parser ):
         def expr(self):
             return self.getTypedRuleContext(McCompParser.ExprContext,0)
 
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitComponentParameterInteger" ):
+                return visitor.visitComponentParameterInteger(self)
+            else:
+                return visitor.visitChildren(self)
 
 
     class ComponentParameterIntegerArrayContext(Component_parameterContext):
@@ -1495,6 +1585,12 @@ class McCompParser ( Parser ):
         def Null(self):
             return self.getToken(McCompParser.Null, 0)
 
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitComponentParameterIntegerArray" ):
+                return visitor.visitComponentParameterIntegerArray(self)
+            else:
+                return visitor.visitChildren(self)
+
 
     class ComponentParameterStringContext(Component_parameterContext):
 
@@ -1516,6 +1612,12 @@ class McCompParser ( Parser ):
             return self.getToken(McCompParser.StringLiteral, 0)
         def Null(self):
             return self.getToken(McCompParser.Null, 0)
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitComponentParameterString" ):
+                return visitor.visitComponentParameterString(self)
+            else:
+                return visitor.visitChildren(self)
 
 
 
@@ -1808,6 +1910,12 @@ class McCompParser ( Parser ):
             return self.getTypedRuleContext(McCompParser.Unparsed_blockContext,0)
 
 
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitShareBlock" ):
+                return visitor.visitShareBlock(self)
+            else:
+                return visitor.visitChildren(self)
+
 
     class ShareBlockCopyContext(ShareContext):
 
@@ -1826,6 +1934,12 @@ class McCompParser ( Parser ):
         def unparsed_block(self):
             return self.getTypedRuleContext(McCompParser.Unparsed_blockContext,0)
 
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitShareBlockCopy" ):
+                return visitor.visitShareBlockCopy(self)
+            else:
+                return visitor.visitChildren(self)
 
 
 
@@ -1913,6 +2027,12 @@ class McCompParser ( Parser ):
             return self.getTypedRuleContext(McCompParser.Unparsed_blockContext,0)
 
 
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitDisplayBlockCopy" ):
+                return visitor.visitDisplayBlockCopy(self)
+            else:
+                return visitor.visitChildren(self)
+
 
     class DisplayBlockContext(DisplayContext):
 
@@ -1925,6 +2045,12 @@ class McCompParser ( Parser ):
         def unparsed_block(self):
             return self.getTypedRuleContext(McCompParser.Unparsed_blockContext,0)
 
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitDisplayBlock" ):
+                return visitor.visitDisplayBlock(self)
+            else:
+                return visitor.visitChildren(self)
 
 
 
@@ -2002,6 +2128,12 @@ class McCompParser ( Parser ):
         def getRuleIndex(self):
             return McCompParser.RULE_component_ref
 
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitComponent_ref" ):
+                return visitor.visitComponent_ref(self)
+            else:
+                return visitor.visitChildren(self)
+
 
 
 
@@ -2077,6 +2209,12 @@ class McCompParser ( Parser ):
         def getRuleIndex(self):
             return McCompParser.RULE_coords
 
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitCoords" ):
+                return visitor.visitCoords(self)
+            else:
+                return visitor.visitChildren(self)
+
 
 
 
@@ -2128,6 +2266,12 @@ class McCompParser ( Parser ):
 
         def getRuleIndex(self):
             return McCompParser.RULE_reference
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitReference" ):
+                return visitor.visitReference(self)
+            else:
+                return visitor.visitChildren(self)
 
 
 
@@ -2192,6 +2336,12 @@ class McCompParser ( Parser ):
         def getRuleIndex(self):
             return McCompParser.RULE_dependency
 
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitDependency" ):
+                return visitor.visitDependency(self)
+            else:
+                return visitor.visitChildren(self)
+
 
 
 
@@ -2243,6 +2393,12 @@ class McCompParser ( Parser ):
             return self.getTypedRuleContext(McCompParser.Unparsed_blockContext,0)
 
 
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitDeclareBlock" ):
+                return visitor.visitDeclareBlock(self)
+            else:
+                return visitor.visitChildren(self)
+
 
     class DeclareBlockCopyContext(DeclareContext):
 
@@ -2261,6 +2417,12 @@ class McCompParser ( Parser ):
         def unparsed_block(self):
             return self.getTypedRuleContext(McCompParser.Unparsed_blockContext,0)
 
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitDeclareBlockCopy" ):
+                return visitor.visitDeclareBlockCopy(self)
+            else:
+                return visitor.visitChildren(self)
 
 
 
@@ -2330,6 +2492,12 @@ class McCompParser ( Parser ):
         def getRuleIndex(self):
             return McCompParser.RULE_uservars
 
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitUservars" ):
+                return visitor.visitUservars(self)
+            else:
+                return visitor.visitChildren(self)
+
 
 
 
@@ -2381,6 +2549,12 @@ class McCompParser ( Parser ):
             return self.getTypedRuleContext(McCompParser.Unparsed_blockContext,0)
 
 
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitInitializeBlock" ):
+                return visitor.visitInitializeBlock(self)
+            else:
+                return visitor.visitChildren(self)
+
 
     class InitializeBlockCopyContext(InitialiseContext):
 
@@ -2399,6 +2573,12 @@ class McCompParser ( Parser ):
         def unparsed_block(self):
             return self.getTypedRuleContext(McCompParser.Unparsed_blockContext,0)
 
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitInitializeBlockCopy" ):
+                return visitor.visitInitializeBlockCopy(self)
+            else:
+                return visitor.visitChildren(self)
 
 
 
@@ -2486,6 +2666,12 @@ class McCompParser ( Parser ):
             return self.getTypedRuleContext(McCompParser.Unparsed_blockContext,0)
 
 
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitSaveBlockCopy" ):
+                return visitor.visitSaveBlockCopy(self)
+            else:
+                return visitor.visitChildren(self)
+
 
     class SaveBlockContext(SaveContext):
 
@@ -2498,6 +2684,12 @@ class McCompParser ( Parser ):
         def unparsed_block(self):
             return self.getTypedRuleContext(McCompParser.Unparsed_blockContext,0)
 
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitSaveBlock" ):
+                return visitor.visitSaveBlock(self)
+            else:
+                return visitor.visitChildren(self)
 
 
 
@@ -2579,6 +2771,12 @@ class McCompParser ( Parser ):
             return self.getTypedRuleContext(McCompParser.Unparsed_blockContext,0)
 
 
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitFinallyBlock" ):
+                return visitor.visitFinallyBlock(self)
+            else:
+                return visitor.visitChildren(self)
+
 
     class FinallyBlockCopyContext(Finally_Context):
 
@@ -2597,6 +2795,12 @@ class McCompParser ( Parser ):
         def unparsed_block(self):
             return self.getTypedRuleContext(McCompParser.Unparsed_blockContext,0)
 
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitFinallyBlockCopy" ):
+                return visitor.visitFinallyBlockCopy(self)
+            else:
+                return visitor.visitChildren(self)
 
 
 
@@ -2680,6 +2884,12 @@ class McCompParser ( Parser ):
         def getRuleIndex(self):
             return McCompParser.RULE_metadata
 
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitMetadata" ):
+                return visitor.visitMetadata(self)
+            else:
+                return visitor.visitChildren(self)
+
 
 
 
@@ -2737,6 +2947,12 @@ class McCompParser ( Parser ):
 
         def getRuleIndex(self):
             return McCompParser.RULE_category
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitCategory" ):
+                return visitor.visitCategory(self)
+            else:
+                return visitor.visitChildren(self)
 
 
 
@@ -2797,6 +3013,12 @@ class McCompParser ( Parser ):
         def getRuleIndex(self):
             return McCompParser.RULE_initializerlist
 
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitInitializerlist" ):
+                return visitor.visitInitializerlist(self)
+            else:
+                return visitor.visitChildren(self)
+
 
 
 
@@ -2856,6 +3078,12 @@ class McCompParser ( Parser ):
         def getRuleIndex(self):
             return McCompParser.RULE_assignment
 
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitAssignment" ):
+                return visitor.visitAssignment(self)
+            else:
+                return visitor.visitChildren(self)
+
 
 
 
@@ -2913,6 +3141,12 @@ class McCompParser ( Parser ):
                 return self.getTypedRuleContext(McCompParser.ExprContext,i)
 
 
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitExpressionBinaryMod" ):
+                return visitor.visitExpressionBinaryMod(self)
+            else:
+                return visitor.visitChildren(self)
+
 
     class ExpressionBinaryLessContext(ExprContext):
 
@@ -2930,6 +3164,12 @@ class McCompParser ( Parser ):
             else:
                 return self.getTypedRuleContext(McCompParser.ExprContext,i)
 
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitExpressionBinaryLess" ):
+                return visitor.visitExpressionBinaryLess(self)
+            else:
+                return visitor.visitChildren(self)
 
 
     class ExpressionBinaryGreaterContext(ExprContext):
@@ -2949,6 +3189,12 @@ class McCompParser ( Parser ):
                 return self.getTypedRuleContext(McCompParser.ExprContext,i)
 
 
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitExpressionBinaryGreater" ):
+                return visitor.visitExpressionBinaryGreater(self)
+            else:
+                return visitor.visitChildren(self)
+
 
     class ExpressionBinaryLessEqualContext(ExprContext):
 
@@ -2967,6 +3213,12 @@ class McCompParser ( Parser ):
                 return self.getTypedRuleContext(McCompParser.ExprContext,i)
 
 
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitExpressionBinaryLessEqual" ):
+                return visitor.visitExpressionBinaryLessEqual(self)
+            else:
+                return visitor.visitChildren(self)
+
 
     class ExpressionArrayAccessContext(ExprContext):
 
@@ -2983,6 +3235,12 @@ class McCompParser ( Parser ):
 
         def RightBracket(self):
             return self.getToken(McCompParser.RightBracket, 0)
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitExpressionArrayAccess" ):
+                return visitor.visitExpressionArrayAccess(self)
+            else:
+                return visitor.visitChildren(self)
 
 
     class ExpressionBinaryLogicContext(ExprContext):
@@ -3004,6 +3262,12 @@ class McCompParser ( Parser ):
         def OrOr(self):
             return self.getToken(McCompParser.OrOr, 0)
 
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitExpressionBinaryLogic" ):
+                return visitor.visitExpressionBinaryLogic(self)
+            else:
+                return visitor.visitChildren(self)
+
 
     class ExpressionIntegerContext(ExprContext):
 
@@ -3013,6 +3277,12 @@ class McCompParser ( Parser ):
 
         def IntegerLiteral(self):
             return self.getToken(McCompParser.IntegerLiteral, 0)
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitExpressionInteger" ):
+                return visitor.visitExpressionInteger(self)
+            else:
+                return visitor.visitChildren(self)
 
 
     class ExpressionBinaryRightShiftContext(ExprContext):
@@ -3030,6 +3300,12 @@ class McCompParser ( Parser ):
                 return self.getTypedRuleContext(McCompParser.ExprContext,i)
 
 
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitExpressionBinaryRightShift" ):
+                return visitor.visitExpressionBinaryRightShift(self)
+            else:
+                return visitor.visitChildren(self)
+
 
     class ExpressionMyselfContext(ExprContext):
 
@@ -3039,6 +3315,12 @@ class McCompParser ( Parser ):
 
         def Myself(self):
             return self.getToken(McCompParser.Myself, 0)
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitExpressionMyself" ):
+                return visitor.visitExpressionMyself(self)
+            else:
+                return visitor.visitChildren(self)
 
 
     class ExpressionPreviousContext(ExprContext):
@@ -3050,6 +3332,12 @@ class McCompParser ( Parser ):
         def Previous(self):
             return self.getToken(McCompParser.Previous, 0)
 
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitExpressionPrevious" ):
+                return visitor.visitExpressionPrevious(self)
+            else:
+                return visitor.visitChildren(self)
+
 
     class ExpressionIdentifierContext(ExprContext):
 
@@ -3059,6 +3347,12 @@ class McCompParser ( Parser ):
 
         def Identifier(self):
             return self.getToken(McCompParser.Identifier, 0)
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitExpressionIdentifier" ):
+                return visitor.visitExpressionIdentifier(self)
+            else:
+                return visitor.visitChildren(self)
 
 
     class ExpressionStructAccessContext(ExprContext):
@@ -3074,6 +3368,12 @@ class McCompParser ( Parser ):
         def expr(self):
             return self.getTypedRuleContext(McCompParser.ExprContext,0)
 
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitExpressionStructAccess" ):
+                return visitor.visitExpressionStructAccess(self)
+            else:
+                return visitor.visitChildren(self)
 
 
     class ExpressionFunctionCallContext(ExprContext):
@@ -3102,6 +3402,12 @@ class McCompParser ( Parser ):
             else:
                 return self.getToken(McCompParser.Comma, i)
 
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitExpressionFunctionCall" ):
+                return visitor.visitExpressionFunctionCall(self)
+            else:
+                return visitor.visitChildren(self)
+
 
     class ExpressionBinaryMDContext(ExprContext):
 
@@ -3122,6 +3428,12 @@ class McCompParser ( Parser ):
         def Div(self):
             return self.getToken(McCompParser.Div, 0)
 
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitExpressionBinaryMD" ):
+                return visitor.visitExpressionBinaryMD(self)
+            else:
+                return visitor.visitChildren(self)
+
 
     class ExpressionStringContext(ExprContext):
 
@@ -3137,6 +3449,12 @@ class McCompParser ( Parser ):
             else:
                 return self.getToken(McCompParser.StringLiteral, i)
 
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitExpressionString" ):
+                return visitor.visitExpressionString(self)
+            else:
+                return visitor.visitChildren(self)
+
 
     class ExpressionGroupingContext(ExprContext):
 
@@ -3151,6 +3469,12 @@ class McCompParser ( Parser ):
 
         def RightParen(self):
             return self.getToken(McCompParser.RightParen, 0)
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitExpressionGrouping" ):
+                return visitor.visitExpressionGrouping(self)
+            else:
+                return visitor.visitChildren(self)
 
 
     class ExpressionExponentiationContext(ExprContext):
@@ -3170,6 +3494,12 @@ class McCompParser ( Parser ):
                 return self.getTypedRuleContext(McCompParser.ExprContext,i)
 
 
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitExpressionExponentiation" ):
+                return visitor.visitExpressionExponentiation(self)
+            else:
+                return visitor.visitChildren(self)
+
 
     class ExpressionBinaryLeftShiftContext(ExprContext):
 
@@ -3185,6 +3515,12 @@ class McCompParser ( Parser ):
             else:
                 return self.getTypedRuleContext(McCompParser.ExprContext,i)
 
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitExpressionBinaryLeftShift" ):
+                return visitor.visitExpressionBinaryLeftShift(self)
+            else:
+                return visitor.visitChildren(self)
 
 
     class ExpressionBinaryGreaterEqualContext(ExprContext):
@@ -3204,6 +3540,12 @@ class McCompParser ( Parser ):
                 return self.getTypedRuleContext(McCompParser.ExprContext,i)
 
 
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitExpressionBinaryGreaterEqual" ):
+                return visitor.visitExpressionBinaryGreaterEqual(self)
+            else:
+                return visitor.visitChildren(self)
+
 
     class ExpressionZeroContext(ExprContext):
 
@@ -3211,6 +3553,12 @@ class McCompParser ( Parser ):
             super().__init__(parser)
             self.copyFrom(ctx)
 
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitExpressionZero" ):
+                return visitor.visitExpressionZero(self)
+            else:
+                return visitor.visitChildren(self)
 
 
     class ExpressionUnaryPMContext(ExprContext):
@@ -3226,6 +3574,12 @@ class McCompParser ( Parser ):
             return self.getToken(McCompParser.Plus, 0)
         def Minus(self):
             return self.getToken(McCompParser.Minus, 0)
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitExpressionUnaryPM" ):
+                return visitor.visitExpressionUnaryPM(self)
+            else:
+                return visitor.visitChildren(self)
 
 
     class ExpressionTrinaryLogicContext(ExprContext):
@@ -3248,6 +3602,12 @@ class McCompParser ( Parser ):
                 return self.getTypedRuleContext(McCompParser.ExprContext,i)
 
 
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitExpressionTrinaryLogic" ):
+                return visitor.visitExpressionTrinaryLogic(self)
+            else:
+                return visitor.visitChildren(self)
+
 
     class ExpressionFloatContext(ExprContext):
 
@@ -3257,6 +3617,12 @@ class McCompParser ( Parser ):
 
         def FloatingLiteral(self):
             return self.getToken(McCompParser.FloatingLiteral, 0)
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitExpressionFloat" ):
+                return visitor.visitExpressionFloat(self)
+            else:
+                return visitor.visitChildren(self)
 
 
     class ExpressionPointerAccessContext(ExprContext):
@@ -3272,6 +3638,12 @@ class McCompParser ( Parser ):
         def expr(self):
             return self.getTypedRuleContext(McCompParser.ExprContext,0)
 
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitExpressionPointerAccess" ):
+                return visitor.visitExpressionPointerAccess(self)
+            else:
+                return visitor.visitChildren(self)
 
 
     class ExpressionBinaryEqualContext(ExprContext):
@@ -3290,6 +3662,12 @@ class McCompParser ( Parser ):
             else:
                 return self.getTypedRuleContext(McCompParser.ExprContext,i)
 
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitExpressionBinaryEqual" ):
+                return visitor.visitExpressionBinaryEqual(self)
+            else:
+                return visitor.visitChildren(self)
 
 
     class ExpressionBinaryPMContext(ExprContext):
@@ -3311,6 +3689,12 @@ class McCompParser ( Parser ):
         def Minus(self):
             return self.getToken(McCompParser.Minus, 0)
 
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitExpressionBinaryPM" ):
+                return visitor.visitExpressionBinaryPM(self)
+            else:
+                return visitor.visitChildren(self)
+
 
     class ExpressionUnaryLogicContext(ExprContext):
 
@@ -3323,6 +3707,12 @@ class McCompParser ( Parser ):
         def expr(self):
             return self.getTypedRuleContext(McCompParser.ExprContext,0)
 
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitExpressionUnaryLogic" ):
+                return visitor.visitExpressionUnaryLogic(self)
+            else:
+                return visitor.visitChildren(self)
 
 
 
@@ -3753,6 +4143,12 @@ class McCompParser ( Parser ):
         def getRuleIndex(self):
             return McCompParser.RULE_shell
 
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitShell" ):
+                return visitor.visitShell(self)
+            else:
+                return visitor.visitChildren(self)
+
 
 
 
@@ -3803,6 +4199,12 @@ class McCompParser ( Parser ):
         def StringLiteral(self):
             return self.getToken(McCompParser.StringLiteral, 0)
 
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitSearchPath" ):
+                return visitor.visitSearchPath(self)
+            else:
+                return visitor.visitChildren(self)
+
 
     class SearchShellContext(SearchContext):
 
@@ -3816,6 +4218,12 @@ class McCompParser ( Parser ):
             return self.getToken(McCompParser.Shell, 0)
         def StringLiteral(self):
             return self.getToken(McCompParser.StringLiteral, 0)
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitSearchShell" ):
+                return visitor.visitSearchShell(self)
+            else:
+                return visitor.visitChildren(self)
 
 
 
@@ -3869,6 +4277,12 @@ class McCompParser ( Parser ):
 
         def getRuleIndex(self):
             return McCompParser.RULE_unparsed_block
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitUnparsed_block" ):
+                return visitor.visitUnparsed_block(self)
+            else:
+                return visitor.visitChildren(self)
 
 
 

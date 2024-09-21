@@ -7,25 +7,27 @@ from .registry import Registry, MCSTAS_REGISTRY, registries_match, registry_from
 from ..comp import Comp
 from ..common import Mode
 
+def make_reader_error_listener(super_class, filetype, name, source, pre=5, post=2):
+    class ReaderErrorListener(super_class):
+        def __init__(self):
+            self.filetype = filetype
+            self.name = name
+            self.source = source
+            self.pre = pre
+            self.post = post
 
-class ReaderErrorListener(ErrorListener):
-    def __init__(self, filetype: str, name: str, source: str, pre=5, post=2):
-        self.filetype = filetype
-        self.name = name
-        self.source = source
-        self.pre = pre
-        self.post = post
+        def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
+            logger.error(f'Syntax error in parsing {self.filetype} {self.name} at {line},{column}')
+            lines = self.source.split('\n')
+            pre_lines = lines[line-self.pre:line]
+            post_lines = lines[line:line+self.post]
+            for line in pre_lines:
+                logger.info(line)
+            logger.error('~'*column + '^ ' + msg)
+            for line in post_lines:
+                logger.info(line)
 
-    def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
-        logger.error(f'Syntax error in parsing {self.filetype} {self.name} at {line},{column}')
-        lines = self.source.split('\n')
-        pre_lines = lines[line-self.pre:line]
-        post_lines = lines[line:line+self.post]
-        for line in pre_lines:
-            logger.info(line)
-        logger.error('~'*column + '^ ' + msg)
-        for line in post_lines:
-            logger.info(line)
+    return ReaderErrorListener()
 
 
 @dataclass
@@ -92,18 +94,19 @@ class Reader:
     def add_component(self, name: str, current_instance_name=None):
         if name in self.components:
             raise RuntimeError("The named component is already known.")
-        from antlr4 import CommonTokenStream, FileStream
-        from ..grammar import McCompLexer, McCompParser
+        from antlr4 import FileStream
+        from ..grammar import McComp_ErrorListener, McComp_parse
         from ..comp import CompVisitor
         filename = str(self.locate(name, ext='.comp').resolve())
         with open(filename, 'r') as file:
             source = file.read()
-        lexer = McCompLexer(FileStream(filename, encoding='utf8'))
-        tokens = CommonTokenStream(lexer)
-        parser = McCompParser(tokens)
-        parser.addErrorListener(ReaderErrorListener('Component', name, source))
+
+        stream = FileStream(filename, encoding='utf8')
+        error_listener = make_reader_error_listener(McComp_ErrorListener, 'Component', name, source)
+        tree = McComp_parse(stream, 'prog', error_listener)
+
         visitor = CompVisitor(self, filename, instance_name=current_instance_name)  # The visitor needs to be able to call *this* method
-        res = visitor.visitProg(parser.prog())
+        res = visitor.visitProg(tree)
         if not isinstance(res, Comp):
             raise RuntimeError(f'Parsing component file {filename} did not produce a component object!')
         if res.category is None:
@@ -125,8 +128,8 @@ class Reader:
         In McCode3 fashion, the instrument file *should* be in the current working directory.
         In new-fashion, the registry/registries will be checked if it is not.
         """
-        from antlr4 import CommonTokenStream, FileStream
-        from ..grammar import McInstrParser, McInstrLexer
+        from antlr4 import FileStream
+        from ..grammar import McInstr_parse, McInstr_ErrorListener
         from ..instr import InstrVisitor, Instr
         path = name if isinstance(name, Path) else Path(name)
         if path.suffix != '.instr':
@@ -138,12 +141,15 @@ class Reader:
         filename = str(path.resolve())
         with open(filename, 'r') as file:
             source = file.read()
-        lexer = McInstrLexer(FileStream(filename, encoding='utf8'))
-        tokens = CommonTokenStream(lexer)
-        parser = McInstrParser(tokens)
-        parser.addErrorListener(ReaderErrorListener('Instrument', name, source))
+
+        stream = FileStream(filename, encoding='utf8')
+        error_listener = make_reader_error_listener(
+            McInstr_ErrorListener, 'Instrument', name, source
+        )
+        tree = McInstr_parse(stream, 'prog', error_listener)
+
         visitor = InstrVisitor(self, filename, destination=destination, mode=mode)
-        res = visitor.visitProg(parser.prog())
+        res = visitor.visitProg(tree)
         if not isinstance(res, Instr):
             raise RuntimeError(f'Parsing instrument file {filename} did not produce an Instr object')
         res.source = filename

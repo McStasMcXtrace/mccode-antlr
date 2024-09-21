@@ -102,7 +102,7 @@ def rebuild_speedy_language(grammar_file, features: list[Feature], output: Path,
     cpp_output_dir = grammar_file.parent / str(Target.cpp)
 
     rebuild_language(grammar_file, Target.cpp, features, verbose=verbose, output=cpp_output_dir)
-    rebuild_language(grammar_file, Target.python, [], verbose=verbose, output=output)
+    rebuild_language(grammar_file, Target.python, features, verbose=verbose, output=output)
 
     py_parser_path = output / f'{grammar_file.stem}Parser.py'
     generate(str(py_parser_path), cpp_output_dir)

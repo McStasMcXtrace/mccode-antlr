@@ -2,8 +2,8 @@ from unittest import TestCase
 
 class TestExtract(TestCase):
     def test_runtime_parameter(self):
-        from antlr4 import CommonTokenStream, InputStream
-        from mccode_antlr.grammar import McInstrParser, McInstrLexer
+        from antlr4 import InputStream
+        from mccode_antlr.grammar import McInstr_parse
         from mccode_antlr.instr import InstrVisitor
         from mccode_antlr.reader import MCSTAS_REGISTRY, Reader
         from mccode_antlr.common.expression import Value, ObjectType
@@ -24,10 +24,10 @@ class TestExtract(TestCase):
         COMPONENT monitor = PSD_monitor(nx=par, ny=par, xwidth=0.1, yheight=0.1) AT (0, 0, 10.1) RELATIVE PREVIOUS
         END
         """
-        parser = McInstrParser(CommonTokenStream(McInstrLexer(InputStream(instr_source))))
+        tree = McInstr_parse(InputStream(instr_source), 'prog')
         visitor = InstrVisitor(Reader(registries=[MCSTAS_REGISTRY, ]), __file__)
         # Parse the instrument definition and return an Instr object
-        instr = visitor.visitProg(parser.prog())
+        instr = visitor.visitProg(tree)
         nx = instr.components[-1].get_parameter('nx')
 
         self.assertFalse(nx.value.is_parameter)

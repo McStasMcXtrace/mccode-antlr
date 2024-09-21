@@ -2,7 +2,6 @@ from loguru import logger
 from ..grammar import CParser, CListener, McInstrParser
 from ..instr import InstrVisitor
 from ..common import Expr
-from antlr4.error.ErrorListener import ErrorListener
 
 
 def literal_string(ctx):
@@ -11,22 +10,25 @@ def literal_string(ctx):
     return stream.getText(start_token.start, stop_token.stop)
 
 
-class CErrorListener(ErrorListener):
-    def __init__(self, source: str, pre=5, post=2):
-        self.source = source
-        self.pre = pre
-        self.post = post
+def make_error_listener(super_class, source: str, pre=5, post=2):
+    class ErrorListener(super_class):
+        def __init__(self):
+            self.source = source
+            self.pre = pre
+            self.post = post
 
-    def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
-        logger.error(f'Syntax error in parsing {line},{column}')
-        lines = self.source.split('\n')
-        pre_lines = lines[line-self.pre:line]
-        post_lines = lines[line:line+self.post]
-        for line in pre_lines:
-            logger.info(line)
-        logger.error('~'*column + '^ ' + msg)
-        for line in post_lines:
-            logger.info(line)
+        def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
+            logger.error(f'Syntax error in parsing {line},{column}')
+            lines = self.source.split('\n')
+            pre_lines = lines[line-self.pre:line]
+            post_lines = lines[line:line+self.post]
+            for line in pre_lines:
+                logger.info(line)
+            logger.error('~'*column + '^ ' + msg)
+            for line in post_lines:
+                logger.info(line)
+
+    return ErrorListener()
 
 
 class DeclaresCListener(CListener):
@@ -148,6 +150,7 @@ class EvalCVisitor(InstrVisitor):
 def extract_c_declared_variables_and_defined_types(block: str, user_types: list = None, verbose=False):
     from antlr4 import InputStream, CommonTokenStream
     from antlr4 import ParseTreeWalker
+    from antlr4.error.ErrorListener import ErrorListener
     from ..grammar import CLexer
     # self.debug('Load block into ANTLR4 stream')
     # self.debug(f'{block}')
@@ -158,7 +161,7 @@ def extract_c_declared_variables_and_defined_types(block: str, user_types: list 
     tokens = CommonTokenStream(lexer)
     # self.debug('Parse tokens')
     parser = CParser(tokens)
-    parser.addErrorListener(CErrorListener(block))
+    parser.addErrorListener(make_error_listener(ErrorListener, block))
     # self.debug('Extract compilation unit tree')
     tree = parser.compilationUnit()
     # self.debug('Initialize listener')
@@ -183,16 +186,15 @@ def extract_c_defined_then_declared_variables(defined_in_block: str, declared_in
 def evaluate_c_defined_variables(variables: dict[str, str], initialized_in: str, known: dict[str, Expr] = None,
                                  verbose=False):
     """Evaluate individual statements from C-like source in an attempt to find values for the provided variables"""
-    from antlr4 import InputStream, CommonTokenStream
-    from ..grammar import McInstrLexer, McInstrParser
+    from antlr4 import InputStream
+    from ..grammar import McInstr_parse, McInstr_ErrorListener
     from ..common import Expr, DataType
     lines = [f'{line};' for line in initialized_in.split(';') if len(line.strip())]
     found = {} if known is None else known
     for line in lines:
-        parser = McInstrParser(CommonTokenStream(McInstrLexer(InputStream(line))))
-        parser.addErrorListener((CErrorListener(line)))
+        tree = McInstr_parse(InputStream(line), 'assignment', make_error_listener(McInstr_ErrorListener, line))
         visitor = EvalCVisitor(found=found, verbose=verbose)
-        visitor.visitAssignment(parser.assignment())
+        visitor.visitAssignment(tree)
         found = visitor.assigned
 
     def get_found(name, data_type):

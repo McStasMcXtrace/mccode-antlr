@@ -9,3 +9,6 @@
 *build/
 *.egg-info/
 *.c
+*.so
+*.dll
+*.dynlib
