@@ -392,7 +392,7 @@ class TestExpression(TestCase):
         self.assertEqual(atan2_y_x, expr)
 
     def test_instrument_parameter(self):
-        from antlr4 import, InputStream
+        from antlr4 import InputStream
         from mccode_antlr.grammar import McInstr_parse
         from mccode_antlr.instr import InstrVisitor
         from mccode_antlr.reader import MCSTAS_REGISTRY, Reader

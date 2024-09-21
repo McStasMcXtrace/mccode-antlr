@@ -17,14 +17,20 @@ def make_error_listener(super_class, source: str, pre=5, post=2):
             self.pre = pre
             self.post = post
 
-        def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
+        def syntaxError(self, recognizer, offendingSymbol, *args, **kwargs):
+            if len(args) == 4 and isinstance(args[3], str):
+                # The 'speedy-antlr' syntax
+                char_index, line, column, msg = args
+            else:
+                # the antlr4 (4.13.0) syntax
+                line, column, msg, e = args
             logger.error(f'Syntax error in parsing {line},{column}')
             lines = self.source.split('\n')
             pre_lines = lines[line-self.pre:line]
             post_lines = lines[line:line+self.post]
             for line in pre_lines:
                 logger.info(line)
-            logger.error('~'*column + '^ ' + msg)
+            logger.error('~'*column + '^ ' + str(msg))
             for line in post_lines:
                 logger.info(line)
 

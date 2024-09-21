@@ -1008,9 +1008,12 @@ class Value:
             self._object = ObjectType.parameter
 
 
+ExprNodeSingular = Value | UnaryOp | BinaryOp | TrinaryOp
+ExprNode = ExprNodeSingular | list[ExprNodeSingular]
+
 
 class Expr:
-    def __init__(self, expr: Union[Value, UnaryOp, BinaryOp, list[Union[Value, UnaryOp, BinaryOp]]]):
+    def __init__(self, expr: ExprNode):
         self.expr = expr if isinstance(expr, list) else [expr]
 
     def __str__(self):

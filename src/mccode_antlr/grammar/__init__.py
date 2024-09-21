@@ -1,12 +1,14 @@
 def _import_component_language():
     from .sa_mccomp import parse, SA_ErrorListener
-    from .McCompVisitor import McCompVisitor, McCompParser
+    from .McCompVisitor import McCompVisitor
+    from .McCompParser import McCompParser
     return parse, SA_ErrorListener, McCompVisitor, McCompParser
 
 
 def _import_instrument_language():
     from .sa_mcinstr import parse, SA_ErrorListener
-    from McInstrVisitor import McInstrVisitor, McInstrParser
+    from .McInstrVisitor import McInstrVisitor
+    from .McInstrParser import McInstrParser
     return parse, SA_ErrorListener, McInstrVisitor, McInstrParser
 
 
