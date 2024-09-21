@@ -10,9 +10,17 @@ on:
     types:
       - published
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event.action == 'published' }}
+
+defaults:
+  run:
+    shell: bash -l {0}
+
 jobs:
-  build_sdist_and_wheel:
-    name: Build SDist and Wheel
+  build_sdist:
+    name: Build Source
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -21,32 +29,85 @@ jobs:
         submodules: true
 
     - name: Build SDist
-      run: pipx run build
+      run: pipx run build --sdict
 
     - name: Check metadata
       run: pipx run twine check dist/*
 
     - uses: actions/upload-artifact@v4
       with:
-        path: dist/*
+        name: dist
+        path: dist/*.tar.gz
+
+  cibuildwheel:
+    name: "${{ matrix.variant.platform }} on ${{ matrix.variant.os }}"
+    runs-on: ${{ matrix.variant.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        variant:
+          - { os: ubuntu-22.04, platform: 'manylinux' }
+          - { os: ubuntu-22.04, platform: 'musllinux' }
+          - { os: macos-13, platform: 'macosx' }  # Intel support
+          - { os: macos-14, platform: 'macosx' }  # Apple silicon support
+          - { os: windows-2022, platform: "win" }
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - uses: actions/setup-python@v5
+      with:
+        python-version: 3.8
+      if: runner.os == 'macOS' && runner.arch == 'ARM64'
+
+    - uses: pypa/cibuildwheel@v2.20.0
+      env:
+        CIBW_BUILD: "*-${{ matrix.variant.platform }}*"
+        MACOSX_DEPLOYMENT_TARGET: "10.15"
+
+    - name: Verify clean directory
+      run: git diff --exit-code
+      shell: bash
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: "cibw-wheels-${{ matrix.variant.platform }}-${{ matrix.variant.os }}"
+        path: wheelhouse/*.whl
 
   upload_all:
     name: Upload if release
-    needs: [build_sdist_and_wheel]
+    needs: [build_sdist, cibuildwheel]
     runs-on: ubuntu-latest
     environment:
       name: pypi
       url: https://pypi.org/p/mccode_antlr
     permissions:
       id-token: write
-    if: github.event_name == 'release' && github.event.action == 'published'
+      contents: write
+    if: github.event_name == 'release'
 
     steps:
     - uses: actions/setup-python@v5
 
     - uses: actions/download-artifact@v4
+      id: download
       with:
-        name: artifact
-        path: dist
+        path: artifacts
 
-    - uses: pypa/gh-action-pypi-publish@release/v1
+    - name: Move artifacts into a single folder
+      run: |
+        mkdir dist
+        find ${{ steps.download.outputs.download-path }} -type f -regex ".*\.\(tar\.gz\|whl\)" -exec mv {} dist/. \;
+
+    - name: Attach artifacts to GitHub tagged draft release
+      uses: ncipollo/release-action@v1
+      with:
+        allowUpdates: true
+        draft: ${{ github.event.action != 'published' }}
+        artifacts: "dist/*.whl,dist/*.tar.gz"
+
+    - name: Publish artifacts to PyPI
+      if: ${{ github.event.action == 'published' }}
+      uses: pypa/gh-action-pypi-publish@release/v1
