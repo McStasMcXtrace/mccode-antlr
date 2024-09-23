@@ -154,7 +154,7 @@ def get_username():
 def _monitor_name_file_name_match(folder, monitor_name):
     import re
     look_for_filename = False
-    with open(folder.joinpath('mccode_antlr.sim'), 'r') as file:
+    with open(folder.joinpath('mccode.sim'), 'r') as file:
         lines = file.readlines()
     for line in lines:
         if re.match(rf"\s*component:\s*{monitor_name}$", line):
@@ -178,9 +178,10 @@ def mccode_test_compiler(work_dir, file_path, target, registry, generator, dump,
     from pathlib import Path
     from mccode_antlr.reader import Reader
     from mccode_antlr.compiler.c import compile_instrument
+    from mccode_antlr.common import Mode
     # only the provided (remote) registry should be necessary for test instruments
     reader = Reader(registries=[registry])
-    inst = reader.get_instrument(file_path)
+    inst = reader.get_instrument(file_path, mode=Mode.minimal)
     output = Path(work_dir)
     config = dict(default_main=True, enable_trace=False, portable=False, include_runtime=True,
                   embed_instrument_file=False, verbose=False)
@@ -284,7 +285,7 @@ def _mccode_test(compiler, runner, registry: Registry, search_pattern=None, inst
     from datetime import datetime
     logging.info(f"Finding test instruments in: {registry}")
     # we _require_ that all test instr files are in a folder called "examples" ...
-    filenames = registry.match(re.compile('examples'))
+    filenames = registry.match(re.compile(r'.*examples/.*\.instr'))
     # allow the user to limit which test cases can be found via a regular expression search
     if search_pattern is not None:
         if not isinstance(search_pattern, re.Pattern):
@@ -295,7 +296,7 @@ def _mccode_test(compiler, runner, registry: Registry, search_pattern=None, inst
     # optionally test case count limiter:
     if instr_count is not None and isinstance(instr_count, int) and instr_count > 0:
         filenames = filenames[:instr_count]
-    # grab full paths to each file (in case this is a remote registry and they need to be fetched)
+    # grab full paths to each file (in case this is a remote registry, they need to be fetched)
     filepaths = [registry.path(filename) for filename in filenames]
 
     longest_name = max(len(x.stem) for x in filepaths)

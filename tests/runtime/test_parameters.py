@@ -35,3 +35,44 @@ def test_parameters():
 
         for ex, ln in zip(expected, lines):
             assert ex == ln
+
+
+@compiled
+def test_declared_component_setting_parameter():
+    """Ensure that instrument parameters are available for 'when' statements, e.g., in the raytrace section"""
+    from mccode_antlr.loader.loader import parse_mcstas_instr
+    from textwrap import dedent
+    instr_source = dedent("""\
+        define instrument test_declared_component_setting_parameter(dummy=1)
+        declare %{
+        double ex;
+        double thickness;
+        int values[1];
+        %}
+        initialize %{
+        ex=0.3;
+        thickness=110.0;
+        values[0] = -909;
+        %}
+        trace
+        component o = Arm() at (0,0,0) absolute
+        component a = Arm() at (ex,0,0) absolute extend %{ printf("ex=%0.2f\\n", ex); %}
+        component b = Progress_bar(percent=thickness) at (0,0,0) absolute
+                      extend %{ printf("thickness=%0.2f\\n", thickness);%}
+        component c = Al_window(thickness=-ex / values[0]) at (0,0,0) absolute
+                      extend %{ printf("thickness=%0.5f\\n", thickness);%}
+        end 
+    """)
+    instr = parse_mcstas_instr(instr_source)
+    n_max = 2
+    results, data = compile_and_run(instr, f"-n {n_max} dummy=2")
+    lines = results.decode('utf-8').splitlines()
+    print(lines)
+    expected = []
+    for i in range(n_max):
+        expected.append(f'ex=0.30')
+        expected.append(f'thickness=110.00')
+        expected.append(f'thickness=0.00033')
+
+    for ex, ln in zip(expected, lines[1:]):
+        assert ex == ln

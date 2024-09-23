@@ -483,3 +483,16 @@ class TestExpression(TestCase):
                 self.assertEqual(len(edges), 4)
                 for edge in edges:
                     self.assertTrue(isinstance(edge, Expr))
+
+    def test_is_vector(self):
+        from mccode_antlr.common.expression import Expr, Value, ObjectType, ShapeType, DataType, BinaryOp
+        self.assertTrue(Expr.array([1, 2, 3]).is_vector)
+        self.assertFalse(Expr.int(1).is_vector)
+
+        # This is needed for setting, e.g., component parameters from declared _vector_ variables
+        ex = Expr.id('ex')
+        values = Value('values', object_type=ObjectType.identifier, shape_type=ShapeType.vector, data_type=DataType.float)
+        expr = -ex / BinaryOp('__getitem__', values, Expr.int(0))
+        self.assertEqual(f'{expr}', '-ex / values[0]')
+
+        self.assertFalse(expr.is_vector) # because values[0] is a scalar
