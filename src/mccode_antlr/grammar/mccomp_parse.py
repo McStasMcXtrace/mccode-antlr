@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from antlr4 import InputStream
 from antlr4.tree.Tree import ParseTree
 from antlr4.error.ErrorListener import ErrorListener

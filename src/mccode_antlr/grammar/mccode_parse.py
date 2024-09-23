@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import types
 from antlr4 import InputStream, CommonTokenStream
 from antlr4.tree.Tree import ParseTree
