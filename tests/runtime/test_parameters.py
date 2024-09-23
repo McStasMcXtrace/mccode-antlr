@@ -20,30 +20,18 @@ def test_parameters():
         end 
     """))
     n_max = 5
-    results, data = compile_and_run(instr, f"-n {n_max} boolean_value=0")
-    lines = results.decode('utf-8').splitlines()
-    print(lines)
-    expected = []
-    for i in range(n_max):
-        if i % 4 == 0:
-            expected.append(f'a={i}')
-        if i % 2 == 0:
-            expected.append(f'b={i}')
+    for boolean_value in [0, 1]:
+        results, data = compile_and_run(instr, f"-n {n_max} boolean_value={boolean_value}")
+        lines = results.decode('utf-8').splitlines()
+        print(lines)
+        expected = []
+        for i in range(n_max):
+            if i % 4 == 0:
+                expected.append(f'a={i}')
+            if i % 2 == 0:
+                expected.append(f'b={i}')
+            if boolean_value and i % 2:
+                expected.append(f'c={i}')
 
-    for ex, ln in zip(expected, lines):
-        assert ex == ln
-
-    results, data = compile_and_run(instr, f"-n {n_max} boolean_value=1")
-    lines = results.decode('utf-8').splitlines()
-    print(lines)
-    expected = []
-    for i in range(n_max):
-        if i % 4 == 0:
-            expected.append(f'a={i}')
-        if i % 2 == 0:
-            expected.append(f'b={i}')
-        if i % 2:
-            expected.append(f'c={i}')
-
-    for ex, ln in zip(expected, lines):
-        assert ex == ln
+        for ex, ln in zip(expected, lines):
+            assert ex == ln
