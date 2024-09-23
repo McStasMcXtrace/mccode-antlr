@@ -34,7 +34,7 @@ dynamic = ["version"]
 [project.optional-dependencies]
 test = ["gputil==1.4.0", 'pytest']
 hdf5 = ["h5py>=3.11.0"]
-antlr = ['antlr4-tools==0.2.1', 'speedy-antlr-tool']
+antlr = ['antlr4-tools==0.2.1']
 
 [project.urls]
 "Homepage" = "https://github.com/McStasMcXtrace/mccode-antlr"
