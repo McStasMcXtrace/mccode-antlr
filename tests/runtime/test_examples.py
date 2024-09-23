@@ -2,9 +2,8 @@ from .compiled import compiled, compile_and_run
 
 @compiled
 def test_template_instr():
-    """This test fails at the momement because its name is a reserved word in C++ (template)
-
-    To make this pass, we will need to rebase the McCommon grammar on C99.
+    """
+    This test failed previously because its name is a reserved word in C++ (template)
     """
     from mccode_antlr.loader.loader import parse_mcstas_instr
     from textwrap import dedent

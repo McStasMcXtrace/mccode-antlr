@@ -141,8 +141,8 @@ def main():
     args = parser.parse_args()
     verbose = args.verbose
 
-    ensure_language_up_to_date('McComp', target=Target.python, features=[Feature.visitor], deps=('McCommon', 'cpp'), verbose=verbose)
-    ensure_language_up_to_date('McInstr', target=Target.python, features=[Feature.visitor], deps=('McCommon', 'cpp'), verbose=verbose)
+    ensure_language_up_to_date('McComp', target=Target.python, features=[Feature.visitor], deps=('McCommon', 'c99'), verbose=verbose)
+    ensure_language_up_to_date('McInstr', target=Target.python, features=[Feature.visitor], deps=('McCommon', 'c99'), verbose=verbose)
     ensure_language_up_to_date('C', target=Target.python, features=[Feature.visitor, Feature.listener], verbose=verbose)
 
 if __name__ == '__main__':
