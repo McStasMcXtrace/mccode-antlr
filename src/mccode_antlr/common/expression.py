@@ -1,4 +1,5 @@
-from __future__ import annotations
+from typing import Union
+
 from enum import Enum
 from loguru import logger
 
@@ -1006,8 +1007,8 @@ class Value:
             self._object = ObjectType.parameter
 
 
-ExprNodeSingular = Value | UnaryOp | BinaryOp | TrinaryOp
-ExprNode = ExprNodeSingular | list[ExprNodeSingular]
+ExprNodeSingular = Union[Value, UnaryOp, BinaryOp, TrinaryOp]
+ExprNode = Union[ExprNodeSingular, list[ExprNodeSingular]]
 
 
 class Expr:
