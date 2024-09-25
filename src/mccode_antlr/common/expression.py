@@ -473,7 +473,14 @@ class BinaryOp(Op):
 
     @property
     def is_vector(self):
-        return len(self.left) == 1 and len(self.right) == 1 and self.left[0].is_vector or self.right[0].is_vector
+        if len(self.left) == 1 and len(self.right) == 1:
+            lv = self.left[0].is_vector
+            rv = self.right[0].is_vector
+            rs = self.right[0].is_scalar
+            if lv and rs and self.op == '__getitem__':
+                return False
+            return lv and rv
+        return False
 
     @property
     def vector_known(self):

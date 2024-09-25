@@ -93,7 +93,7 @@ def cogen_raytrace(source, ok_to_skip):
         if len(comp.type.trace) or len(comp.extend):
             # WHEN
             if comp.when is not None:
-                lines.append(f'      if (({comp.when}))  // conditional WHEN execution')
+                lines.append(f'      if (({comp.when:p}))  // conditional WHEN execution')
             lines.extend([
                 f'      class_{comp.type.name}_trace(&_{comp.name}_var, _particle);{" /* contains EXTEND code */" if len(comp.extend) else ""}',
                 '      if (_particle->_restore)',
@@ -365,7 +365,7 @@ def cogen_funnel(source, ok_to_skip):
             ])
         if len(comp.type.trace) or len(comp.extend):
             if comp.when is not None:
-                lines.append(f'    if (({comp.when}))  // conditional WHEN')
+                lines.append(f'    if (({comp.when:p}))  // conditional WHEN')
             lines.extend([
                 f'        class_{comp.type.name}_trace(&_{comp.name}_var, _particle);{" /* contains EXTEND code */" if len(comp.extend) else ""}',
                 '         if (_particle->_restore) particle_restore(_particle, &_particle_save);'

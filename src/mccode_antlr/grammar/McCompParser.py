@@ -10,7 +10,7 @@ else:
 
 def serializedATN():
     return [
-        4,1,192,501,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,
+        4,1,156,501,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,
         7,6,2,7,7,7,2,8,7,8,2,9,7,9,2,10,7,10,2,11,7,11,2,12,7,12,2,13,7,
         13,2,14,7,14,2,15,7,15,2,16,7,16,2,17,7,17,2,18,7,18,2,19,7,19,2,
         20,7,20,2,21,7,21,2,22,7,22,2,23,7,23,2,24,7,24,2,25,7,25,2,26,7,
@@ -51,8 +51,8 @@ def serializedATN():
         1,24,1,24,1,24,5,24,484,8,24,10,24,12,24,487,9,24,1,25,1,25,1,25,
         1,26,1,26,1,26,1,26,1,26,3,26,497,8,26,1,27,1,27,1,27,0,1,48,28,
         0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,42,44,
-        46,48,50,52,54,0,6,1,0,17,18,3,0,1,1,48,48,52,52,2,0,52,52,179,179,
-        1,0,138,139,1,0,140,141,1,0,165,166,577,0,56,1,0,0,0,2,157,1,0,0,
+        46,48,50,52,54,0,6,1,0,17,18,3,0,1,1,48,48,52,52,2,0,52,52,143,143,
+        1,0,102,103,1,0,104,105,1,0,129,130,577,0,56,1,0,0,0,2,157,1,0,0,
         0,4,168,1,0,0,0,6,171,1,0,0,0,8,179,1,0,0,0,10,183,1,0,0,0,12,187,
         1,0,0,0,14,191,1,0,0,0,16,273,1,0,0,0,18,284,1,0,0,0,20,295,1,0,
         0,0,22,304,1,0,0,0,24,306,1,0,0,0,26,320,1,0,0,0,28,322,1,0,0,0,
@@ -60,7 +60,7 @@ def serializedATN():
         1,0,0,0,40,372,1,0,0,0,42,377,1,0,0,0,44,380,1,0,0,0,46,391,1,0,
         0,0,48,439,1,0,0,0,50,488,1,0,0,0,52,496,1,0,0,0,54,498,1,0,0,0,
         56,57,3,2,1,0,57,58,5,0,0,1,58,1,1,0,0,0,59,60,5,9,0,0,60,61,5,7,
-        0,0,61,62,5,179,0,0,62,64,3,6,3,0,63,65,3,42,21,0,64,63,1,0,0,0,
+        0,0,61,62,5,143,0,0,62,64,3,6,3,0,63,65,3,42,21,0,64,63,1,0,0,0,
         64,65,1,0,0,0,65,69,1,0,0,0,66,68,3,40,20,0,67,66,1,0,0,0,68,71,
         1,0,0,0,69,67,1,0,0,0,69,70,1,0,0,0,70,73,1,0,0,0,71,69,1,0,0,0,
         72,74,3,50,25,0,73,72,1,0,0,0,73,74,1,0,0,0,74,76,1,0,0,0,75,77,
@@ -74,7 +74,7 @@ def serializedATN():
         0,99,101,3,38,19,0,100,99,1,0,0,0,100,101,1,0,0,0,101,103,1,0,0,
         0,102,104,3,20,10,0,103,102,1,0,0,0,103,104,1,0,0,0,104,105,1,0,
         0,0,105,106,5,12,0,0,106,158,1,0,0,0,107,108,5,9,0,0,108,109,5,7,
-        0,0,109,110,5,179,0,0,110,111,5,34,0,0,111,112,5,179,0,0,112,114,
+        0,0,109,110,5,143,0,0,110,111,5,34,0,0,111,112,5,143,0,0,112,114,
         3,6,3,0,113,115,3,42,21,0,114,113,1,0,0,0,114,115,1,0,0,0,115,119,
         1,0,0,0,116,118,3,40,20,0,117,116,1,0,0,0,118,121,1,0,0,0,119,117,
         1,0,0,0,119,120,1,0,0,0,120,123,1,0,0,0,121,119,1,0,0,0,122,124,
@@ -91,7 +91,7 @@ def serializedATN():
         3,20,10,0,153,152,1,0,0,0,153,154,1,0,0,0,154,155,1,0,0,0,155,156,
         5,12,0,0,156,158,1,0,0,0,157,59,1,0,0,0,157,107,1,0,0,0,158,3,1,
         0,0,0,159,160,5,24,0,0,160,169,3,54,27,0,161,162,5,24,0,0,162,163,
-        5,34,0,0,163,166,5,179,0,0,164,165,5,26,0,0,165,167,3,54,27,0,166,
+        5,34,0,0,163,166,5,143,0,0,164,165,5,26,0,0,165,167,3,54,27,0,166,
         164,1,0,0,0,166,167,1,0,0,0,167,169,1,0,0,0,168,159,1,0,0,0,168,
         161,1,0,0,0,169,5,1,0,0,0,170,172,3,8,4,0,171,170,1,0,0,0,171,172,
         1,0,0,0,172,174,1,0,0,0,173,175,3,10,5,0,174,173,1,0,0,0,174,175,
@@ -99,97 +99,97 @@ def serializedATN():
         1,0,0,0,178,7,1,0,0,0,179,180,5,11,0,0,180,181,5,19,0,0,181,182,
         3,14,7,0,182,9,1,0,0,0,183,184,5,23,0,0,184,185,5,19,0,0,185,186,
         3,14,7,0,186,11,1,0,0,0,187,188,7,0,0,0,188,189,5,19,0,0,189,190,
-        3,14,7,0,190,13,1,0,0,0,191,200,5,132,0,0,192,197,3,16,8,0,193,194,
-        5,169,0,0,194,196,3,16,8,0,195,193,1,0,0,0,196,199,1,0,0,0,197,195,
+        3,14,7,0,190,13,1,0,0,0,191,200,5,96,0,0,192,197,3,16,8,0,193,194,
+        5,133,0,0,194,196,3,16,8,0,195,193,1,0,0,0,196,199,1,0,0,0,197,195,
         1,0,0,0,197,198,1,0,0,0,198,201,1,0,0,0,199,197,1,0,0,0,200,192,
-        1,0,0,0,200,201,1,0,0,0,201,202,1,0,0,0,202,203,5,133,0,0,203,15,
-        1,0,0,0,204,206,5,78,0,0,205,204,1,0,0,0,205,206,1,0,0,0,206,207,
-        1,0,0,0,207,213,5,179,0,0,208,211,5,148,0,0,209,212,3,48,24,0,210,
+        1,0,0,0,200,201,1,0,0,0,201,202,1,0,0,0,202,203,5,97,0,0,203,15,
+        1,0,0,0,204,206,5,68,0,0,205,204,1,0,0,0,205,206,1,0,0,0,206,207,
+        1,0,0,0,207,213,5,143,0,0,208,211,5,112,0,0,209,212,3,48,24,0,210,
         212,5,1,0,0,211,209,1,0,0,0,211,210,1,0,0,0,212,214,1,0,0,0,213,
-        208,1,0,0,0,213,214,1,0,0,0,214,274,1,0,0,0,215,216,5,93,0,0,216,
-        222,5,179,0,0,217,220,5,148,0,0,218,221,3,48,24,0,219,221,5,1,0,
+        208,1,0,0,0,213,214,1,0,0,0,214,274,1,0,0,0,215,216,5,79,0,0,216,
+        222,5,143,0,0,217,220,5,112,0,0,218,221,3,48,24,0,219,221,5,1,0,
         0,220,218,1,0,0,0,220,219,1,0,0,0,221,223,1,0,0,0,222,217,1,0,0,
-        0,222,223,1,0,0,0,223,274,1,0,0,0,224,228,5,43,0,0,225,226,5,66,
-        0,0,226,228,5,140,0,0,227,224,1,0,0,0,227,225,1,0,0,0,228,229,1,
-        0,0,0,229,232,5,179,0,0,230,231,5,148,0,0,231,233,7,1,0,0,232,230,
+        0,222,223,1,0,0,0,223,274,1,0,0,0,224,228,5,43,0,0,225,226,5,62,
+        0,0,226,228,5,104,0,0,227,224,1,0,0,0,227,225,1,0,0,0,228,229,1,
+        0,0,0,229,232,5,143,0,0,230,231,5,112,0,0,231,233,7,1,0,0,232,230,
         1,0,0,0,232,233,1,0,0,0,233,274,1,0,0,0,234,235,5,44,0,0,235,243,
-        5,179,0,0,236,241,5,148,0,0,237,242,5,179,0,0,238,242,3,44,22,0,
+        5,143,0,0,236,241,5,112,0,0,237,242,5,143,0,0,238,242,3,44,22,0,
         239,242,5,48,0,0,240,242,5,1,0,0,241,237,1,0,0,0,241,238,1,0,0,0,
         241,239,1,0,0,0,241,240,1,0,0,0,242,244,1,0,0,0,243,236,1,0,0,0,
-        243,244,1,0,0,0,244,274,1,0,0,0,245,246,5,45,0,0,246,247,5,179,0,
-        0,247,248,5,148,0,0,248,274,3,48,24,0,249,250,5,78,0,0,250,251,5,
-        140,0,0,251,259,5,179,0,0,252,257,5,148,0,0,253,258,5,179,0,0,254,
+        243,244,1,0,0,0,244,274,1,0,0,0,245,246,5,45,0,0,246,247,5,143,0,
+        0,247,248,5,112,0,0,248,274,3,48,24,0,249,250,5,68,0,0,250,251,5,
+        104,0,0,251,259,5,143,0,0,252,257,5,112,0,0,253,258,5,143,0,0,254,
         258,3,44,22,0,255,258,5,48,0,0,256,258,5,1,0,0,257,253,1,0,0,0,257,
         254,1,0,0,0,257,255,1,0,0,0,257,256,1,0,0,0,258,260,1,0,0,0,259,
-        252,1,0,0,0,259,260,1,0,0,0,260,274,1,0,0,0,261,262,5,93,0,0,262,
-        263,5,140,0,0,263,271,5,179,0,0,264,269,5,148,0,0,265,270,5,179,
+        252,1,0,0,0,259,260,1,0,0,0,260,274,1,0,0,0,261,262,5,79,0,0,262,
+        263,5,104,0,0,263,271,5,143,0,0,264,269,5,112,0,0,265,270,5,143,
         0,0,266,270,3,44,22,0,267,270,5,48,0,0,268,270,5,1,0,0,269,265,1,
         0,0,0,269,266,1,0,0,0,269,267,1,0,0,0,269,268,1,0,0,0,270,272,1,
         0,0,0,271,264,1,0,0,0,271,272,1,0,0,0,272,274,1,0,0,0,273,205,1,
         0,0,0,273,215,1,0,0,0,273,227,1,0,0,0,273,234,1,0,0,0,273,245,1,
         0,0,0,273,249,1,0,0,0,273,261,1,0,0,0,274,17,1,0,0,0,275,276,5,25,
         0,0,276,285,3,54,27,0,277,278,5,25,0,0,278,279,5,34,0,0,279,282,
-        5,179,0,0,280,281,5,26,0,0,281,283,3,54,27,0,282,280,1,0,0,0,282,
+        5,143,0,0,280,281,5,26,0,0,281,283,3,54,27,0,282,280,1,0,0,0,282,
         283,1,0,0,0,283,285,1,0,0,0,284,275,1,0,0,0,284,277,1,0,0,0,285,
         19,1,0,0,0,286,287,5,13,0,0,287,296,3,54,27,0,288,289,5,13,0,0,289,
-        290,5,34,0,0,290,293,5,179,0,0,291,292,5,26,0,0,292,294,3,54,27,
+        290,5,34,0,0,290,293,5,143,0,0,291,292,5,26,0,0,292,294,3,54,27,
         0,293,291,1,0,0,0,293,294,1,0,0,0,294,296,1,0,0,0,295,286,1,0,0,
-        0,295,288,1,0,0,0,296,21,1,0,0,0,297,301,5,22,0,0,298,299,5,132,
-        0,0,299,300,5,49,0,0,300,302,5,133,0,0,301,298,1,0,0,0,301,302,1,
-        0,0,0,302,305,1,0,0,0,303,305,5,179,0,0,304,297,1,0,0,0,304,303,
-        1,0,0,0,305,23,1,0,0,0,306,307,5,132,0,0,307,308,3,48,24,0,308,309,
-        5,169,0,0,309,310,3,48,24,0,310,311,5,169,0,0,311,312,3,48,24,0,
-        312,313,5,133,0,0,313,25,1,0,0,0,314,321,5,4,0,0,315,318,5,20,0,
-        0,316,319,5,4,0,0,317,319,3,22,11,0,318,316,1,0,0,0,318,317,1,0,
-        0,0,319,321,1,0,0,0,320,314,1,0,0,0,320,315,1,0,0,0,321,27,1,0,0,
-        0,322,323,5,39,0,0,323,324,5,52,0,0,324,29,1,0,0,0,325,326,5,10,
-        0,0,326,335,3,54,27,0,327,328,5,10,0,0,328,329,5,34,0,0,329,332,
-        5,179,0,0,330,331,5,26,0,0,331,333,3,54,27,0,332,330,1,0,0,0,332,
-        333,1,0,0,0,333,335,1,0,0,0,334,325,1,0,0,0,334,327,1,0,0,0,335,
-        31,1,0,0,0,336,337,5,8,0,0,337,338,3,54,27,0,338,33,1,0,0,0,339,
-        340,5,15,0,0,340,349,3,54,27,0,341,342,5,15,0,0,342,343,5,34,0,0,
-        343,346,5,179,0,0,344,345,5,26,0,0,345,347,3,54,27,0,346,344,1,0,
-        0,0,346,347,1,0,0,0,347,349,1,0,0,0,348,339,1,0,0,0,348,341,1,0,
-        0,0,349,35,1,0,0,0,350,351,5,28,0,0,351,360,3,54,27,0,352,353,5,
-        28,0,0,353,354,5,34,0,0,354,357,5,179,0,0,355,356,5,26,0,0,356,358,
-        3,54,27,0,357,355,1,0,0,0,357,358,1,0,0,0,358,360,1,0,0,0,359,350,
-        1,0,0,0,359,352,1,0,0,0,360,37,1,0,0,0,361,362,5,14,0,0,362,371,
-        3,54,27,0,363,364,5,14,0,0,364,365,5,34,0,0,365,368,5,179,0,0,366,
-        367,5,26,0,0,367,369,3,54,27,0,368,366,1,0,0,0,368,369,1,0,0,0,369,
-        371,1,0,0,0,370,361,1,0,0,0,370,363,1,0,0,0,371,39,1,0,0,0,372,373,
-        5,42,0,0,373,374,7,2,0,0,374,375,7,2,0,0,375,376,3,54,27,0,376,41,
+        0,295,288,1,0,0,0,296,21,1,0,0,0,297,301,5,22,0,0,298,299,5,96,0,
+        0,299,300,5,49,0,0,300,302,5,97,0,0,301,298,1,0,0,0,301,302,1,0,
+        0,0,302,305,1,0,0,0,303,305,5,143,0,0,304,297,1,0,0,0,304,303,1,
+        0,0,0,305,23,1,0,0,0,306,307,5,96,0,0,307,308,3,48,24,0,308,309,
+        5,133,0,0,309,310,3,48,24,0,310,311,5,133,0,0,311,312,3,48,24,0,
+        312,313,5,97,0,0,313,25,1,0,0,0,314,321,5,4,0,0,315,318,5,20,0,0,
+        316,319,5,4,0,0,317,319,3,22,11,0,318,316,1,0,0,0,318,317,1,0,0,
+        0,319,321,1,0,0,0,320,314,1,0,0,0,320,315,1,0,0,0,321,27,1,0,0,0,
+        322,323,5,39,0,0,323,324,5,52,0,0,324,29,1,0,0,0,325,326,5,10,0,
+        0,326,335,3,54,27,0,327,328,5,10,0,0,328,329,5,34,0,0,329,332,5,
+        143,0,0,330,331,5,26,0,0,331,333,3,54,27,0,332,330,1,0,0,0,332,333,
+        1,0,0,0,333,335,1,0,0,0,334,325,1,0,0,0,334,327,1,0,0,0,335,31,1,
+        0,0,0,336,337,5,8,0,0,337,338,3,54,27,0,338,33,1,0,0,0,339,340,5,
+        15,0,0,340,349,3,54,27,0,341,342,5,15,0,0,342,343,5,34,0,0,343,346,
+        5,143,0,0,344,345,5,26,0,0,345,347,3,54,27,0,346,344,1,0,0,0,346,
+        347,1,0,0,0,347,349,1,0,0,0,348,339,1,0,0,0,348,341,1,0,0,0,349,
+        35,1,0,0,0,350,351,5,28,0,0,351,360,3,54,27,0,352,353,5,28,0,0,353,
+        354,5,34,0,0,354,357,5,143,0,0,355,356,5,26,0,0,356,358,3,54,27,
+        0,357,355,1,0,0,0,357,358,1,0,0,0,358,360,1,0,0,0,359,350,1,0,0,
+        0,359,352,1,0,0,0,360,37,1,0,0,0,361,362,5,14,0,0,362,371,3,54,27,
+        0,363,364,5,14,0,0,364,365,5,34,0,0,365,368,5,143,0,0,366,367,5,
+        26,0,0,367,369,3,54,27,0,368,366,1,0,0,0,368,369,1,0,0,0,369,371,
+        1,0,0,0,370,361,1,0,0,0,370,363,1,0,0,0,371,39,1,0,0,0,372,373,5,
+        42,0,0,373,374,7,2,0,0,374,375,7,2,0,0,375,376,3,54,27,0,376,41,
         1,0,0,0,377,378,5,6,0,0,378,379,7,2,0,0,379,43,1,0,0,0,380,381,5,
-        136,0,0,381,386,3,48,24,0,382,383,5,169,0,0,383,385,3,48,24,0,384,
+        100,0,0,381,386,3,48,24,0,382,383,5,133,0,0,383,385,3,48,24,0,384,
         382,1,0,0,0,385,388,1,0,0,0,386,384,1,0,0,0,386,387,1,0,0,0,387,
-        389,1,0,0,0,388,386,1,0,0,0,389,390,5,137,0,0,390,45,1,0,0,0,391,
-        392,5,179,0,0,392,393,5,148,0,0,393,394,3,48,24,0,394,47,1,0,0,0,
+        389,1,0,0,0,388,386,1,0,0,0,389,390,5,101,0,0,390,45,1,0,0,0,391,
+        392,5,143,0,0,392,393,5,112,0,0,393,394,3,48,24,0,394,47,1,0,0,0,
         395,396,6,24,-1,0,396,440,5,1,0,0,397,440,5,49,0,0,398,440,5,51,
         0,0,399,401,5,52,0,0,400,399,1,0,0,0,401,404,1,0,0,0,402,400,1,0,
-        0,0,402,403,1,0,0,0,403,440,1,0,0,0,404,402,1,0,0,0,405,406,5,179,
-        0,0,406,407,5,171,0,0,407,440,3,48,24,23,408,409,5,179,0,0,409,410,
-        5,176,0,0,410,440,3,48,24,22,411,412,5,179,0,0,412,413,5,134,0,0,
-        413,414,3,48,24,0,414,415,5,135,0,0,415,440,1,0,0,0,416,417,5,179,
-        0,0,417,418,5,132,0,0,418,423,3,48,24,0,419,420,5,169,0,0,420,422,
+        0,0,402,403,1,0,0,0,403,440,1,0,0,0,404,402,1,0,0,0,405,406,5,143,
+        0,0,406,407,5,135,0,0,407,440,3,48,24,23,408,409,5,143,0,0,409,410,
+        5,140,0,0,410,440,3,48,24,22,411,412,5,143,0,0,412,413,5,98,0,0,
+        413,414,3,48,24,0,414,415,5,99,0,0,415,440,1,0,0,0,416,417,5,143,
+        0,0,417,418,5,96,0,0,418,423,3,48,24,0,419,420,5,133,0,0,420,422,
         3,48,24,0,421,419,1,0,0,0,422,425,1,0,0,0,423,421,1,0,0,0,423,424,
-        1,0,0,0,424,426,1,0,0,0,425,423,1,0,0,0,426,427,5,133,0,0,427,440,
-        1,0,0,0,428,429,5,132,0,0,429,430,3,48,24,0,430,431,5,133,0,0,431,
-        440,1,0,0,0,432,433,7,3,0,0,433,440,3,48,24,18,434,440,5,179,0,0,
-        435,436,5,147,0,0,436,440,3,48,24,5,437,440,5,22,0,0,438,440,5,33,
+        1,0,0,0,424,426,1,0,0,0,425,423,1,0,0,0,426,427,5,97,0,0,427,440,
+        1,0,0,0,428,429,5,96,0,0,429,430,3,48,24,0,430,431,5,97,0,0,431,
+        440,1,0,0,0,432,433,7,3,0,0,433,440,3,48,24,18,434,440,5,143,0,0,
+        435,436,5,111,0,0,436,440,3,48,24,5,437,440,5,22,0,0,438,440,5,33,
         0,0,439,395,1,0,0,0,439,397,1,0,0,0,439,398,1,0,0,0,439,402,1,0,
         0,0,439,405,1,0,0,0,439,408,1,0,0,0,439,411,1,0,0,0,439,416,1,0,
         0,0,439,428,1,0,0,0,439,432,1,0,0,0,439,434,1,0,0,0,439,435,1,0,
         0,0,439,437,1,0,0,0,439,438,1,0,0,0,440,485,1,0,0,0,441,442,10,17,
-        0,0,442,443,5,143,0,0,443,484,3,48,24,17,444,445,10,16,0,0,445,446,
+        0,0,442,443,5,107,0,0,443,484,3,48,24,17,444,445,10,16,0,0,445,446,
         7,4,0,0,446,484,3,48,24,17,447,448,10,15,0,0,448,449,7,3,0,0,449,
-        484,3,48,24,16,450,451,10,14,0,0,451,452,5,142,0,0,452,484,3,48,
+        484,3,48,24,16,450,451,10,14,0,0,451,452,5,106,0,0,452,484,3,48,
         24,15,453,454,10,13,0,0,454,455,5,2,0,0,455,484,3,48,24,14,456,457,
         10,12,0,0,457,458,5,3,0,0,458,484,3,48,24,13,459,460,10,10,0,0,460,
-        461,5,161,0,0,461,484,3,48,24,11,462,463,10,9,0,0,463,464,5,163,
-        0,0,464,484,3,48,24,10,465,466,10,8,0,0,466,467,5,164,0,0,467,484,
-        3,48,24,9,468,469,10,7,0,0,469,470,5,149,0,0,470,484,3,48,24,8,471,
-        472,10,6,0,0,472,473,5,150,0,0,473,484,3,48,24,7,474,475,10,4,0,
-        0,475,476,7,5,0,0,476,484,3,48,24,5,477,478,10,3,0,0,478,479,5,172,
-        0,0,479,480,3,48,24,0,480,481,5,173,0,0,481,482,3,48,24,4,482,484,
+        461,5,125,0,0,461,484,3,48,24,11,462,463,10,9,0,0,463,464,5,127,
+        0,0,464,484,3,48,24,10,465,466,10,8,0,0,466,467,5,128,0,0,467,484,
+        3,48,24,9,468,469,10,7,0,0,469,470,5,113,0,0,470,484,3,48,24,8,471,
+        472,10,6,0,0,472,473,5,114,0,0,473,484,3,48,24,7,474,475,10,4,0,
+        0,475,476,7,5,0,0,476,484,3,48,24,5,477,478,10,3,0,0,478,479,5,136,
+        0,0,479,480,3,48,24,0,480,481,5,137,0,0,481,482,3,48,24,4,482,484,
         1,0,0,0,483,441,1,0,0,0,483,444,1,0,0,0,483,447,1,0,0,0,483,450,
         1,0,0,0,483,453,1,0,0,0,483,456,1,0,0,0,483,459,1,0,0,0,483,462,
         1,0,0,0,483,465,1,0,0,0,483,468,1,0,0,0,483,471,1,0,0,0,483,474,
@@ -228,29 +228,21 @@ class McCompParser ( Parser ):
                      "<INVALID>", "'string'", "'vector'", "'symbol'", "<INVALID>", 
                      "'%include'", "'NULL'", "<INVALID>", "<INVALID>", "<INVALID>", 
                      "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
-                     "<INVALID>", "<INVALID>", "'alignas'", "'alignof'", 
-                     "'asm'", "'auto'", "'bool'", "'break'", "'case'", "'catch'", 
-                     "'char'", "'char16_t'", "'char32_t'", "'class'", "'const'", 
-                     "'constexpr'", "'const_cast'", "'continue'", "'decltype'", 
-                     "'default'", "'delete'", "'do'", "'double'", "'dynamic_cast'", 
-                     "'else'", "'enum'", "'explicit'", "'export'", "'extern'", 
-                     "'false'", "'final'", "'float'", "'for'", "'friend'", 
-                     "'goto'", "'if'", "'inline'", "'int'", "'long'", "'mutable'", 
-                     "'namespace'", "'new'", "'noexcept'", "'nullptr'", 
-                     "'operator'", "'override'", "'protected'", "'public'", 
-                     "'register'", "'reinterpret_cast'", "'return'", "'short'", 
-                     "'signed'", "'sizeof'", "'static'", "'static_assert'", 
-                     "'static_cast'", "'struct'", "'switch'", "'template'", 
-                     "'this'", "'thread_local'", "'throw'", "'true'", "'try'", 
-                     "'typedef'", "'typeid'", "'typename'", "'union'", "'unsigned'", 
-                     "'using'", "'virtual'", "'void'", "'volatile'", "'wchar_t'", 
-                     "'while'", "'('", "')'", "'['", "']'", "'{'", "'}'", 
-                     "'+'", "'-'", "'*'", "'/'", "'%'", "'^'", "'&'", "'|'", 
-                     "'~'", "<INVALID>", "'='", "'<'", "'>'", "'+='", "'-='", 
-                     "'*='", "'/='", "'%='", "'^='", "'&='", "'|='", "'<<='", 
-                     "'>>='", "'=='", "'!='", "'<='", "'>='", "<INVALID>", 
-                     "<INVALID>", "'++'", "'--'", "','", "'->*'", "'->'", 
-                     "'?'", "':'", "'::'", "';'", "'.'", "'.*'", "'...'" ]
+                     "<INVALID>", "'asm'", "'auto'", "'_Bool'", "'break'", 
+                     "'case'", "'char'", "'_Complex'", "'const'", "'continue'", 
+                     "'default'", "'do'", "'double'", "'else'", "'enum'", 
+                     "'extern'", "'false'", "'float'", "'for'", "'goto'", 
+                     "'if'", "'_Imaginary'", "'inline'", "'int'", "'long'", 
+                     "'register'", "'return'", "'short'", "'signed'", "'sizeof'", 
+                     "'static'", "'struct'", "'switch'", "'true'", "'typedef'", 
+                     "'union'", "'unsigned'", "'void'", "'volatile'", "'while'", 
+                     "'('", "')'", "'['", "']'", "'{'", "'}'", "'+'", "'-'", 
+                     "'*'", "'/'", "'%'", "'^'", "'&'", "'|'", "'~'", "<INVALID>", 
+                     "'='", "'<'", "'>'", "'+='", "'-='", "'*='", "'/='", 
+                     "'%='", "'^='", "'&='", "'|='", "'<<='", "'>>='", "'=='", 
+                     "'!='", "'<='", "'>='", "<INVALID>", "<INVALID>", "'++'", 
+                     "'--'", "','", "'->*'", "'->'", "'?'", "':'", "'::'", 
+                     "';'", "'.'", "'.*'", "'...'" ]
 
     symbolicNames = [ "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
                       "Absolute", "At", "Category", "Component", "UserVars", 
@@ -263,27 +255,20 @@ class McCompParser ( Parser ):
                       "Search", "MetaData", "String", "Vector", "Symbol", 
                       "UnparsedBlock", "Include", "Null", "IntegerLiteral", 
                       "CharacterLiteral", "FloatingLiteral", "StringLiteral", 
-                      "BooleanLitteral", "PointerLiteral", "UserDefinedLiteral", 
-                      "MultiLineMacro", "Directive", "Alignas", "Alignof", 
-                      "Asm", "Auto", "Bool", "Break", "Case", "Catch", "Char", 
-                      "Char16", "Char32", "Class", "Const", "Constexpr", 
-                      "Const_cast", "Continue", "Decltype", "Default", "Delete", 
-                      "Do", "Double", "Dynamic_cast", "Else", "Enum", "Explicit", 
-                      "Export", "Extern", "False_", "Final", "Float", "For", 
-                      "Friend", "Goto", "If", "Inline", "Int", "Long", "Mutable", 
-                      "Namespace", "New", "Noexcept", "Nullptr", "Operator", 
-                      "Override", "Protected", "Public", "Register", "Reinterpret_cast", 
-                      "Return", "Short", "Signed", "Sizeof", "Static", "Static_assert", 
-                      "Static_cast", "Struct", "Switch", "Template", "This", 
-                      "Thread_local", "Throw", "True_", "Try", "Typedef", 
-                      "Typeid_", "Typename_", "Union", "Unsigned", "Using", 
-                      "Virtual", "Void", "Volatile", "Wchar", "While", "LeftParen", 
-                      "RightParen", "LeftBracket", "RightBracket", "LeftBrace", 
-                      "RightBrace", "Plus", "Minus", "Star", "Div", "Mod", 
-                      "Caret", "And", "Or", "Tilde", "Not", "Assign", "Less", 
-                      "Greater", "PlusAssign", "MinusAssign", "StarAssign", 
-                      "DivAssign", "ModAssign", "XorAssign", "AndAssign", 
-                      "OrAssign", "LeftShiftAssign", "RightShiftAssign", 
+                      "BooleanLitteral", "UserDefinedLiteral", "MultiLineMacro", 
+                      "Directive", "Asm", "Auto", "Bool", "Break", "Case", 
+                      "Char", "Complex", "Const", "Continue", "Default", 
+                      "Do", "Double", "Else", "Enum", "Extern", "False_", 
+                      "Float", "For", "Goto", "If", "Imaginary", "Inline", 
+                      "Int", "Long", "Register", "Return", "Short", "Signed", 
+                      "Sizeof", "Static", "Struct", "Switch", "True_", "Typedef", 
+                      "Union", "Unsigned", "Void", "Volatile", "While", 
+                      "LeftParen", "RightParen", "LeftBracket", "RightBracket", 
+                      "LeftBrace", "RightBrace", "Plus", "Minus", "Star", 
+                      "Div", "Mod", "Caret", "And", "Or", "Tilde", "Not", 
+                      "Assign", "Less", "Greater", "PlusAssign", "MinusAssign", 
+                      "StarAssign", "DivAssign", "ModAssign", "XorAssign", 
+                      "AndAssign", "OrAssign", "LeftShiftAssign", "RightShiftAssign", 
                       "Equal", "NotEqual", "LessEqual", "GreaterEqual", 
                       "AndAnd", "OrOr", "PlusPlus", "MinusMinus", "Comma", 
                       "ArrowStar", "Arrow", "Question", "Colon", "Doublecolon", 
@@ -385,145 +370,109 @@ class McCompParser ( Parser ):
     FloatingLiteral=51
     StringLiteral=52
     BooleanLitteral=53
-    PointerLiteral=54
-    UserDefinedLiteral=55
-    MultiLineMacro=56
-    Directive=57
-    Alignas=58
-    Alignof=59
-    Asm=60
-    Auto=61
-    Bool=62
-    Break=63
-    Case=64
-    Catch=65
-    Char=66
-    Char16=67
-    Char32=68
-    Class=69
-    Const=70
-    Constexpr=71
-    Const_cast=72
-    Continue=73
-    Decltype=74
-    Default=75
-    Delete=76
-    Do=77
-    Double=78
-    Dynamic_cast=79
-    Else=80
-    Enum=81
-    Explicit=82
-    Export=83
-    Extern=84
-    False_=85
-    Final=86
-    Float=87
-    For=88
-    Friend=89
-    Goto=90
-    If=91
-    Inline=92
-    Int=93
-    Long=94
-    Mutable=95
-    Namespace=96
-    New=97
-    Noexcept=98
-    Nullptr=99
-    Operator=100
-    Override=101
-    Protected=102
-    Public=103
-    Register=104
-    Reinterpret_cast=105
-    Return=106
-    Short=107
-    Signed=108
-    Sizeof=109
-    Static=110
-    Static_assert=111
-    Static_cast=112
-    Struct=113
-    Switch=114
-    Template=115
-    This=116
-    Thread_local=117
-    Throw=118
-    True_=119
-    Try=120
-    Typedef=121
-    Typeid_=122
-    Typename_=123
-    Union=124
-    Unsigned=125
-    Using=126
-    Virtual=127
-    Void=128
-    Volatile=129
-    Wchar=130
-    While=131
-    LeftParen=132
-    RightParen=133
-    LeftBracket=134
-    RightBracket=135
-    LeftBrace=136
-    RightBrace=137
-    Plus=138
-    Minus=139
-    Star=140
-    Div=141
-    Mod=142
-    Caret=143
-    And=144
-    Or=145
-    Tilde=146
-    Not=147
-    Assign=148
-    Less=149
-    Greater=150
-    PlusAssign=151
-    MinusAssign=152
-    StarAssign=153
-    DivAssign=154
-    ModAssign=155
-    XorAssign=156
-    AndAssign=157
-    OrAssign=158
-    LeftShiftAssign=159
-    RightShiftAssign=160
-    Equal=161
-    NotEqual=162
-    LessEqual=163
-    GreaterEqual=164
-    AndAnd=165
-    OrOr=166
-    PlusPlus=167
-    MinusMinus=168
-    Comma=169
-    ArrowStar=170
-    Arrow=171
-    Question=172
-    Colon=173
-    Doublecolon=174
-    Semi=175
-    Dot=176
-    DotStar=177
-    Ellipsis=178
-    Identifier=179
-    DecimalLiteral=180
-    OctalLiteral=181
-    HexadecimalLiteral=182
-    BinaryLiteral=183
-    IntegerSuffix=184
-    UserDefinedIntegerLiteral=185
-    UserDefinedFloatingLiteral=186
-    UserDefinedStringLiteral=187
-    UserDefinedCharacterLiteral=188
-    Whitespace=189
-    Newline=190
-    BlockComment=191
-    LineComment=192
+    UserDefinedLiteral=54
+    MultiLineMacro=55
+    Directive=56
+    Asm=57
+    Auto=58
+    Bool=59
+    Break=60
+    Case=61
+    Char=62
+    Complex=63
+    Const=64
+    Continue=65
+    Default=66
+    Do=67
+    Double=68
+    Else=69
+    Enum=70
+    Extern=71
+    False_=72
+    Float=73
+    For=74
+    Goto=75
+    If=76
+    Imaginary=77
+    Inline=78
+    Int=79
+    Long=80
+    Register=81
+    Return=82
+    Short=83
+    Signed=84
+    Sizeof=85
+    Static=86
+    Struct=87
+    Switch=88
+    True_=89
+    Typedef=90
+    Union=91
+    Unsigned=92
+    Void=93
+    Volatile=94
+    While=95
+    LeftParen=96
+    RightParen=97
+    LeftBracket=98
+    RightBracket=99
+    LeftBrace=100
+    RightBrace=101
+    Plus=102
+    Minus=103
+    Star=104
+    Div=105
+    Mod=106
+    Caret=107
+    And=108
+    Or=109
+    Tilde=110
+    Not=111
+    Assign=112
+    Less=113
+    Greater=114
+    PlusAssign=115
+    MinusAssign=116
+    StarAssign=117
+    DivAssign=118
+    ModAssign=119
+    XorAssign=120
+    AndAssign=121
+    OrAssign=122
+    LeftShiftAssign=123
+    RightShiftAssign=124
+    Equal=125
+    NotEqual=126
+    LessEqual=127
+    GreaterEqual=128
+    AndAnd=129
+    OrOr=130
+    PlusPlus=131
+    MinusMinus=132
+    Comma=133
+    ArrowStar=134
+    Arrow=135
+    Question=136
+    Colon=137
+    Doublecolon=138
+    Semi=139
+    Dot=140
+    DotStar=141
+    Ellipsis=142
+    Identifier=143
+    DecimalLiteral=144
+    OctalLiteral=145
+    HexadecimalLiteral=146
+    BinaryLiteral=147
+    IntegerSuffix=148
+    UserDefinedIntegerLiteral=149
+    UserDefinedFloatingLiteral=150
+    UserDefinedStringLiteral=151
+    UserDefinedCharacterLiteral=152
+    Whitespace=153
+    Newline=154
+    BlockComment=155
+    LineComment=156
 
     def __init__(self, input:TokenStream, output:TextIO = sys.stdout):
         super().__init__(input, output)
@@ -1390,13 +1339,13 @@ class McCompParser ( Parser ):
             self.state = 200
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if ((((_la - 43)) & ~0x3f) == 0 and ((1 << (_la - 43)) & 1125934274969607) != 0) or _la==179:
+            if ((((_la - 43)) & ~0x3f) == 0 and ((1 << (_la - 43)) & 68753555463) != 0) or _la==143:
                 self.state = 192
                 self.component_parameter()
                 self.state = 197
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                while _la==169:
+                while _la==133:
                     self.state = 193
                     self.match(McCompParser.Comma)
                     self.state = 194
@@ -1636,7 +1585,7 @@ class McCompParser ( Parser ):
                 self.state = 205
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==78:
+                if _la==68:
                     self.state = 204
                     self.match(McCompParser.Double)
 
@@ -1646,7 +1595,7 @@ class McCompParser ( Parser ):
                 self.state = 213
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==148:
+                if _la==112:
                     self.state = 208
                     self.match(McCompParser.Assign)
                     self.state = 211
@@ -1677,7 +1626,7 @@ class McCompParser ( Parser ):
                 self.state = 222
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==148:
+                if _la==112:
                     self.state = 217
                     self.match(McCompParser.Assign)
                     self.state = 220
@@ -1708,7 +1657,7 @@ class McCompParser ( Parser ):
                     self.state = 224
                     self.match(McCompParser.String)
                     pass
-                elif token in [66]:
+                elif token in [62]:
                     self.state = 225
                     self.match(McCompParser.Char)
                     self.state = 226
@@ -1722,7 +1671,7 @@ class McCompParser ( Parser ):
                 self.state = 232
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==148:
+                if _la==112:
                     self.state = 230
                     self.match(McCompParser.Assign)
                     self.state = 231
@@ -1746,17 +1695,17 @@ class McCompParser ( Parser ):
                 self.state = 243
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==148:
+                if _la==112:
                     self.state = 236
                     self.match(McCompParser.Assign)
                     self.state = 241
                     self._errHandler.sync(self)
                     token = self._input.LA(1)
-                    if token in [179]:
+                    if token in [143]:
                         self.state = 237
                         self.match(McCompParser.Identifier)
                         pass
-                    elif token in [136]:
+                    elif token in [100]:
                         self.state = 238
                         self.initializerlist()
                         pass
@@ -1801,17 +1750,17 @@ class McCompParser ( Parser ):
                 self.state = 259
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==148:
+                if _la==112:
                     self.state = 252
                     self.match(McCompParser.Assign)
                     self.state = 257
                     self._errHandler.sync(self)
                     token = self._input.LA(1)
-                    if token in [179]:
+                    if token in [143]:
                         self.state = 253
                         self.match(McCompParser.Identifier)
                         pass
-                    elif token in [136]:
+                    elif token in [100]:
                         self.state = 254
                         self.initializerlist()
                         pass
@@ -1842,17 +1791,17 @@ class McCompParser ( Parser ):
                 self.state = 271
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==148:
+                if _la==112:
                     self.state = 264
                     self.match(McCompParser.Assign)
                     self.state = 269
                     self._errHandler.sync(self)
                     token = self._input.LA(1)
-                    if token in [179]:
+                    if token in [143]:
                         self.state = 265
                         self.match(McCompParser.Identifier)
                         pass
-                    elif token in [136]:
+                    elif token in [100]:
                         self.state = 266
                         self.initializerlist()
                         pass
@@ -2153,7 +2102,7 @@ class McCompParser ( Parser ):
                 self.state = 301
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==132:
+                if _la==96:
                     self.state = 298
                     self.match(McCompParser.LeftParen)
                     self.state = 299
@@ -2163,7 +2112,7 @@ class McCompParser ( Parser ):
 
 
                 pass
-            elif token in [179]:
+            elif token in [143]:
                 self.enterOuterAlt(localctx, 2)
                 self.state = 303
                 self.match(McCompParser.Identifier)
@@ -2300,7 +2249,7 @@ class McCompParser ( Parser ):
                     self.state = 316
                     self.match(McCompParser.Absolute)
                     pass
-                elif token in [22, 179]:
+                elif token in [22, 143]:
                     self.state = 317
                     self.component_ref()
                     pass
@@ -2905,7 +2854,7 @@ class McCompParser ( Parser ):
             self.state = 373
             localctx.mime = self._input.LT(1)
             _la = self._input.LA(1)
-            if not(_la==52 or _la==179):
+            if not(_la==52 or _la==143):
                 localctx.mime = self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -2913,7 +2862,7 @@ class McCompParser ( Parser ):
             self.state = 374
             localctx.name = self._input.LT(1)
             _la = self._input.LA(1)
-            if not(_la==52 or _la==179):
+            if not(_la==52 or _la==143):
                 localctx.name = self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -2968,7 +2917,7 @@ class McCompParser ( Parser ):
             self.match(McCompParser.Category)
             self.state = 378
             _la = self._input.LA(1)
-            if not(_la==52 or _la==179):
+            if not(_la==52 or _la==143):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -3037,7 +2986,7 @@ class McCompParser ( Parser ):
             self.state = 386
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la==169:
+            while _la==133:
                 self.state = 382
                 self.match(McCompParser.Comma)
                 self.state = 383
@@ -3824,7 +3773,7 @@ class McCompParser ( Parser ):
                 self.state = 423
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                while _la==169:
+                while _la==133:
                     self.state = 419
                     self.match(McCompParser.Comma)
                     self.state = 420
@@ -3856,7 +3805,7 @@ class McCompParser ( Parser ):
                 _prevctx = localctx
                 self.state = 432
                 _la = self._input.LA(1)
-                if not(_la==138 or _la==139):
+                if not(_la==102 or _la==103):
                     self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -3936,7 +3885,7 @@ class McCompParser ( Parser ):
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 16)")
                         self.state = 445
                         _la = self._input.LA(1)
-                        if not(_la==140 or _la==141):
+                        if not(_la==104 or _la==105):
                             self._errHandler.recoverInline(self)
                         else:
                             self._errHandler.reportMatch(self)
@@ -3955,7 +3904,7 @@ class McCompParser ( Parser ):
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 15)")
                         self.state = 448
                         _la = self._input.LA(1)
-                        if not(_la==138 or _la==139):
+                        if not(_la==102 or _la==103):
                             self._errHandler.recoverInline(self)
                         else:
                             self._errHandler.reportMatch(self)
@@ -4086,7 +4035,7 @@ class McCompParser ( Parser ):
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 4)")
                         self.state = 475
                         _la = self._input.LA(1)
-                        if not(_la==165 or _la==166):
+                        if not(_la==129 or _la==130):
                             self._errHandler.recoverInline(self)
                         else:
                             self._errHandler.reportMatch(self)

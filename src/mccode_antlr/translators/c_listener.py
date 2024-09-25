@@ -36,11 +36,33 @@ def make_error_listener(super_class, source: str, pre=5, post=2):
 
     return ErrorListener()
 
+class TypedefCListener(CListener):
+    def __init__(self, typedefs: list = None):
+        self.typedefs = [] if typedefs is None else [x for x in typedefs]
+        self.is_typedef = False
+        self.typedef_name = None
+
+    def enterDeclaration(self, ctx: CParser.DeclarationContext):
+        self.is_typedef = False
+        self.typedef_name = None
+
+    def exitDeclaration(self, ctx: CParser.DeclarationContext):
+        if self.is_typedef and self.typedef_name is not None:
+            typename = self.typedef_name.replace('*', '').strip()
+            if typename not in self.typedefs:
+                self.typedefs.append(typename)
+
+    def enterStorageClassSpecifier(self, ctx: CParser.StorageClassSpecifierContext):
+        self.is_typedef = 'typedef' in literal_string(ctx)
+
+    def enterTypedefName(self, ctx: CParser.TypedefNameContext):
+        self.typedef_name = literal_string(ctx)
+
 
 class DeclaresCListener(CListener):
     def __init__(self, typedefs: list = None, verbose=False):
         self.verbose = verbose
-        self.typedefs = [] if typedefs is None else typedefs
+        self.typedefs = [] if typedefs is None else [x for x in typedefs]
         self.variables = dict()  # self.variables['name'] = type, value set by listeners
         self.last_type = None
         self.last_name = None
@@ -62,18 +84,7 @@ class DeclaresCListener(CListener):
 
     # Exit a parse tree produced by CParser#declaration.
     def exitDeclaration(self, ctx: CParser.DeclarationContext):
-        if self.is_typedef:
-            typename = self.not_type_name if self.last_name is None else self.last_name
-            if typename is None:
-                print(literal_string(ctx))
-                print(self.last_type)
-                print(self.last_name)
-                print(self.last_value)
-                print(self.not_type_name)
-                return
-            self.typedefs.append(typename.replace('*', '').strip())
-            self.is_typedef = False
-        elif not self.stored and self.not_type_name is not None and self.last_type.endswith(self.not_type_name):
+        if not self.stored and self.not_type_name is not None and self.last_type.endswith(self.not_type_name):
             # this can only happen for declaration lines? where no initialization is performed.
             new_type = self.last_type[:-len(self.not_type_name)].strip()
             self.debug(f'Storing declaration for {self.not_type_name} = ({new_type}, {self.last_value})')
@@ -85,19 +96,19 @@ class DeclaresCListener(CListener):
         self.last_name = None
         self.last_value = None
         self.is_declaration = False
+        self.is_typedef = False
         self.debug('Exit declaration')
 
     def enterDeclarationSpecifiers(self, ctx: CParser.DeclarationSpecifiersContext):
         self.last_type = literal_string(ctx)
-        self.debug(f'Enter Declaration Specifier {self.last_type=}')
-
-    def enterStorageClassSpecifier(self, ctx: CParser.StorageClassSpecifierContext):
-        self.is_typedef = 'typedef' in literal_string(ctx)
-        self.debug(f'Enter storage class specifier {self.is_typedef=}')
+        self.debug(f'Enter Declaration Specifier last_type=\n{self.last_type}')
 
     def enterTypeSpecifier(self, ctx: CParser.TypeSpecifierContext):
         self.was_type = True
-        self.debug(f'Enter type specifier')
+        self.debug(f'Enter type specifier ctx=\n{literal_string(ctx)}')
+
+    def enterStorageClassSpecifier(self, ctx: CParser.StorageClassSpecifierContext):
+        self.is_typedef = 'typedef' in literal_string(ctx)
 
     def enterTypedefName(self, ctx: CParser.TypedefNameContext):
         # Check here if this is a known typedef'd name or not :/
@@ -158,23 +169,20 @@ def extract_c_declared_variables_and_defined_types(block: str, user_types: list 
     from antlr4 import ParseTreeWalker
     from antlr4.error.ErrorListener import ErrorListener
     from ..grammar import CLexer
-    # self.debug('Load block into ANTLR4 stream')
-    # self.debug(f'{block}')
     stream = InputStream(block)
-    # self.debug('Run lexer')
     lexer = CLexer(stream)
-    # self.debug('Tokenize stream')
     tokens = CommonTokenStream(lexer)
-    # self.debug('Parse tokens')
     parser = CParser(tokens)
     parser.addErrorListener(make_error_listener(ErrorListener, block))
-    # self.debug('Extract compilation unit tree')
     tree = parser.compilationUnit()
-    # self.debug('Initialize listener')
-    listener = DeclaresCListener(user_types, verbose=verbose)
-    # self.debug('Initialize walker')
+    # Go through a first time to identify types -- this _could_ be problematic
+    # if typedefs happen _after_ their name(s) are used. But we ignore that for now.
+    typedef_listener = TypedefCListener(user_types)
+    typedef_walker = ParseTreeWalker()
+    typedef_walker.walk(typedef_listener, tree)
+    # Go through again to get the declarations:
+    listener = DeclaresCListener(typedef_listener.typedefs, verbose=verbose)
     walker = ParseTreeWalker()
-    # self.debug('Walk the tree')
     walker.walk(listener, tree)
     return listener.variables, listener.typedefs
 

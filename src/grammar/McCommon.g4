@@ -1,5 +1,5 @@
 grammar McCommon;
-import cpp;
+import c99;
 
 // Common parsing rules
 
