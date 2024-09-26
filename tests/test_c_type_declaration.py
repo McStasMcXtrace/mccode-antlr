@@ -125,3 +125,54 @@ def test_typedef_declaration():
     assert all(x in variables for x in expected)
     for name, (dtype, value) in expected.items():
         assert(variables[name] == (dtype, value))
+
+
+def test_flatellipse_finite_mirror():
+    # A component defines a function handle (then doesn't use it).
+    block = dedent("""\
+        //Scene where all geometry is added to
+    Scene s;
+    //point structure
+    Point p1;
+    //Function to handle Conic-Neutron collisions with reflectivity from McStas Tables
+    void traceNeutronConicWithTables(_class_particle* p, ConicSurf c);
+    double *rfront_inner;//all r-distances at lStart for all mirror surfaces
+    int silicon; // +1: neutron in silicon, -1: neutron in air, 0: mirrorwidth is 0; neutron cannot be in silicon and also does not track mirror transitions
+    t_Table rsTable;
+    """)
+    variables, types = extract(block)
+    assert len(types) == 0
+    assert len(variables) == 6
+    expected = {
+        's': ('Scene', None),
+        'p1': ('Point', None),
+        'traceNeutronConicWithTables(_class_particle* p, ConicSurf c)': ('void', None),
+        '* rfront_inner': ('double', None),
+        'silicon': ('int', None),
+        'rsTable': ('t_Table', None)
+    }
+    assert 'c' not in variables
+    for name, (dtype, value) in expected.items():
+        assert name in variables, f"{name} not in {list(variables.items())}"
+        assert variables[name] == (dtype, value)
+
+
+def test_function_pointer_declaration():
+    block = dedent(r"""
+    int (*fun_ptr)(int, int);
+    int (*fun_ptr_ar3[3])(int, int);
+    int (*fun_ptr_arr[])(int, int) = {add, sub, mul};
+    """)
+    variables, types = extract(block)
+    assert len(types) == 0
+    assert len(variables) == 3
+    print(variables)
+
+    expected = {
+        '(* fun_ptr)(int, int)': ('int', None),
+        '(* fun_ptr_ar3[3])(int, int)': ('int', None),
+        '(* fun_ptr_arr[])(int, int)': ('int', '{add, sub, mul}'),
+    }
+    for name, (dtype, value) in expected.items():
+        assert name in variables
+        assert variables[name] == (dtype, value)

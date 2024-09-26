@@ -1,13 +1,17 @@
 from loguru import logger
-from ..grammar import CParser, CListener, McInstrParser
+from ..grammar import CParser, McInstrParser, CVisitor
 from ..instr import InstrVisitor
 from ..common import Expr
 
-
-def literal_string(ctx):
-    start_token, stop_token = ctx.start, ctx.stop
+def string_between_tokens(start_token, stop_token):
     stream = start_token.getInputStream()
     return stream.getText(start_token.start, stop_token.stop)
+
+
+def literal_string(ctx, until=None):
+    if until is None:
+        until = ctx
+    return string_between_tokens(ctx.start, until.stop)
 
 
 def make_error_listener(super_class, source: str, pre=5, post=2):
@@ -36,104 +40,208 @@ def make_error_listener(super_class, source: str, pre=5, post=2):
 
     return ErrorListener()
 
-class TypedefCListener(CListener):
-    def __init__(self, typedefs: list = None):
-        self.typedefs = [] if typedefs is None else [x for x in typedefs]
-        self.is_typedef = False
-        self.typedef_name = None
 
-    def enterDeclaration(self, ctx: CParser.DeclarationContext):
-        self.is_typedef = False
-        self.typedef_name = None
+class CDeclarator:
+    def __init__(self, pointer, declare, extensions):
+        self.pointer = pointer
+        self.declare = declare
+        self.extensions = extensions
+        self.dtype = None
 
-    def exitDeclaration(self, ctx: CParser.DeclarationContext):
-        if self.is_typedef and self.typedef_name is not None:
-            typename = self.typedef_name.replace('*', '').strip()
-            if typename not in self.typedefs:
-                self.typedefs.append(typename)
+    def __str__(self):
+        ext = " ".join(f'{x}' for x in self.extensions)
+        dec = f'{self.declare} {ext}' if len(ext) else f'{self.declare}'
+        if self.pointer:
+            dec = f'{self.pointer} {dec}'
+        if self.dtype:
+            dec = f'{self.dtype} {dec}'
+        return dec
 
-    def enterStorageClassSpecifier(self, ctx: CParser.StorageClassSpecifierContext):
-        self.is_typedef = 'typedef' in literal_string(ctx)
+    def variable_key(self):
+        ext = " ".join(f'{x}' for x in self.extensions)
+        dec = f'{self.declare} {ext}' if len(ext) else f'{self.declare}'
+        if self.pointer:
+            dec = f'{self.pointer} {dec}'
+        return dec
 
-    def enterTypedefName(self, ctx: CParser.TypedefNameContext):
-        self.typedef_name = literal_string(ctx)
+    def __hash__(self):
+        return hash(str(self))
 
 
-class DeclaresCListener(CListener):
-    def __init__(self, typedefs: list = None, verbose=False):
+class CFuncPointer:
+    def __init__(self, declare: CDeclarator, modifiers):
+        self.mods = modifiers
+        self.declare = declare
+        self.args = None
+
+    def __str__(self):
+        f = f'({self.mods} {self.declare})' if self.mods else f'({self.declare})'
+        return f'{f}({self.args})' if self.args else f'{f}()'
+
+    def __hash__(self):
+        return hash(str(self))
+
+
+class DeclaresCVisitor(CVisitor):
+    def __init__(self, typedefs: list | None = None, verbose: bool = False):
         self.verbose = verbose
-        self.typedefs = [] if typedefs is None else [x for x in typedefs]
-        self.variables = dict()  # self.variables['name'] = type, value set by listeners
-        self.last_type = None
-        self.last_name = None
-        self.last_value = None
-        self.is_declaration = False
-        self.is_typedef = False
-        self.not_type_name = None
-        self.was_type = False
-        self.stored = False
-        
+        self.typedefs = [x for x in typedefs] if typedefs else []
+        self.declares = {}
+
     def debug(self, message):
         if self.verbose:
             logger.debug(message)
 
-    def enterDeclaration(self, ctx: CParser.DeclarationContext):
-        self.debug('Enter declaration')
-        self.is_declaration = True
-        self.stored = False
+    def info(self, message):
+        if self.verbose:
+            logger.info(message)
 
-    # Exit a parse tree produced by CParser#declaration.
-    def exitDeclaration(self, ctx: CParser.DeclarationContext):
-        if not self.stored and self.not_type_name is not None and self.last_type.endswith(self.not_type_name):
-            # this can only happen for declaration lines? where no initialization is performed.
-            new_type = self.last_type[:-len(self.not_type_name)].strip()
-            self.debug(f'Storing declaration for {self.not_type_name} = ({new_type}, {self.last_value})')
-            if len(new_type):
-                self.variables[self.not_type_name] = (new_type, self.last_value)
-                self.stored = True
-        self.not_type_name = None
-        self.last_type = None
-        self.last_name = None
-        self.last_value = None
-        self.is_declaration = False
-        self.is_typedef = False
-        self.debug('Exit declaration')
+    def visitDeclaration(self, ctx:CParser.DeclarationContext):
+        if ctx.staticAssertDeclaration() is not None:
+            return
+        #
+        specs = [self.visit(x) for x in ctx.declarationSpecifiers().declarationSpecifier()]
+        if ctx.initDeclaratorList() is not None:
+            inits = [self.visit(x) for x in ctx.initDeclaratorList().initDeclarator()]
+        else:
+            inits = []
 
-    def enterDeclarationSpecifiers(self, ctx: CParser.DeclarationSpecifiersContext):
-        self.last_type = literal_string(ctx)
-        self.debug(f'Enter Declaration Specifier last_type=\n{self.last_type}')
+        if 'typedef' in specs:
+            # this _is_ a typedef statement.
+            # It (probably) is of the form
+            #   typedef typeInformation aliasIdentifier;
+            if specs[0] != 'typedef':
+                self.debug(f"Expected typedef ... identifier; not\n{literal_string(ctx)}")
+            if len(inits):
+                self.debug(f'Expected no initializer with typedef, but found {inits}')
+            alias = specs[-1]
+            if alias in self.typedefs:
+                self.info(f'Re-definition of typedef alias {alias}?')
+            self.typedefs.append(alias)
+        elif len(inits):
+            for decl, init in inits:
+                decl.dtype = ' '.join(specs)
+                self.declares[decl] = init
+        elif len(specs) > 1:
+            decl = CDeclarator(pointer=None, declare=specs[-1], extensions=[])
+            decl.dtype = ' '.join(specs[:-1])
+            self.declares[decl] = None
 
-    def enterTypeSpecifier(self, ctx: CParser.TypeSpecifierContext):
-        self.was_type = True
-        self.debug(f'Enter type specifier ctx=\n{literal_string(ctx)}')
+    # Five declaration specifiers
+    def visitStorageClassSpecifier(self, ctx:CParser.StorageClassSpecifierContext):
+        self.debug(f'StorageClassSpecifier {literal_string(ctx)}')
+        return literal_string(ctx)
 
-    def enterStorageClassSpecifier(self, ctx: CParser.StorageClassSpecifierContext):
-        self.is_typedef = 'typedef' in literal_string(ctx)
+    def visitTypeSpecifier(self, ctx:CParser.TypeSpecifierContext):
+        if (c := ctx.atomicTypeSpecifier()) is not None:
+            return self.visit(c)
+        if (c := ctx.structOrUnionSpecifier()) is not None:
+            return self.visit(c)
+        if (c := ctx.enumSpecifier()) is not None:
+            return self.visit(c)
+        if (c := ctx.typedefName()) is not None:
+            return self.visit(c)
+        if (c := ctx.constantExpression()) is not None:
+            return f'__typeof__({self.visit(c)}'
+        return literal_string(ctx)
 
-    def enterTypedefName(self, ctx: CParser.TypedefNameContext):
-        # Check here if this is a known typedef'd name or not :/
-        self.was_type = literal_string(ctx) in self.typedefs
-        if not self.was_type:
-            # We erroneously ended up here thinking this is part of a type name.
-            # It's not, but we need to save the string value _Somewhere_
-            self.not_type_name = literal_string(ctx)
-        self.debug(f'Enter typedef name {self.was_type=} {self.not_type_name=}')
+    # Keep going from here
+    def visitTypeQualifier(self, ctx:CParser.TypeQualifierContext):
+        self.debug(f'typeQualifier {literal_string(ctx)}')
+        return literal_string(ctx)
 
-    def exitInitDeclarator(self, ctx: CParser.InitDeclaratorContext):
-        if not self.is_typedef:
-            self.debug(f'Storing declaration for {self.last_name} = ({self.last_type}, {self.last_value})')
-            self.variables[self.last_name] = (self.last_type, self.last_value)
-            self.stored = True
-            self.last_name = None
-        self.last_value = None
+    def visitFunctionSpecifier(self, ctx:CParser.FunctionSpecifierContext):
+        self.debug(f'functionSpecifier {literal_string(ctx)}')
+        return literal_string(ctx)
 
-    def enterDeclarator(self, ctx: CParser.DeclaratorContext):
-        self.last_name = literal_string(ctx)
-        self.debug(f'Enter declarator {self.last_name=}')
+    def visitAlignmentSpecifier(self, ctx:CParser.AlignmentSpecifierContext):
+        self.debug(f'alignmentSpecifier {literal_string(ctx)}')
+        return literal_string(ctx)
 
-    def exitInitializer(self, ctx: CParser.InitializerContext):
-        self.last_value = literal_string(ctx)
-        self.debug(f'Exit initializer {self.last_value=}')
+    # initDeclarator
+    def visitInitDeclarator(self, ctx:CParser.InitDeclaratorContext):
+        # declarator ( '=' initializer )?
+        decl = self.visit(ctx.declarator())
+        init = self.visit(ctx.initializer()) if ctx.initializer() else None
+        return decl, init
+
+    def visitAtomicTypeSpecifier(self, ctx:CParser.AtomicTypeSpecifierContext):
+        self.debug(f'AtomicTypeSpecifier {literal_string(ctx)}')
+        return literal_string(ctx)
+
+    def visitStructOrUnionSpecifier(self, ctx:CParser.StructOrUnionContext):
+        self.debug(f'StructOrUnion {literal_string(ctx)}')
+        return literal_string(ctx)
+
+    def visitEnumSpecifier(self, ctx:CParser.EnumSpecifierContext):
+        self.debug(f'EnumSpecifier {literal_string(ctx)}')
+        return literal_string(ctx)
+
+    def visitTypedefName(self, ctx:CParser.TypedefNameContext):
+        self.debug(f'TypedefName {literal_string(ctx)}')
+        return literal_string(ctx)
+
+    def visitConstantExpression(self, ctx:CParser.ConstantExpressionContext):
+        a = ctx.conditionalExpression()
+        self.debug(f'ConstantExpression {literal_string(ctx)}')
+        return literal_string(a)
+
+    def visitInitializer(self, ctx:CParser.InitializerContext):
+        self.debug(f'Initializer {literal_string(ctx)}')
+        return literal_string(ctx)
+
+    def visitDeclarator(self, ctx:CParser.DeclaratorContext):
+        ptr = self.visit(ctx.pointer()) if ctx.pointer() else None
+        dec = self.visit(ctx.directDeclarator())
+        extensions = [self.visit(x) for x in ctx.gccDeclaratorExtension()]
+        return CDeclarator(pointer=ptr, declare=dec, extensions=extensions)
+
+    def visitPointer(self, ctx:CParser.PointerContext):
+        self.debug(f'pointer {literal_string(ctx)}')
+        return literal_string(ctx)
+
+    def visitDirectDeclarator(self, ctx:CParser.DirectDeclaratorContext):
+        if ctx.declarator():
+            # this _is_ a function pointer declarator, right?
+            modifiers = literal_string(ctx.vcSpecificModifer()) if ctx.vcSpecificModifer() else None
+            return CFuncPointer(self.visit(ctx.declarator()), modifiers=modifiers)
+        if ctx.Identifier():
+            return literal_string(ctx)
+
+        dd = ctx.directDeclarator()
+        after_dd_str = literal_string(ctx).replace(literal_string(dd), '')
+        dec = self.visit(dd)
+        if isinstance(dec, CFuncPointer):
+            dec.args = after_dd_str.strip('()')
+            return dec
+        return dec + after_dd_str
+
+
+def extract_c_declared_variables_and_defined_types(block: str, user_types: list = None, verbose=False):
+    from antlr4 import InputStream, CommonTokenStream
+    from antlr4.error.ErrorListener import ErrorListener
+    from ..grammar import CLexer
+    stream = InputStream(block)
+    lexer = CLexer(stream)
+    tokens = CommonTokenStream(lexer)
+    parser = CParser(tokens)
+    parser.addErrorListener(make_error_listener(ErrorListener, block))
+    tree = parser.compilationUnit()
+    visitor = DeclaresCVisitor(user_types, verbose=verbose)
+    visitor.visitCompilationUnit(tree)
+    # Consider _using_ the CDeclarator class instead of this conversion?
+    variables = {dec.variable_key(): (dec.dtype, init) for dec, init in visitor.declares.items()}
+    return variables, visitor.typedefs
+
+
+def extract_c_declared_variables(block: str, user_types: list = None, verbose=False):
+    variables, types = extract_c_declared_variables_and_defined_types(block, user_types, verbose=verbose)
+    return variables
+
+
+def extract_c_defined_then_declared_variables(defined_in_block: str, declared_in_block):
+    _, defined_in_types = extract_c_declared_variables_and_defined_types(defined_in_block)
+    return extract_c_declared_variables(declared_in_block, user_types=defined_in_types)
 
 
 class EvalCVisitor(InstrVisitor):
@@ -161,40 +269,6 @@ class EvalCVisitor(InstrVisitor):
         if name in self.assigned:
             return self.assigned[name]
         return Expr.id(name)
-
-
-
-def extract_c_declared_variables_and_defined_types(block: str, user_types: list = None, verbose=False):
-    from antlr4 import InputStream, CommonTokenStream
-    from antlr4 import ParseTreeWalker
-    from antlr4.error.ErrorListener import ErrorListener
-    from ..grammar import CLexer
-    stream = InputStream(block)
-    lexer = CLexer(stream)
-    tokens = CommonTokenStream(lexer)
-    parser = CParser(tokens)
-    parser.addErrorListener(make_error_listener(ErrorListener, block))
-    tree = parser.compilationUnit()
-    # Go through a first time to identify types -- this _could_ be problematic
-    # if typedefs happen _after_ their name(s) are used. But we ignore that for now.
-    typedef_listener = TypedefCListener(user_types)
-    typedef_walker = ParseTreeWalker()
-    typedef_walker.walk(typedef_listener, tree)
-    # Go through again to get the declarations:
-    listener = DeclaresCListener(typedef_listener.typedefs, verbose=verbose)
-    walker = ParseTreeWalker()
-    walker.walk(listener, tree)
-    return listener.variables, listener.typedefs
-
-
-def extract_c_declared_variables(block: str, user_types: list = None, verbose=False):
-    variables, types = extract_c_declared_variables_and_defined_types(block, user_types, verbose=verbose)
-    return variables
-
-
-def extract_c_defined_then_declared_variables(defined_in_block: str, declared_in_block):
-    _, defined_in_types = extract_c_declared_variables_and_defined_types(defined_in_block)
-    return extract_c_declared_variables(declared_in_block, user_types=defined_in_types)
 
 
 def evaluate_c_defined_variables(variables: dict[str, str], initialized_in: str, known: dict[str, Expr] = None,
