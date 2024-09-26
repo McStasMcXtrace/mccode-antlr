@@ -67,7 +67,7 @@ class Registry:
     def is_available(self, name: str, ext: str = None):
         pass
 
-    def path(self, name: str, ext: str = None):
+    def path(self, name: str, ext: str = None) -> Path:
         pass
 
     def filenames(self) -> list[str]:
@@ -82,6 +82,10 @@ class Registry:
         """Return regex *matching* registered file names -- which *start* with the regex pattern"""
         regex = ensure_regex_pattern(regex)
         return [x for x in self.filenames() if regex.match(x) is not None]
+
+    def contents(self, *args, **kwargs):
+        """Return the text contents of a Registry file"""
+        return self.path(*args, **kwargs).read_text()
 
 
 def _name_plus_suffix(name: str, suffix: str = None):
@@ -171,7 +175,7 @@ class RemoteRegistry(Registry):
     def is_available(self, name: str, ext: str = None, exact: bool = True):
         return self.pooch.registry_files(self.fullname(name, ext, exact))
 
-    def path(self, name: str, ext: str = None, exact: bool = True):
+    def path(self, name: str, ext: str = None, exact: bool = True) -> Path:
         return Path(self.pooch.fetch(self.fullname(name, ext, exact)))
 
     def filenames(self) -> list[str]:
@@ -309,7 +313,7 @@ class LocalRegistry(Registry):
     def is_available(self, name: str, ext: str = None):
         return self.known(name, ext)
 
-    def path(self, name: str, ext: str = None, exact: bool = True):
+    def path(self, name: str, ext: str = None, exact: bool = True) -> Path:
         return self.root.joinpath(self.fullname(name, ext, exact))
 
     def filenames(self) -> list[str]:
@@ -323,6 +327,46 @@ class LocalRegistry(Registry):
         if other.root != self.root:
             return False
         return True
+
+
+class InMemoryRegistry(Registry):
+    def __init__(self, name, **components):
+        self.name = name
+        self.root = '/proc/memory/'  # Something pathlike is needed?
+        self.version = mccode_antlr_version()
+        self.components = {k: v for k, v in components.items()}
+
+    def add(self, name: str, definition: str):
+        self.components[name] = definition
+
+    def add_comp(self, name: str, definition: str):
+        if not name.lower().endswith('.comp'):
+            name += '.comp'
+        self.add(name, definition)
+
+    def add_instr(self, name: str, definition: str):
+        if not name.lower().endswith('.instr'):
+            name += '.instr'
+        self.add(name, definition)
+
+    def filenames(self) -> list[str]:
+        return list(self.components.keys())
+
+    def fullname(self, name: str, ext: str | None = None):
+        full_name = name if ext is None else name + ext
+        return full_name if full_name in self.components else None
+
+    def known(self, name: str, ext: str | None = None):
+        full_name = self.fullname(name, ext=ext)
+        if full_name is not None and full_name in self.components:
+            return True
+        return False
+
+    def contents(self, name: str, ext: str | None = None):
+        full_name = self.fullname(name, ext=ext)
+        if full_name is not None and full_name in self.components:
+            return self.components[full_name]
+        raise KeyError(f'InMemoryRegistry does not know of {name if ext is None else name + ext}')
 
 
 def registries_match(registry: Registry, spec):

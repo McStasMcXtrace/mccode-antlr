@@ -3,6 +3,30 @@ from textwrap import dedent
 
 from .compiled import compiled, compile_and_run
 
+
+@compiled
+def test_without_components():
+    instr = parse_mcstas_instr(dedent("""\
+    DEFINE INSTRUMENT without_components(int dummy=0)
+    DECLARE %{
+    int i_declare;
+    %}
+    INITIALIZE %{
+    i_declare = 1;
+    printf("Ran without components!\\ndummy=%d\\n", dummy);
+    %}
+    TRACE
+    FINALLY %{ %}
+    END
+    """))
+    results, files = compile_and_run(instr, '-n 1 dummy=101')
+    lines = results.decode('utf-8').splitlines()
+    assert len(lines) == 3
+    assert lines[0] == "Ran without components!"
+    assert lines[1] == "dummy=101"
+
+
+
 @compiled
 def test_template_instr():
     """

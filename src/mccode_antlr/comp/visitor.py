@@ -60,7 +60,7 @@ class CompVisitor(McCompVisitor):
 
     def visitComponent_define_parameters(self, ctx: Parser.Component_define_parametersContext):
         for parameter in self.visit(ctx.component_parameters()):
-            self.state.add_parameter(parameter)
+            self.state.add_define(parameter)
 
     def visitComponent_set_parameters(self, ctx: Parser.Component_set_parametersContext):
         for parameter in self.visit(ctx.component_parameters()):

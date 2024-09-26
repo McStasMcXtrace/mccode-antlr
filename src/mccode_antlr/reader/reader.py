@@ -72,6 +72,17 @@ class Reader:
         msg = "registry " + names[0] if len(names) == 1 else 'registries: ' + ','.join(names)
         raise RuntimeError(f'{name} not found in {msg}')
 
+    def contents(self, name: str, which: str = None, ext: str = None):
+        registries = self.registries if which is None else [x for x in self.registries
+                                                            if x.name in which]
+        for reg in registries:
+            if reg.known(name, ext):
+                return reg.contents(name, ext)
+        names = [reg.name for reg in registries]
+        msg = "registry " + names[0] if len(names) == 1 else 'registries: ' + ','.join(
+            names)
+        raise RuntimeError(f'{name} not found in {msg}')
+
     def fullname(self, name: str, which: str = None, ext: str=None):
         registries = self.registries if which is None else [x for x in self.registries if x.name in which]
         for reg in registries:
@@ -94,20 +105,19 @@ class Reader:
         return [reg.name for reg in registries if reg.known(name)]
 
     def stream(self, name: str, which: str = None):
-        from antlr4 import FileStream
-        return FileStream(str(self.locate(name, which=which).resolve()), encoding='utf8')
+        from antlr4 import InputStream
+        return InputStream(self.contents(name, which=which))
 
     def add_component(self, name: str, current_instance_name=None):
         if name in self.components:
             raise RuntimeError("The named component is already known.")
-        from antlr4 import FileStream
+        from antlr4 import InputStream
         from ..grammar import McComp_ErrorListener, McComp_parse
         from ..comp import CompVisitor
-        filename = str(self.locate(name, ext='.comp').resolve())
-        with open(filename, 'r') as file:
-            source = file.read()
+        source = self.contents(name, ext='.comp')
+        filename = str(self.locate(name, ext='.comp'))
 
-        stream = FileStream(filename, encoding='utf8')
+        stream = InputStream(source)
         error_listener = make_reader_error_listener(McComp_ErrorListener, 'Component', name, source)
         tree = McComp_parse(stream, 'prog', error_listener)
 
@@ -134,21 +144,20 @@ class Reader:
         In McCode3 fashion, the instrument file *should* be in the current working directory.
         In new-fashion, the registry/registries will be checked if it is not.
         """
-        from antlr4 import FileStream
+        from antlr4 import InputStream
         from ..grammar import McInstr_parse, McInstr_ErrorListener
         from ..instr import InstrVisitor, Instr
         path = name if isinstance(name, Path) else Path(name)
         if path.suffix != '.instr':
             path = path.with_suffix(f'{path.suffix}.instr')
-        if not path.exists() and not path.is_file():
+        if path.exists() and path.is_file():
+            source = path.read_text()
+        else:
             path = self.locate(path.name)  # include the .instr for the search
-        if not path.exists() and not path.is_file():
-            raise RuntimeError(f'Can not locate instr file for {name}.')
+            source = self.contents(path.name)
         filename = str(path.resolve())
-        with open(filename, 'r') as file:
-            source = file.read()
 
-        stream = FileStream(filename, encoding='utf8')
+        stream = InputStream(source)
         error_listener = make_reader_error_listener(
             McInstr_ErrorListener, 'Instrument', name, source
         )

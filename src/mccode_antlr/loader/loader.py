@@ -12,12 +12,11 @@ def parse_mccode_instr_parameters(contents: str):
     return visitor.visitProg(McInstr_parse(InputStream(contents), 'prog'))
 
 
-def parse_mccode_instr(contents: str, registry: Registry, source: str = None) -> Instr:
+def parse_mccode_instr(contents: str, registries: list[Registry], source: str = None) -> Instr:
     from antlr4 import InputStream
     from mccode_antlr.grammar import McInstr_parse
     from mccode_antlr.instr import InstrVisitor
     from mccode_antlr.reader import Reader
-    registries = [registry]
     reader = Reader(registries=registries)
     visitor = InstrVisitor(reader, source or '<string>')
     instr = visitor.visitProg(McInstr_parse(InputStream(contents), 'prog'))
@@ -26,25 +25,33 @@ def parse_mccode_instr(contents: str, registry: Registry, source: str = None) ->
     return instr
 
 
-def parse_mcstas_instr(contents: str) -> Instr:
+def ensure_registry(needed: Registry, have: list[Registry] | None):
+    if have is None or len(have) == 0:
+        return [needed]
+    if needed in have:
+        return have
+    return have + [needed]
+
+
+def parse_mcstas_instr(contents: str, registries: list[Registry] | None = None) -> Instr:
     from mccode_antlr.reader import MCSTAS_REGISTRY
-    return parse_mccode_instr(contents, MCSTAS_REGISTRY)
+    return parse_mccode_instr(contents, ensure_registry(MCSTAS_REGISTRY, registries))
 
 
-def parse_mcxtrace_instr(contents: str) -> Instr:
+def parse_mcxtrace_instr(contents: str, registries: list[Registry] | None = None) -> Instr:
     from mccode_antlr.reader import MCXTRACE_REGISTRY
-    return parse_mccode_instr(contents, MCXTRACE_REGISTRY)
+    return parse_mccode_instr(contents, ensure_registry(MCXTRACE_REGISTRY, registries))
 
 
-def load_mccode_instr(filename: Union[str, Path], registry: Registry) -> Instr:
-    return parse_mccode_instr(Path(filename).read_text(), registry, source=str(filename))
+def load_mccode_instr(filename: Union[str, Path], registries: list[Registry]) -> Instr:
+    return parse_mccode_instr(Path(filename).read_text(), registries, source=str(filename))
 
 
-def load_mcstas_instr(filename: Union[str, Path]) -> Instr:
+def load_mcstas_instr(filename: Union[str, Path], registries: list[Registry] | None = None) -> Instr:
     from mccode_antlr.reader import MCSTAS_REGISTRY
-    return load_mccode_instr(filename, MCSTAS_REGISTRY)
+    return load_mccode_instr(filename, ensure_registry(MCSTAS_REGISTRY, registries))
 
 
-def load_mcxtrace_instr(filename: Union[str, Path]) -> Instr:
+def load_mcxtrace_instr(filename: Union[str, Path], registries: list[Registry] | None = None) -> Instr:
     from mccode_antlr.reader import MCXTRACE_REGISTRY
-    return load_mccode_instr(filename, MCXTRACE_REGISTRY)
+    return load_mccode_instr(filename, ensure_registry(MCXTRACE_REGISTRY, registries))
