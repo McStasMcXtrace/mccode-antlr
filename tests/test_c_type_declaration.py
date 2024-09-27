@@ -1,5 +1,6 @@
 from mccode_antlr.translators.c_listener import (
-    extract_c_declared_variables_and_defined_types as extract
+    extract_c_declared_variables_and_defined_types as extract,
+    CDeclarator, CFuncPointer
 )
 from textwrap import dedent
 
@@ -80,12 +81,14 @@ def test_assignments():
     variables, types = extract(block)
     assert len(variables) == 3
     assert len(types) == 0
-    assert 'blah' in variables
-    assert variables['blah'] == ('int', '1')
-    assert 'yarg' in variables
-    assert variables['yarg'] == ('double', None)
-    assert 'mmmm[11]' in variables
-    assert variables['mmmm[11]'] == ('char', '"0123456789"')
+    expected = [
+        CDeclarator(dtype='int', declare='blah', init='1'),
+        CDeclarator(dtype='double', declare='yarg'),
+        CDeclarator(dtype='char', declare='mmmm', init='"0123456789"', elements=11),
+    ]
+    for x in expected:
+        assert x in variables
+
 
 def test_struct_declaration():
     block = dedent("""\
@@ -96,14 +99,12 @@ def test_struct_declaration():
     variables, types = extract(block)
     assert len(variables) == 3
     assert len(types) == 0
-    expected = {
-        'the_struct': ('struct my_struct_type', None),
-        'a_struct_with_values': ('struct another_struct', '{0, 1.0, "two"}'),
-        '* ptr_to_third_struct': ('struct the_third_s', None),
-    }
+    expected = [
+        CDeclarator(dtype='struct my_struct_type', declare='the_struct'),
+        CDeclarator(dtype='struct another_struct', declare='a_struct_with_values', init='{0, 1.0, "two"}'),
+        CDeclarator(dtype='struct the_third_s', declare='ptr_to_third_struct', pointer='*')
+    ]
     assert all(x in variables for x in expected)
-    for name, (dtype, value) in expected.items():
-        assert(variables[name] == (dtype, value))
 
 
 def test_typedef_declaration():
@@ -117,14 +118,12 @@ def test_typedef_declaration():
     assert len(variables) == 3
     assert len(types) == 1
     assert types[0] == "blah"
-    expected = {
-        'really_a_double': ('blah', '1.0f'),
-        '* double_ptr': ('blah', 'NULL'),
-        'double_array[10]': ('blah', None),
-    }
+    expected = [
+        CDeclarator(dtype='blah', declare='really_a_double', init='1.0f'),
+        CDeclarator(dtype='blah', declare='double_ptr', pointer='*', init='NULL'),
+        CDeclarator(dtype='blah', declare='double_array', elements=10)
+    ]
     assert all(x in variables for x in expected)
-    for name, (dtype, value) in expected.items():
-        assert(variables[name] == (dtype, value))
 
 
 def test_flatellipse_finite_mirror():
@@ -143,18 +142,20 @@ def test_flatellipse_finite_mirror():
     variables, types = extract(block)
     assert len(types) == 0
     assert len(variables) == 6
-    expected = {
-        's': ('Scene', None),
-        'p1': ('Point', None),
-        'traceNeutronConicWithTables(_class_particle* p, ConicSurf c)': ('void', None),
-        '* rfront_inner': ('double', None),
-        'silicon': ('int', None),
-        'rsTable': ('t_Table', None)
-    }
-    assert 'c' not in variables
-    for name, (dtype, value) in expected.items():
-        assert name in variables, f"{name} not in {list(variables.items())}"
-        assert variables[name] == (dtype, value)
+    expected = [
+        CDeclarator(dtype='Scene', declare='s'),
+        CDeclarator(dtype='Point', declare='p1'),
+        # the function pre-declaration _IS NOT_ a function pointer (and should be in DECLARE)
+        CDeclarator(
+            dtype='void',
+            declare='traceNeutronConicWithTables(_class_particle* p, ConicSurf c)',
+        ),
+        CDeclarator(dtype='double', pointer='*', declare='rfront_inner'),
+        CDeclarator(dtype='int', declare='silicon'),
+        CDeclarator(dtype='t_Table', declare='rsTable')
+    ]
+    for x, y in zip(expected, variables, strict=True):
+        assert x == y
 
 
 def test_function_pointer_declaration():
@@ -167,12 +168,31 @@ def test_function_pointer_declaration():
     assert len(types) == 0
     assert len(variables) == 3
     print(variables)
-
-    expected = {
-        '(* fun_ptr)(int, int)': ('int', None),
-        '(* fun_ptr_ar3[3])(int, int)': ('int', None),
-        '(* fun_ptr_arr[])(int, int)': ('int', '{add, sub, mul}'),
-    }
-    for name, (dtype, value) in expected.items():
-        assert name in variables
-        assert variables[name] == (dtype, value)
+    expected = [
+        CDeclarator(
+            dtype='int',
+            declare=CFuncPointer(
+                declare=CDeclarator(pointer='*', declare='fun_ptr'),
+                args='int, int',
+            ),
+        ),
+        CDeclarator(
+            dtype='int',
+            declare=CFuncPointer(
+                declare=CDeclarator(pointer='*', declare='fun_ptr_ar3'),
+                args='int, int',
+            ),
+            elements=3,
+        ),
+        CDeclarator(
+            dtype='int',
+            declare=CFuncPointer(
+                declare=CDeclarator(pointer='*', declare='fun_ptr_arr'),
+                args='int, int',
+            ),
+            elements=0,
+            init='{add, sub, mul}',
+        ),
+    ]
+    for x, y in zip(expected, variables, strict=True):
+        assert x == y

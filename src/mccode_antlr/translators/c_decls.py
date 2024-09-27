@@ -181,20 +181,20 @@ def component_type_declaration(comp, typedefs: list, declared_parameters: list):
     # This is the loop over the *replaced* `comp->def->out_par` e.g., found DECLARE parameters
     lines.append(f"/* Component type '{comp.name}' private parameters */")
     for x in declared_parameters:
-        # Switch these to use CDeclarations, then we have (.name, .type, .init, .is_pointer, .is_array, .orig)
-        # and the append would be f'  {x.type} {x.orig}; /* {"Not initialized" if x.init is None else x.init} */'
-        # But of course, we need to do a bit more work to initialize any static array, so we instead would
-        # branch on x.is_array and then either count the number of initializer elements or punt to 16384 elements
-        # as McCode-3 does.
+        # `x` is now a CDeclarator object, which has a bit more information
+        # than CDeclarations had, (.name, .type, .init, .is_pointer, .is_array, .orig)
+
+        line = f'{x}'  # like 'double value', 'struct tS * ptr', 'int (* f_ptr)(int, int)'
         if x.is_array:
-            if x.init is None:
-                # hopefully handle all size-specified cases...
-                lines.append(f'  {x.type} {x.orig}; /* Not initialized */')
+            if x.elements:
+                line+=f'[{x.elements}]'
+            elif x.init is not None:
+                n_inits = min(len(x.init.split(',')), 16384)
+                line+=f'[{n_inits}]'
             else:
-                n_inits = 16384 if not isinstance(x.init, str) else min(len(x.init.split(',')), 16384)
-                lines.append(f'  {x.type} {x.name}[{n_inits}]; /* {x.init} */')
-        else:
-            lines.append(f'  {x.type} {x.orig}; /* {"Not initialized" if x.init is None else x.init} */')
+                line+='[]'
+        line+=f'; /* {x.init if x.init else "Not initialized"} */'
+        lines.append(line)
 
     if len(comp.setting) + len(declared_parameters) == 0:
         lines.append(f'  char {comp.name}_has_no_parameters;')

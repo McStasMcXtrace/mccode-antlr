@@ -1,4 +1,8 @@
-def _runtime_parameters(is_mcstas):
+from .c_listener import CDeclarator
+from ..comp import Comp
+from ..instr import Instr
+
+def _runtime_parameters(is_mcstas: bool):
     pars = ['x', 'y', 'z']
     if is_mcstas:
         pars.extend(['vx', 'vy', 'vz', 't', 'sx', 'sy', 'sz', 'p', 'mcgravitation', 'mcMagnet', 'allow_backprop'])
@@ -9,14 +13,14 @@ def _runtime_parameters(is_mcstas):
     return pars
 
 
-def _runtime_kv_parameters(is_mcstas):
+def _runtime_kv_parameters(is_mcstas: bool):
     pars = ['p', 't']
     pars.extend(['vx', 'vy', 'vz'] if is_mcstas else ['kx', 'ky', 'kz'])
     pars.extend(['x', 'y', 'z'])
     return pars
 
 
-def def_trace_section(is_mcstas):
+def def_trace_section(is_mcstas: bool):
     lines = [
         "/*******************************************************************************",
         "* components TRACE",
@@ -49,7 +53,7 @@ def def_trace_section(is_mcstas):
     return '\n'.join(lines)
 
 
-def undef_trace_section(is_mcstas):
+def undef_trace_section(is_mcstas: bool):
     lines = [f'#undef {x}' for x in _runtime_parameters(is_mcstas)]
     lines.extend([
         "#ifdef OPENACC",
@@ -73,14 +77,33 @@ def undef_trace_section(is_mcstas):
     return '\n'.join(lines)
 
 
-def cogen_trace_section(is_mcstas, source, declared_parameters, instrument_uservars, component_uservars):
+def cogen_trace_section(
+        is_mcstas: bool,
+        source: Instr,
+        declared_parameters: dict[str, list[CDeclarator]],
+        instrument_uservars: list[CDeclarator],
+        component_uservars: dict[str, list[CDeclarator]],
+) -> str:
     return '\n'.join([
-        cogen_comp_trace_class(is_mcstas, c, source, declared_parameters[c.name],
-                               instrument_uservars, component_uservars[c.name]) for c in source.component_types()
+        cogen_comp_trace_class(
+            is_mcstas,
+            component_type,
+            source,
+            declared_parameters[component_type.name],
+            instrument_uservars,
+            component_uservars[component_type.name]
+        ) for component_type in source.component_types()
     ])
 
 
-def cogen_comp_trace_class(is_mcstas, comp, source, declared_parameters, instr_uservars, comp_uservars):
+def cogen_comp_trace_class(
+        is_mcstas: bool,
+        comp: Comp,
+        source: Instr,
+        declared_parameters: list[CDeclarator],
+        instr_uservars: list[CDeclarator],
+        comp_uservars: list[CDeclarator],
+) -> str:
     from .c_defines import cogen_parameter_define, cogen_parameter_undef
     # count matching component type instances which define an EXTEND block:
     extended = [(n, i) for n, i in enumerate(source.components) if i.type.name == comp.name and len(i.extend)]
@@ -103,7 +126,7 @@ def cogen_comp_trace_class(is_mcstas, comp, source, declared_parameters, instr_u
 
     # Check if there are any user-defined parameter types ... (something which wasn't set previously?)
     # This is the 'symbol' type
-    declared_types = [x.type for x in declared_parameters]
+    declared_types = [x.dtype for x in declared_parameters]
     # there must be a better way than this
     is_symbol = [t == 'symbol' for t in declared_types]
     # TODO FIXME This should be looping through setting parameters. It is probably wrong.
@@ -116,8 +139,8 @@ def cogen_comp_trace_class(is_mcstas, comp, source, declared_parameters, instr_u
             # loop through the symbol types and set the component-instance values from ... somewhere
             for c_dec in declared_parameters:
                 # Use the user-defined instance parameter if it exists, or attempt to use a default otherwise?
-                inst_param = [p for p in inst.parameters if p.name == c_dec.name]
-                v = inst_param[0].value if len(inst_param) else c_dec.init
+                v = next(iter(p for p in inst.parameters if p.name == c_dec.name), None)
+                v = v.value if v else c_dec.init
                 if v is not None:
                     lines.append(f'    {c_dec.name} = {v};')
             lines.append('  }')
@@ -143,7 +166,6 @@ def cogen_comp_trace_class(is_mcstas, comp, source, declared_parameters, instr_u
 
     if len(extended):
         # combine the USERVARS from the instrument and this component type blocks:
-        # uvs = set().union(instr_uservars).union(comp_uservars)
         uvs = list(dict.fromkeys([*instr_uservars, *comp_uservars]))
         # So that the EXTEND block(s) can access them
         lines.extend([f'  #define {x.name} (_particle->{x.name})' for x in uvs])
