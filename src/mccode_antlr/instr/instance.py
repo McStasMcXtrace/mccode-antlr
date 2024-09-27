@@ -149,7 +149,7 @@ class Instance:
 
         self.parameters += (ComponentParameter(p.name, value), )
 
-    def verify_parameters(self, instrument_parameters: tuple[InstrumentParameter]):
+    def verify_parameters(self, instrument_parameters: tuple[InstrumentParameter, ...]):
         """Check for instance parameters which are identifiers that match instrument parameter names,
         and flag them as parameter objects"""
         instrument_parameter_names = [x.name for x in instrument_parameters]
