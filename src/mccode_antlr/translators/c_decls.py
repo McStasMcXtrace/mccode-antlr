@@ -179,22 +179,8 @@ def component_type_declaration(comp, typedefs: list, declared_parameters: list):
             lines.append(f'  {par.value.mccode_c_type} {par.name};')
 
     # This is the loop over the *replaced* `comp->def->out_par` e.g., found DECLARE parameters
-    lines.append(f"/* Component type '{comp.name}' private parameters */")
-    for x in declared_parameters:
-        # `x` is now a CDeclarator object, which has a bit more information
-        # than CDeclarations had, (.name, .type, .init, .is_pointer, .is_array, .orig)
-
-        line = f'{x}'  # like 'double value', 'struct tS * ptr', 'int (* f_ptr)(int, int)'
-        if x.is_array:
-            if x.elements:
-                line+=f'[{x.elements}]'
-            elif x.init is not None:
-                n_inits = min(len(x.init.split(',')), 16384)
-                line+=f'[{n_inits}]'
-            else:
-                line+='[]'
-        line+=f'; /* {x.init if x.init else "Not initialized"} */'
-        lines.append(line)
+    lines.append(f"  /* Component type '{comp.name}' private parameters */")
+    lines.extend([f'  {x.as_struct_member()};' for x in declared_parameters])
 
     if len(comp.setting) + len(declared_parameters) == 0:
         lines.append(f'  char {comp.name}_has_no_parameters;')

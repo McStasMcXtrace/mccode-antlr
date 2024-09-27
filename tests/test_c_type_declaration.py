@@ -167,7 +167,6 @@ def test_function_pointer_declaration():
     variables, types = extract(block)
     assert len(types) == 0
     assert len(variables) == 3
-    print(variables)
     expected = [
         CDeclarator(
             dtype='int',
@@ -179,20 +178,25 @@ def test_function_pointer_declaration():
         CDeclarator(
             dtype='int',
             declare=CFuncPointer(
-                declare=CDeclarator(pointer='*', declare='fun_ptr_ar3'),
+                declare=CDeclarator(pointer='*', declare='fun_ptr_ar3', elements=3),
                 args='int, int',
             ),
-            elements=3,
         ),
         CDeclarator(
             dtype='int',
             declare=CFuncPointer(
-                declare=CDeclarator(pointer='*', declare='fun_ptr_arr'),
+                declare=CDeclarator(pointer='*', declare='fun_ptr_arr', elements=0),
                 args='int, int',
             ),
-            elements=0,
             init='{add, sub, mul}',
         ),
     ]
     for x, y in zip(expected, variables, strict=True):
         assert x == y
+    members = [
+        'int (* fun_ptr)(int, int)',
+        'int (* fun_ptr_ar3[3])(int, int)',
+        'int (* fun_ptr_arr[3])(int, int)',
+    ]
+    for x, y in zip(members, variables, strict=True):
+        assert x == y.as_struct_member()

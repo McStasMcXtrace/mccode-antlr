@@ -80,12 +80,19 @@ class CFuncPointer:
             return False
         return self.declare == other.declare
 
-    def __str__(self):
-        f = f'({self.modifiers} {self.declare})' if self.modifiers else f'({self.declare})'
+    def string(self, dec_str):
+        f = f'({self.modifiers} {dec_str})' if self.modifiers else f'({dec_str})'
         return f'{f}({self.args})' if self.args else f'{f}()'
+
+    def __str__(self):
+        return self.string(str(self.declare))
 
     def __hash__(self):
         return hash(str(self))
+
+    def as_struct_member(self, max_array_length):
+        dec = self.declare.as_struct_member(max_array_length=max_array_length)
+        return self.string(dec)
 
 
 @dataclass
@@ -103,7 +110,10 @@ class CDeclarator:
 
     @property
     def is_array(self) -> bool:
-        return self.elements is not None
+        if self.elements is not None:
+            return True
+        # jump through the CFuncPointer to its CDeclarator
+        return isinstance(self.declare, CFuncPointer) and self.declare.declare.is_array
 
     @property
     def name(self) -> str:
@@ -138,25 +148,30 @@ class CDeclarator:
                 return False
         return same_type(self.declare, other.declare) and self.declare == other.declare
 
-    def __str__(self):
+    def string(self, dec_str):
         ext = " ".join(f'{x}' for x in self.extensions)
-        dec = f'{self.declare} {ext}' if len(ext) else f'{self.declare}'
+        dec = f'{dec_str} {ext}' if len(ext) else f'{dec_str}'
         if self.pointer:
             dec = f'{self.pointer} {dec}'
         if self.dtype:
             dec = f'{self.dtype} {dec}'
         return dec
 
-    def variable_key(self):
-        ext = " ".join(f'{x}' for x in self.extensions)
-        dec = f'{self.declare} {ext}' if len(ext) else f'{self.declare}'
-        if self.pointer:
-            dec = f'{self.pointer} {dec}'
-        return dec
+    def __str__(self):
+        return self.string(str(self.declare))
 
     def __hash__(self):
         return hash(str(self))
 
+    def as_struct_member(self, max_array_length: int = 16384):
+        if self.init:
+            max_array_length = min(len(self.init.split(',')), max_array_length)
+        no = self.elements if self.elements else max_array_length
+        if isinstance(self.declare, CFuncPointer):
+            return self.string(self.declare.as_struct_member(max_array_length=no))
+        elif self.elements is not None:
+            return f'{self}[{no}]'
+        return str(self)
 
 
 class DeclaresCVisitor(CVisitor):
@@ -274,8 +289,9 @@ class DeclaresCVisitor(CVisitor):
         extensions = [self.visit(x) for x in ctx.gccDeclaratorExtension()]
         elements = None
         if isinstance(dec, CFuncPointer):
-            elements = dec.declare.elements
-            dec.declare.elements = None
+            # elements = dec.declare.elements
+            # dec.declare.elements = None
+            pass
         elif all(x in dec for x in ('[', ']')):
             if dec.count('[') > 1 or dec.count(']') > 1:
                 raise RuntimeError('No idea how to handle multi-level arrays')
