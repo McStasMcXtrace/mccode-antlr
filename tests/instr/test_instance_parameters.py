@@ -144,9 +144,13 @@ class TestInstrInstanceParameters(TestCase):
 
         # But we can attempt to parse the declarations and instantiation blocks from the instrument
         from mccode_antlr.translators.c_listener import extract_c_declared_expressions, evaluate_c_defined_expressions
+        # Here variables _is_ and _must be_ dict[str, Expr]
         variables = {x.name: x.value for x in assembler.instrument.parameters}
         for dec in assembler.instrument.declare:
-            variables.update(extract_c_declared_expressions(dec.source))
+            # This produces dict[CDeclarator, Expr]
+            decs_expr = extract_c_declared_expressions(dec.source)
+            # So extract just the CDeclarator's name
+            variables.update({key.name: val for key, val in decs_expr.items()})
 
         # defined as
         # TODO this does not work because the simple "C"-style expression parser doesn't know about pointers

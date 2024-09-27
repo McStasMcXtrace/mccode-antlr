@@ -171,8 +171,16 @@ def cogen_comp_setpos(index, comp, last, instr, component_declared_parameters):
     for c_dec in component_declared_parameters[comp.type.name]:
         # c_dec is a CDeclare named tuple with (name, type, init, is_pointer, is_array, orig)
         initialized_value = 'NULL' if (c_dec.is_pointer and c_dec.init is None) else c_dec.init
-        if initialized_value is not None:
-            lines.append(f'  _{comp.name}_var._parameters.{c_dec.name} = {initialized_value};')
+        fullname = f'_{comp.name}_var._parameters.{c_dec.name}'
+        if c_dec.is_array and initialized_value is not None:
+            for i, val in enumerate(initialized_value.strip('{}').split(',')):
+                lines.append(f'  {fullname}[{i}] = {val.strip()};')
+        # elif c_dec.is_struct and initialized_value is not None:
+        #     # deal with a structured initializer ...
+        #     # = {.x=#, .y=#, ...}
+        #     pass
+        elif initialized_value is not None:
+            lines.append(f'  {fullname} = {initialized_value};')
     # >>> End of second call to `cogen_comp_init_par`
 
     # position/rotation

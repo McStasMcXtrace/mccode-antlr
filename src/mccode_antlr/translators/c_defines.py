@@ -1,3 +1,4 @@
+from .c_listener import CDeclarator
 from ..comp import Comp
 from ..common import ComponentParameter
 
@@ -10,13 +11,13 @@ def undef(a: ComponentParameter):
     return f'#undef {a.name}'
 
 
-def cogen_parameter_define(comp: Comp, declares: list):
+def cogen_parameter_define(comp: Comp, declares: list[CDeclarator]):
     # All parameters get defines? Not just DEFINE PARAMETERS
     lines = [define(par) for pars in (comp.define, comp.setting, comp.output, declares) for par in pars]
     return '\n'.join(lines)
 
 
-def cogen_parameter_undef(comp: Comp, declares: list):
+def cogen_parameter_undef(comp: Comp, declares: list[CDeclarator]):
     # The same parameters that were defined need to be undefined:
     lines = [undef(par) for pars in (comp.define, comp.setting, comp.output, declares) for par in pars]
     return '\n'.join(lines)

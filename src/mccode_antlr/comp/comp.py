@@ -13,21 +13,21 @@ class Comp:
     """
     name: str = None           # Component *type* name, e.g. {name}.comp
     category: str = None       # Component type catagory -- nearly free-form
-    define: tuple[ComponentParameter] = field(default_factory=tuple)   # C #define'ed parameters
-    setting: tuple[ComponentParameter] = field(default_factory=tuple)  # Formal 'setting' parameters
-    output: tuple[ComponentParameter] = field(default_factory=tuple)   # 'output' parameters
-    metadata: tuple[MetaData] = field(default_factory=tuple)           # metadata for use by simulation consumers
+    define: tuple[ComponentParameter, ...] = field(default_factory=tuple)   # C #define'ed parameters
+    setting: tuple[ComponentParameter, ...] = field(default_factory=tuple)  # Formal 'setting' parameters
+    output: tuple[ComponentParameter, ...] = field(default_factory=tuple)   # 'output' parameters
+    metadata: tuple[MetaData, ...] = field(default_factory=tuple)           # metadata for use by simulation consumers
     dependency: str = None     # compile-time dependency
     acc: bool = True           # False if this component *can not* work under OpenACC
     # literal strings writen into C source files
-    share: tuple[RawC] = field(default_factory=tuple)       # function(s) for all instances of this class 
-    user: tuple[RawC] = field(default_factory=tuple)        # struct members for _particle
-    declare: tuple[RawC] = field(default_factory=tuple)     # global parameters used in component trace
-    initialize: tuple[RawC] = field(default_factory=tuple)  # initialization of global declare parameters
-    trace: tuple[RawC] = field(default_factory=tuple)       # per-particle interaction executed at TRACE time
-    save: tuple[RawC] = field(default_factory=tuple)        # statements executed after TRACE to save results
-    final: tuple[RawC] = field(default_factory=tuple)       # clean-up memory for global declare parameters
-    display: tuple[RawC] = field(default_factory=tuple)     # draw this component
+    share: tuple[RawC, ...] = field(default_factory=tuple)       # function(s) for all instances of this class
+    user: tuple[RawC, ...] = field(default_factory=tuple)        # struct members for _particle
+    declare: tuple[RawC, ...] = field(default_factory=tuple)     # global parameters used in component trace
+    initialize: tuple[RawC, ...] = field(default_factory=tuple)  # initialization of global declare parameters
+    trace: tuple[RawC, ...] = field(default_factory=tuple)       # per-particle interaction executed at TRACE time
+    save: tuple[RawC, ...] = field(default_factory=tuple)        # statements executed after TRACE to save results
+    final: tuple[RawC, ...] = field(default_factory=tuple)       # clean-up memory for global declare parameters
+    display: tuple[RawC, ...] = field(default_factory=tuple)     # draw this component
 
     def __hash__(self):
         return hash(repr(self))

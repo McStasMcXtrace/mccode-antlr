@@ -875,7 +875,7 @@ class Value:
         if self.is_value(-1):
             return (-other).as_type(pdt)
         if other.is_value(1):
-            return (self).as_type(pdt)
+            return self.as_type(pdt)
         if other.is_value(-1):
             return (-self).as_type(pdt)
         if other.is_op or self.is_id or other.is_id:
@@ -888,7 +888,7 @@ class Value:
         if self.is_zero:
             return Value(0, DataType.int if pdt.is_str else pdt)
         if other.is_value(1):
-            return (self).as_type(pdt)
+            return self.as_type(pdt)
         if other.is_value(-1):
             return (-self).as_type(pdt)
         if other.is_zero:

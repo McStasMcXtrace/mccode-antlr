@@ -36,7 +36,8 @@ class TestExtract(TestCase):
         # parse the declare block(s) to find parameter declarations
         variables = {}
         for dec in instr.declare:
-            variables.update({k: t for k, (t, _) in extract_c_declared_variables(dec.source).items()})
+            decs = extract_c_declared_variables(dec.source)
+            variables.update({d.name: d.dtype for d in decs})
         # Then parse and evaluate initialize to set their value(s).
         values = {}
         for init in instr.initialize:

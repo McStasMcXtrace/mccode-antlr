@@ -130,18 +130,19 @@ class Assembler:
     def ensure_user_var(self, string, source=None, line=-1):
         # tying the Assembler to work with C might not be great
         from mccode_antlr.translators.c_listener import extract_c_declared_variables as parse
-        input = parse(string)
-        if len(input) == 0:
+        variables = parse(string)
+        if len(variables) == 0:
             raise ValueError(f'The provided input {string} does not specify a C parameter declaration.')
-        if len(input) != 1:
-            print(f'The provided input {string} specifies {len(input)} C parameter declarations, using only the first')
-        name = list(input.keys())[0]
-        dtype, _ = input[name]
+        if len(variables) != 1:
+            print(f'The provided input {string} specifies {len(variables)} C parameter declarations, using only the first')
+        decl = variables[0]
+        name = decl.name
+        dtype = decl.dtype
         for user_vars in self.instrument.user:
-            dec_type_init_dict = parse(user_vars.source)
-            if any(d == dtype and n == name for n, (d, _) in dec_type_init_dict.items()):
+            uv_variables = parse(user_vars.source)
+            if any(x.dtype == dtype and x.name == name for x in uv_variables):
                 return
-            if any(n == name for n in dec_type_init_dict):
+            if any(x.name == name for x in uv_variables):
                 print(f'A USERVARS variable with name {name} but type different than {dtype} has already been defined.')
                 return
         return self.user_vars(string, source=source, line=line)

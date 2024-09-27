@@ -1,35 +1,9 @@
 """Translates a McComp instrument from its intermediate form to a C runtime source file."""
 from loguru import logger
-from collections import namedtuple
 from dataclasses import dataclass
-from ..reader import Registry, LIBC_REGISTRY
-from ..instr import Instr, Instance
+from ..reader import LIBC_REGISTRY
 from .target import TargetVisitor
 from .c_listener import extract_c_declared_variables
-
-# For use in keeping track of 'USERVAR' particle struct injections
-CDeclaration = namedtuple("CDeclaration", "name type init is_pointer is_array orig")
-
-
-def append_cdeclaration_name(decl: CDeclaration, suffix):
-    return CDeclaration(f'{decl.name}_{suffix}', decl.type, decl.init, decl.is_pointer, decl.is_array, decl.orig)
-
-
-def extract_declaration(dec, c_type, init):
-    is_pointer = '*' in dec
-    is_array = '[' in dec and ']' in dec
-    if is_pointer:
-        name = dec.translate(str.maketrans('', '', '*'))
-    elif is_array:
-        # since dec could be 'name[x][y][z]...[a]' don't attempt to parse the size of the array
-        name = dec.split('[', 1)[0]
-    else:
-        name = dec
-    return CDeclaration(name, c_type, init, is_pointer, is_array, dec)
-
-
-def extracted_declares(declares):
-    return [extract_declaration(dec, c_type, init) for dec, (c_type, init) in declares.items()]
 
 
 @dataclass
@@ -166,18 +140,18 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
         return includes, raw_c
 
     def _parse_libraries_for_typedefs(self):
-        from .c_listener import extract_c_declared_variables_and_defined_types as parse
+        from .c_listener import extract_c_defined_types as parse
         typedefs = set()
         for include in self.includes:
             # logger.debug(f'library {include.name}')
             # The files '%include'-d can themselves use the '%include' mechanism :/
-            declares, defined_types = parse(include.content, user_types=list(typedefs))
+            defined_types = parse(include.content, user_types=list(typedefs))
             typedefs = typedefs.union(set(defined_types))
             # logger.debug(f'{include.name} done')
         # types can also be defined in component 'SHARE' blocks:
         for block in [share for comp in self.source.component_types() if len(comp.share) for share in comp.share]:
             # TODO decide if this should be block.translated or block.source
-            declares, defined_types = parse(block.to_c(), user_types=list(typedefs))
+            defined_types = parse(block.to_c(), user_types=list(typedefs))
             typedefs = typedefs.union(set(defined_types))
         self.typedefs = list(typedefs)
 
@@ -199,7 +173,7 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
         """
         def extract_declares(name, raw_c_obj):
             # TODO decide if this should be raw_c_obj.translated or raw_c_obj.source
-            c_decs = extracted_declares(extract_c_declared_variables(raw_c_obj.to_c(), user_types=self.typedefs))
+            c_decs = extract_c_declared_variables(raw_c_obj.to_c(), user_types=self.typedefs)
             if any(d.init is not None for d in c_decs):
                 logger.critical(f'Warning USERVARS block from {name} contains assignment(s) (= sign).')
                 logger.critical('        Move them to an EXTEND section. May fail at compile')
@@ -236,8 +210,7 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
             i_declares = []
             for index, instance in enumerate(self.source.components):
                 if instance.type.name == comp_name:
-                    for dec in a_declares:
-                        i_declares.append(append_cdeclaration_name(dec, index+1))
+                    i_declares.extend([d.copy(suffix=str(index+1)) for d in a_declares])
             inst_declares[comp_name] = i_declares
         # Replace the component definition 'base' uservar declares with the 'real' ones:
         comp_declares = inst_declares
@@ -284,13 +257,12 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
         self._parse_libraries_for_typedefs()
 
         # pull together the per-component-type defined parameters into a dictionary... since this is required
-        # in multiple places :/  -- now using CDeclaration named tuples
-        sc = str.maketrans('', '', '*[] ')  # for '* name' or '*name', or '****   name' or 'name[]' -> 'name'
+        # in multiple places :/  -- now using CDeclarator class objects
         for typ in inst.component_types():
             dp = []
             for block in typ.declare:
                 # TODO decide if this should be block.translated or block.source
-                dp.extend(extracted_declares(extract_c_declared_variables(block.to_c(), user_types=self.typedefs)))
+                dp.extend(extract_c_declared_variables(block.to_c(), user_types=self.typedefs))
                 dp = list(dict.fromkeys(dp))
             self.component_declared_parameters[typ.name] = dp
         self._determine_uservars()
@@ -313,7 +285,7 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
         uuv = self._instrument_and_component_uservars()
 
         is_mcstas = self.is_mcstas
-        self.out(header_pre_runtime(is_mcstas, self.source, self.runtime, self.config, self.typedefs, uuv))
+        self.out(header_pre_runtime(is_mcstas, self.source, self.runtime, self.config, uuv))
         # runtime part
         if self.config.get('include_runtime'):
             self.out('#define MC_EMBEDDED_RUNTIME')
