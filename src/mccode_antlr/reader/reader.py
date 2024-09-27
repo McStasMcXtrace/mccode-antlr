@@ -3,6 +3,8 @@ from pathlib import Path
 from loguru import logger
 from dataclasses import dataclass, field
 from antlr4.error.ErrorListener import ErrorListener
+from sympy import ordered
+
 from .registry import Registry, MCSTAS_REGISTRY, registries_match, registry_from_specification
 from ..comp import Comp
 from ..common import Mode
@@ -43,8 +45,10 @@ class Reader:
     c_flags: list[str] = field(default_factory=list)
 
     def __post_init__(self):
+        from .registry import ordered_registries
         if len(self.registries) == 0:
             self.registries = [MCSTAS_REGISTRY, ]
+        self.registries = list(ordered_registries(self.registries))
 
     def prepend_registry(self, reg: Registry):
         self.registries[:0] = [reg, ]

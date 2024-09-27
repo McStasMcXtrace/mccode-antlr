@@ -41,7 +41,7 @@ class Registry:
     root = None
     pooch = None
     version = None
-    priority: int = -1
+    priority: int = 0
 
     def __str__(self):
         from mccode_antlr.common import TextWrapper
@@ -113,7 +113,7 @@ def find_registry_file(name: str):
 
 
 class RemoteRegistry(Registry):
-    def __init__(self, name: str, url: str | None, version: str | None, filename: str | None, priority: int = -1):
+    def __init__(self, name: str, url: str | None, version: str | None, filename: str | None, priority: int = 0):
         self.name = name
         self.url = url
         self.version = version
@@ -198,7 +198,7 @@ class RemoteRegistry(Registry):
 
 
 class ModuleRemoteRegistry(RemoteRegistry):
-    def __init__(self, name: str, url: str, filename=None, version=None, priority: int=-1):
+    def __init__(self, name: str, url: str, filename=None, version=None, priority: int = 0):
         super().__init__(name, url, version, filename, priority)
         self.pooch = pooch.create(
             path=pooch.os_cache(f'mccode_antlr-{self.name}'),
@@ -218,7 +218,7 @@ class ModuleRemoteRegistry(RemoteRegistry):
 
 class GitHubRegistry(RemoteRegistry):
     def __init__(self, name: str, url: str, version: str, filename: str | None = None,
-                 registry: str | dict | None = None, priority: int = -1):
+                 registry: str | dict | None = None, priority: int = 0):
         if filename is None:
             filename = f'{name}-registry.txt'
         super().__init__(name, url, version, filename, priority)
@@ -260,7 +260,7 @@ class GitHubRegistry(RemoteRegistry):
 
 
 class LocalRegistry(Registry):
-    def __init__(self, name: str, root: str, priority: int = -1):
+    def __init__(self, name: str, root: str, priority: int = 10):
         self.name = name
         self.root = Path(root)
         self.version = mccode_antlr_version()
@@ -333,7 +333,7 @@ class LocalRegistry(Registry):
 
 
 class InMemoryRegistry(Registry):
-    def __init__(self, name, priority: int = -1, **components):
+    def __init__(self, name, priority: int = 100, **components):
         self.name = name
         self.root = '/proc/memory/'  # Something pathlike is needed?
         self.version = mccode_antlr_version()
@@ -463,7 +463,7 @@ def _mccode_pooch_registries():
 
     src, reg, tag = source_registry_tag()
 
-    mc, mx, lib = [GitHubRegistry(name, src, tag, registry=reg) for name in ('mcstas', 'mcxtrace', 'libc')]
+    mc, mx, lib = [GitHubRegistry(name, src, tag, registry=reg, priority=-10) for name in ('mcstas', 'mcxtrace', 'libc')]
     return mc, mx, lib
 
 MCSTAS_REGISTRY, MCXTRACE_REGISTRY, LIBC_REGISTRY = _mccode_pooch_registries()
