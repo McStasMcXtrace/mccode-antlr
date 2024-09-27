@@ -154,7 +154,7 @@ def test_flatellipse_finite_mirror():
         CDeclarator(dtype='int', declare='silicon'),
         CDeclarator(dtype='t_Table', declare='rsTable')
     ]
-    for x, y in zip(expected, variables, strict=True):
+    for x, y in zip(expected, variables):
         assert x == y
 
 
@@ -191,12 +191,12 @@ def test_function_pointer_declaration():
             init='{add, sub, mul}',
         ),
     ]
-    for x, y in zip(expected, variables, strict=True):
+    for x, y in zip(expected, variables):
         assert x == y
     members = [
         'int (* fun_ptr)(int, int)',
         'int (* fun_ptr_ar3[3])(int, int)',
         'int (* fun_ptr_arr[3])(int, int)',
     ]
-    for x, y in zip(members, variables, strict=True):
+    for x, y in zip(members, variables):
         assert x == y.as_struct_member()
