@@ -1,3 +1,7 @@
+from __future__ import annotations
+from dataclasses import dataclass, field
+from typing import TypeVar
+
 from loguru import logger
 from ..grammar import CParser, McInstrParser, CVisitor
 from ..instr import InstrVisitor
@@ -40,53 +44,142 @@ def make_error_listener(super_class, source: str, pre=5, post=2):
 
     return ErrorListener()
 
+TCDeclarator = TypeVar('TCDeclarator', bound='CDeclarator')
+TCFuncPointer = TypeVar('TCFuncPointer', bound='CFuncPointer')
 
-class CDeclarator:
-    def __init__(self, pointer, declare, extensions):
-        self.pointer = pointer
-        self.declare = declare
-        self.extensions = extensions
-        self.dtype = None
+def not_both_None_or_not_equal(a, b):
+    if (a is None and b is not None) or (a is not None and b is None):
+        return False
+    return a is not None and b is not None and a != b
+
+def same_type(a, b):
+    return type(a) == type(b)
+
+@dataclass
+class CFuncPointer:
+    declare: TCDeclarator
+    modifiers: str | None = None
+    args: str | None = None
+
+    @property
+    def name(self) -> str:
+        return self.declare.name
+
+    def copy(self, suffix: str | None = None) -> TCFuncPointer:
+        return CFuncPointer(
+            declare=self.declare.copy(suffix=suffix),
+            modifiers=self.modifiers,
+            args=self.args,
+        )
+
+    def __eq__(self, other: TCFuncPointer) -> bool:
+        if not isinstance(other, CFuncPointer):
+            raise ValueError('Type mismatch')
+        if not_both_None_or_not_equal(self.args, other.args):
+            return False
+        if not_both_None_or_not_equal(self.modifiers, other.modifiers):
+            return False
+        return self.declare == other.declare
+
+    def string(self, dec_str):
+        f = f'({self.modifiers} {dec_str})' if self.modifiers else f'({dec_str})'
+        return f'{f}({self.args})' if self.args else f'{f}()'
 
     def __str__(self):
+        return self.string(str(self.declare))
+
+    def __hash__(self):
+        return hash(str(self))
+
+    def as_struct_member(self, max_array_length):
+        dec = self.declare.as_struct_member(max_array_length=max_array_length)
+        return self.string(dec)
+
+
+@dataclass
+class CDeclarator:
+    declare: str | CFuncPointer
+    pointer: str | None = None
+    extensions: list[str] = field(default_factory=list)
+    elements: int | str | None = None
+    dtype: str | None = None
+    init: str | None = None
+
+    @property
+    def is_pointer(self) -> bool:
+        return self.pointer is not None and len(self.pointer.strip(' ')) > 0
+
+    @property
+    def is_array(self) -> bool:
+        if self.elements is not None:
+            return True
+        # jump through the CFuncPointer to its CDeclarator
+        return isinstance(self.declare, CFuncPointer) and self.declare.declare.is_array
+
+    @property
+    def name(self) -> str:
+        return self.declare if isinstance(self.declare, str) else self.declare.name
+
+    def copy(self, suffix: str | None = None) -> TCDeclarator:
+        dec = self.declare
+        if suffix is not None and isinstance(self.declare, str):
+            dec = f'{self.declare}_{suffix}'
+        elif suffix is not None:
+            dec = self.declare.copy(suffix=suffix)
+        return CDeclarator(
+            pointer=self.pointer,
+            declare=dec,
+            extensions=[x for x in self.extensions],
+            elements=self.elements,
+            dtype=self.dtype,
+            init=self.init,
+        )
+
+    def __eq__(self, other: TCDeclarator):
+        if not isinstance(other, CDeclarator):
+            raise ValueError('Type mismatch')
+        if len(self.extensions) != len(other.extensions):
+            return False
+        for a, b in zip(self.extensions, other.extensions):
+            if a != b:
+                return False
+        for a, b in zip((self.pointer, self.elements, self.dtype, self.init),
+                        (other.pointer, other.elements, other.dtype, other.init)):
+            if not_both_None_or_not_equal(a, b):
+                return False
+        return same_type(self.declare, other.declare) and self.declare == other.declare
+
+    def string(self, dec_str):
         ext = " ".join(f'{x}' for x in self.extensions)
-        dec = f'{self.declare} {ext}' if len(ext) else f'{self.declare}'
+        dec = f'{dec_str} {ext}' if len(ext) else f'{dec_str}'
         if self.pointer:
             dec = f'{self.pointer} {dec}'
         if self.dtype:
             dec = f'{self.dtype} {dec}'
         return dec
 
-    def variable_key(self):
-        ext = " ".join(f'{x}' for x in self.extensions)
-        dec = f'{self.declare} {ext}' if len(ext) else f'{self.declare}'
-        if self.pointer:
-            dec = f'{self.pointer} {dec}'
-        return dec
-
-    def __hash__(self):
-        return hash(str(self))
-
-
-class CFuncPointer:
-    def __init__(self, declare: CDeclarator, modifiers):
-        self.mods = modifiers
-        self.declare = declare
-        self.args = None
-
     def __str__(self):
-        f = f'({self.mods} {self.declare})' if self.mods else f'({self.declare})'
-        return f'{f}({self.args})' if self.args else f'{f}()'
+        return self.string(str(self.declare))
 
     def __hash__(self):
         return hash(str(self))
+
+    def as_struct_member(self, max_array_length: int = 16384):
+        if self.init:
+            max_array_length = min(len(self.init.split(',')), max_array_length)
+        no = self.elements if self.elements else max_array_length
+        if isinstance(self.declare, CFuncPointer):
+            return self.string(self.declare.as_struct_member(max_array_length=no))
+        elif self.elements is not None:
+            return f'{self}[{no}]'
+        return str(self)
 
 
 class DeclaresCVisitor(CVisitor):
     def __init__(self, typedefs: list | None = None, verbose: bool = False):
         self.verbose = verbose
         self.typedefs = [x for x in typedefs] if typedefs else []
-        self.declares = {}
+        self.declares = []
 
     def debug(self, message):
         if self.verbose:
@@ -121,11 +214,12 @@ class DeclaresCVisitor(CVisitor):
         elif len(inits):
             for decl, init in inits:
                 decl.dtype = ' '.join(specs)
-                self.declares[decl] = init
+                decl.init = init
+                self.declares.append(decl)
         elif len(specs) > 1:
             decl = CDeclarator(pointer=None, declare=specs[-1], extensions=[])
             decl.dtype = ' '.join(specs[:-1])
-            self.declares[decl] = None
+            self.declares.append(decl)
 
     # Five declaration specifiers
     def visitStorageClassSpecifier(self, ctx:CParser.StorageClassSpecifierContext):
@@ -194,7 +288,22 @@ class DeclaresCVisitor(CVisitor):
         ptr = self.visit(ctx.pointer()) if ctx.pointer() else None
         dec = self.visit(ctx.directDeclarator())
         extensions = [self.visit(x) for x in ctx.gccDeclaratorExtension()]
-        return CDeclarator(pointer=ptr, declare=dec, extensions=extensions)
+        elements = None
+        if isinstance(dec, CFuncPointer):
+            # elements = dec.declare.elements
+            # dec.declare.elements = None
+            pass
+        elif all(x in dec for x in ('[', ']')):
+            if dec.count('[') > 1 or dec.count(']') > 1:
+                raise RuntimeError('No idea how to handle multi-level arrays')
+            dec, num_post = dec.split('[', 1)
+            num, _ = num_post.split(']', 1)
+            try:
+                elements = int(num) if len(num) else 0
+            except ValueError as er:
+                logger.info(f"Could not convert an integer from {num} due to {er}")
+                elements = num
+        return CDeclarator(pointer=ptr, declare=dec, extensions=extensions, elements=elements)
 
     def visitPointer(self, ctx:CParser.PointerContext):
         self.debug(f'pointer {literal_string(ctx)}')
@@ -217,7 +326,9 @@ class DeclaresCVisitor(CVisitor):
         return dec + after_dd_str
 
 
-def extract_c_declared_variables_and_defined_types(block: str, user_types: list = None, verbose=False):
+def extract_c_declared_variables_and_defined_types(
+        block: str, user_types: list = None, verbose=False
+) -> tuple[list[CDeclarator], list[str]]:
     from antlr4 import InputStream, CommonTokenStream
     from antlr4.error.ErrorListener import ErrorListener
     from ..grammar import CLexer
@@ -229,17 +340,25 @@ def extract_c_declared_variables_and_defined_types(block: str, user_types: list 
     tree = parser.compilationUnit()
     visitor = DeclaresCVisitor(user_types, verbose=verbose)
     visitor.visitCompilationUnit(tree)
-    # Consider _using_ the CDeclarator class instead of this conversion?
-    variables = {dec.variable_key(): (dec.dtype, init) for dec, init in visitor.declares.items()}
-    return variables, visitor.typedefs
+    return visitor.declares, visitor.typedefs
 
 
-def extract_c_declared_variables(block: str, user_types: list = None, verbose=False):
-    variables, types = extract_c_declared_variables_and_defined_types(block, user_types, verbose=verbose)
+def extract_c_declared_variables(
+        block: str, user_types: list = None, verbose=False
+) -> list[CDeclarator]:
+    variables, _ = extract_c_declared_variables_and_defined_types(block, user_types, verbose=verbose)
     return variables
 
+def extract_c_defined_types(
+        block: str, user_types: list = None, verbose=False
+) -> list[str]:
+    _, types = extract_c_declared_variables_and_defined_types(block, user_types, verbose=verbose)
+    return types
 
-def extract_c_defined_then_declared_variables(defined_in_block: str, declared_in_block):
+
+def extract_c_defined_then_declared_variables(
+        defined_in_block: str, declared_in_block
+) -> list[CDeclarator]:
     _, defined_in_types = extract_c_declared_variables_and_defined_types(defined_in_block)
     return extract_c_declared_variables(declared_in_block, user_types=defined_in_types)
 
@@ -271,8 +390,12 @@ class EvalCVisitor(InstrVisitor):
         return Expr.id(name)
 
 
-def evaluate_c_defined_variables(variables: dict[str, str], initialized_in: str, known: dict[str, Expr] = None,
-                                 verbose=False):
+def evaluate_c_defined_variables(
+        variables: dict[str, str],
+        initialized_in: str,
+        known: dict[str, Expr] = None,
+        verbose=False
+):
     """Evaluate individual statements from C-like source in an attempt to find values for the provided variables"""
     from antlr4 import InputStream
     from ..grammar import McInstr_parse, McInstr_ErrorListener
@@ -301,12 +424,16 @@ def _get_expr(type_name: str, initial_value: str) -> Expr:
     return expr
 
 
-def extract_c_declared_expressions(block: str, user_types: list = None, verbose=False) -> dict[str, Expr]:
+def extract_c_declared_expressions(
+        block: str, user_types: list = None, verbose=False
+) -> dict[CDeclarator, Expr]:
     variables = extract_c_declared_variables(block, user_types, verbose=verbose)
-    return {name: _get_expr(dt, val) for name, (dt, val) in variables.items()}
+    return {d: _get_expr(d.dtype, d.init) for d in variables}
 
 
-def evaluate_c_defined_expressions(variables: dict[str, Expr], initialized_in: str, verbose=False) -> dict[str, Expr]:
+def evaluate_c_defined_expressions(
+        variables: dict[str, Expr], initialized_in: str, verbose=False
+) -> dict[str, Expr]:
     """For defined identifiers, evaluate a (simple) block of C code to determine the end values of the identifiers"""
     names_types = {name: expr.data_type.name for name, expr in variables.items()}
     return evaluate_c_defined_variables(names_types, initialized_in, known=variables, verbose=verbose)

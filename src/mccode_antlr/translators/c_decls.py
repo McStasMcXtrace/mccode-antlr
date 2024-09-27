@@ -152,7 +152,6 @@ def component_type_declaration(comp, typedefs: list, declared_parameters: list):
     # The call tree for functions that access `comp->def->out_par` is such that the pointer is not used before it
     # is replaced, so at least there is no ambiguity between DECLARE-found parameters and OUTPUT PARAMETERS in cogen.
 
-    warnings = 0
     lines = [
         f"/* Parameter definition for component type '{comp.name}' */",
         f'struct _struct_{comp.name}_parameters {{',
@@ -179,22 +178,8 @@ def component_type_declaration(comp, typedefs: list, declared_parameters: list):
             lines.append(f'  {par.value.mccode_c_type} {par.name};')
 
     # This is the loop over the *replaced* `comp->def->out_par` e.g., found DECLARE parameters
-    lines.append(f"/* Component type '{comp.name}' private parameters */")
-    for x in declared_parameters:
-        # Switch these to use CDeclarations, then we have (.name, .type, .init, .is_pointer, .is_array, .orig)
-        # and the append would be f'  {x.type} {x.orig}; /* {"Not initialized" if x.init is None else x.init} */'
-        # But of course, we need to do a bit more work to initialize any static array, so we instead would
-        # branch on x.is_array and then either count the number of initializer elements or punt to 16384 elements
-        # as McCode-3 does.
-        if x.is_array:
-            if x.init is None:
-                # hopefully handle all size-specified cases...
-                lines.append(f'  {x.type} {x.orig}; /* Not initialized */')
-            else:
-                n_inits = 16384 if not isinstance(x.init, str) else min(len(x.init.split(',')), 16384)
-                lines.append(f'  {x.type} {x.name}[{n_inits}]; /* {x.init} */')
-        else:
-            lines.append(f'  {x.type} {x.orig}; /* {"Not initialized" if x.init is None else x.init} */')
+    lines.append(f"  /* Component type '{comp.name}' private parameters */")
+    lines.extend([f'  {x.as_struct_member()};' for x in declared_parameters])
 
     if len(comp.setting) + len(declared_parameters) == 0:
         lines.append(f'  char {comp.name}_has_no_parameters;')

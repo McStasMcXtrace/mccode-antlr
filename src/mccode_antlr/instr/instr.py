@@ -20,18 +20,18 @@ class Instr:
     """
     name: str = None  # Instrument name, e.g. {name}.instr (typically)
     source: str = None  # Instrument *file* name
-    parameters: tuple[InstrumentParameter] = field(default_factory=tuple)  # runtime-set instrument parameters
-    metadata: tuple[MetaData] = field(default_factory=tuple)  # metadata for use by simulation consumers
-    components: tuple[Instance] = field(default_factory=tuple)  #
-    included: tuple[str] = field(default_factory=tuple)  # names of included instr definition(s)
-    user: tuple[RawC] = field(default_factory=tuple)  # struct members for _particle
-    declare: tuple[RawC] = field(default_factory=tuple)  # global parameters used in component trace
-    initialize: tuple[RawC] = field(default_factory=tuple)  # initialization of global declare parameters
-    save: tuple[RawC] = field(default_factory=tuple)  # statements executed after TRACE to save results
-    final: tuple[RawC] = field(default_factory=tuple)  # clean-up memory for global declare parameters
+    parameters: tuple[InstrumentParameter, ...] = field(default_factory=tuple)  # runtime-set instrument parameters
+    metadata: tuple[MetaData, ...] = field(default_factory=tuple)  # metadata for use by simulation consumers
+    components: tuple[Instance, ...] = field(default_factory=tuple)  #
+    included: tuple[str, ...] = field(default_factory=tuple)  # names of included instr definition(s)
+    user: tuple[RawC, ...] = field(default_factory=tuple)  # struct members for _particle
+    declare: tuple[RawC, ...] = field(default_factory=tuple)  # global parameters used in component trace
+    initialize: tuple[RawC, ...] = field(default_factory=tuple)  # initialization of global declare parameters
+    save: tuple[RawC, ...] = field(default_factory=tuple)  # statements executed after TRACE to save results
+    final: tuple[RawC, ...] = field(default_factory=tuple)  # clean-up memory for global declare parameters
     groups: dict[str, Group] = field(default_factory=dict)
-    flags: tuple[str] = field(default_factory=tuple)  # (C) flags needed for compilation of the (translated) instrument
-    registries: tuple[Registry] = field(default_factory=tuple)  # the registries used by the reader to populate this
+    flags: tuple[str, ...] = field(default_factory=tuple)  # (C) flags needed for compilation of the (translated) instrument
+    registries: tuple[Registry, ...] = field(default_factory=tuple)  # the registries used by the reader to populate this
 
     def to_file(self, output=None, wrapper=None):
         if output is None:
