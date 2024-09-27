@@ -113,27 +113,6 @@ def test_function_pointer_declare_parameter():
 
 @compiled
 def test_function_pointer_component_declare_parameter():
-    """This doesn't work yet because the declared-parameter handling doesn't
-    know about function pointers, and inserts in the component struct
-    ```
-    typedef struct {
-      ...
-      int (fun_ptr)(int, int);
-      int (fun_ptr_arr[])(int, int)[3];
-    } _parameters;
-    ```
-    and tries accessing them as, e.g., `_parameters.(fun_ptr)(int, int)`
-
-    When it should enter
-    ```
-    typedef struct {
-      ...
-      int (* fun_ptr)(int, int);
-      int (* fun_ptr_arr[3])(int, int);
-    } _parameters;
-    ```
-    and access them as `_parameters.fun_ptr` and `_parameters.fun_ptr_arr`.
-    """
     from mccode_antlr.reader.registry import InMemoryRegistry
     in_memory_registry = InMemoryRegistry('test_components')
     comp_name = 'declares_function_pointer'

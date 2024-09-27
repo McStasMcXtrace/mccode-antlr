@@ -1,35 +1,9 @@
 """Translates a McComp instrument from its intermediate form to a C runtime source file."""
 from loguru import logger
-from collections import namedtuple
 from dataclasses import dataclass
-from ..reader import Registry, LIBC_REGISTRY
-from ..instr import Instr, Instance
+from ..reader import LIBC_REGISTRY
 from .target import TargetVisitor
 from .c_listener import extract_c_declared_variables
-#
-# # For use in keeping track of 'USERVAR' particle struct injections
-# CDeclaration = namedtuple("CDeclaration", "name type init is_pointer is_array orig")
-#
-#
-# def append_cdeclaration_name(decl: CDeclaration, suffix):
-#     return CDeclaration(f'{decl.name}_{suffix}', decl.type, decl.init, decl.is_pointer, decl.is_array, decl.orig)
-#
-#
-# def extract_declaration(dec, c_type, init):
-#     is_pointer = '*' in dec
-#     is_array = '[' in dec and ']' in dec
-#     if is_pointer:
-#         name = dec.translate(str.maketrans('', '', '*'))
-#     elif is_array:
-#         # since dec could be 'name[x][y][z]...[a]' don't attempt to parse the size of the array
-#         name = dec.split('[', 1)[0]
-#     else:
-#         name = dec
-#     return CDeclaration(name, c_type, init, is_pointer, is_array, dec)
-#
-#
-# def extracted_declares(declares):
-#     return [extract_declaration(dec, c_type, init) for dec, (c_type, init) in declares.items()]
 
 
 @dataclass
