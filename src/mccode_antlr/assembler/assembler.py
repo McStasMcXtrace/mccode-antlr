@@ -9,6 +9,9 @@ class Assembler:
     """Interactive instrument assembly"""
 
     def __init__(self, name: str, registries: list[Registry] = None):
+        from ..reader.registry import ordered_registries
+        if registries is not None:
+            registries = list(ordered_registries(registries))
         self.instrument = Instr(name, source='interactive')
         self.reader = Reader(registries=registries) if registries is not None else Reader()
         self.instrument.registries = self.reader.registries

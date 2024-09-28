@@ -41,6 +41,7 @@ class Registry:
     root = None
     pooch = None
     version = None
+    priority: int = 0
 
     def __str__(self):
         from mccode_antlr.common import TextWrapper
@@ -112,12 +113,13 @@ def find_registry_file(name: str):
 
 
 class RemoteRegistry(Registry):
-    def __init__(self, name: str, url: str | None, version: str | None, filename: str | None):
+    def __init__(self, name: str, url: str | None, version: str | None, filename: str | None, priority: int = 0):
         self.name = name
         self.url = url
         self.version = version
         self.filename = filename
         self.pooch = None
+        self.priority = priority
 
     @classmethod
     def file_keys(cls) -> tuple[str, ...]:
@@ -196,8 +198,8 @@ class RemoteRegistry(Registry):
 
 
 class ModuleRemoteRegistry(RemoteRegistry):
-    def __init__(self, name: str, url: str, filename=None, version=None):
-        super().__init__(name, url, version, filename)
+    def __init__(self, name: str, url: str, filename=None, version=None, priority: int = 0):
+        super().__init__(name, url, version, filename, priority)
         self.pooch = pooch.create(
             path=pooch.os_cache(f'mccode_antlr-{self.name}'),
             base_url=self.url,
@@ -216,10 +218,10 @@ class ModuleRemoteRegistry(RemoteRegistry):
 
 class GitHubRegistry(RemoteRegistry):
     def __init__(self, name: str, url: str, version: str, filename: str | None = None,
-                 registry: str | dict | None = None):
+                 registry: str | dict | None = None, priority: int = 0):
         if filename is None:
             filename = f'{name}-registry.txt'
-        super().__init__(name, url, version, filename)
+        super().__init__(name, url, version, filename, priority)
         import requests
         base_url = f'{self.url}/raw/{self.version}/'
         # If registry is a string url, we expect the registry file to be available from _that_ url
@@ -258,10 +260,11 @@ class GitHubRegistry(RemoteRegistry):
 
 
 class LocalRegistry(Registry):
-    def __init__(self, name: str, root: str):
+    def __init__(self, name: str, root: str, priority: int = 10):
         self.name = name
         self.root = Path(root)
         self.version = mccode_antlr_version()
+        self.priority = priority
 
     def to_file(self, output, wrapper):
         contents = '(' + ', '.join([
@@ -330,11 +333,12 @@ class LocalRegistry(Registry):
 
 
 class InMemoryRegistry(Registry):
-    def __init__(self, name, **components):
+    def __init__(self, name, priority: int = 100, **components):
         self.name = name
         self.root = '/proc/memory/'  # Something pathlike is needed?
         self.version = mccode_antlr_version()
         self.components = {k: v for k, v in components.items()}
+        self.priority = priority
 
     def add(self, name: str, definition: str):
         self.components[name] = definition
@@ -367,6 +371,11 @@ class InMemoryRegistry(Registry):
         if full_name is not None and full_name in self.components:
             return self.components[full_name]
         raise KeyError(f'InMemoryRegistry does not know of {name if ext is None else name + ext}')
+
+
+def ordered_registries(registries: list[Registry]):
+    """Sort the registries by their priority"""
+    return sorted(registries, key=lambda x: x.priority, reverse=True)
 
 
 def registries_match(registry: Registry, spec):
@@ -454,7 +463,7 @@ def _mccode_pooch_registries():
 
     src, reg, tag = source_registry_tag()
 
-    mc, mx, lib = [GitHubRegistry(name, src, tag, registry=reg) for name in ('mcstas', 'mcxtrace', 'libc')]
+    mc, mx, lib = [GitHubRegistry(name, src, tag, registry=reg, priority=-10) for name in ('mcstas', 'mcxtrace', 'libc')]
     return mc, mx, lib
 
 MCSTAS_REGISTRY, MCXTRACE_REGISTRY, LIBC_REGISTRY = _mccode_pooch_registries()
