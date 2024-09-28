@@ -2,8 +2,6 @@ from __future__ import annotations
 from pathlib import Path
 from loguru import logger
 from dataclasses import dataclass, field
-from antlr4.error.ErrorListener import ErrorListener
-from sympy import ordered
 
 from .registry import Registry, MCSTAS_REGISTRY, registries_match, registry_from_specification
 from ..comp import Comp
