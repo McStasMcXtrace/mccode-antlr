@@ -267,20 +267,30 @@ class Instr:
 
     def _replace_keywords(self, flag):
         from mccode_antlr.config import config
-        from re import sub
+        from re import sub, findall
         if '@NEXUSFLAGS@' in flag:
             flag = sub(r'@NEXUSFLAGS@', config['flags']['nexus'].as_str_expanded(), flag)
         if '@MCCODE_LIB@' in flag:
             print(f'The instrument {self.name} uses @MCCODE_LIB@ dependencies which no longer work.')
             print('Expect problems at compilation.')
             flag = sub('@MCCODE_LIB@', '.', flag)
+        general_re = r'@(\w+)@'
+        for replace in findall(general_re, flag):
+            # Is this replacement something like XXXFLAGS?
+            if replace.lower().endswith('flags') and replace.lower()[:-5] in config['flags']:
+                flag = sub(f'@{replace}@', config['flags'][replace.lower()[:-5]].as_str_expanded(), flag)
+            elif replace.lower().endswith('flags'):
+                # Punt, and just replace with the lowercase version of the keyword -- hopefully this was intended
+                flag = sub(f'@{replace}@', f'-l{replace.lower()[:-5]}', flag)
+            else:
+                logger.warning(f'Unknown keyword @{replace}@ in dependency string')
         return flag
 
     def decoded_flags(self) -> list[str]:
         # Each 'flag' in self.flags is from a single instrument component DEPENDENCY, and might contain duplicates:
         # If we accept that white space differences matter, we can deduplicate the strings 'easily'
         unique_flags = set(self.flags)
-        # logger.debug(f'{unique_flags = }')
+        logger.debug(f'{unique_flags = }')
         # The dependency strings are allowed to contain any of
         #       '@NEXUSFLAGS@', @MCCODE_LIB@, CMD(...), ENV(...), GETPATH(...)
         # each of which should be replaced by ... something. Start by replacing the 'static' (old-style) keywords
@@ -484,8 +494,6 @@ class Instr:
         # We then verify that no as-of-yet undefined identifiers exist, but can't in case they're defined in
         # an initalize or share block
         return expr
-
-
 
 
 def _join_rawc_tuple(rawc_tuple: tuple[RawC]):
