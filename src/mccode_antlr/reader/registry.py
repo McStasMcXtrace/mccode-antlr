@@ -289,7 +289,7 @@ class LocalRegistry(Registry):
     def unique(self, name: str):
         return len(list(self._file_iterator(name))) == 1
 
-    def fullname(self, name: str, ext: str = None, exact: bool = True):
+    def fullname(self, name: str, ext: str = None, exact: bool = False):
         compare = _name_plus_suffix(name, ext)
         # Complete match
         is_compare = list(self._exact_file_iterator(compare))
@@ -300,6 +300,7 @@ class LocalRegistry(Registry):
         if len(is_name) == 1:
             return is_name[0]
         if not exact:
+            from loguru import logger
             ends_with_compare = list(self._file_iterator(compare))
             if len(ends_with_compare) == 1:
                 return ends_with_compare[0]
@@ -309,6 +310,8 @@ class LocalRegistry(Registry):
                 return ends_with_name[0]
         # Or matching *any* file that contains name
         matches = list(self._file_iterator(name))
+        if len(matches) == 0:
+            raise RuntimeError(f'No match for {compare} or {name} under {self.root}')
         if len(matches) != 1:
             raise RuntimeError(f'More than one match for {name}:{ext}, which is required of:\n{matches}')
         return matches[0]
@@ -316,7 +319,7 @@ class LocalRegistry(Registry):
     def is_available(self, name: str, ext: str = None):
         return self.known(name, ext)
 
-    def path(self, name: str, ext: str = None, exact: bool = True) -> Path:
+    def path(self, name: str, ext: str = None, exact: bool = False) -> Path:
         return self.root.joinpath(self.fullname(name, ext, exact))
 
     def filenames(self) -> list[str]:
