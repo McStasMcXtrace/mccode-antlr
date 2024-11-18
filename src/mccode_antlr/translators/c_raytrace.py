@@ -13,11 +13,7 @@ def cogen_raytrace(source, ok_to_skip):
         #  // we need this override, since "comp" is not defined in raytrace() - see section-wide define
         "  #undef ABSORB0",
         "  #undef ABSORB",
-        "  #ifndef OPENACC",
-        "  #define ABSORB0 do { DEBUG_ABSORB(); MAGNET_OFF; ABSORBED++; return(ABSORBED);} while(0)",
-        "  #else",
         "  #define ABSORB0 do { DEBUG_ABSORB(); MAGNET_OFF; ABSORBED++;} while(0)",
-        "  #endif",
 
         "  #define ABSORB ABSORB0",
         #  /* Debugging (initial state). */
@@ -131,7 +127,7 @@ def cogen_raytrace(source, ok_to_skip):
                 #
             ])
             if index == lid:
-                lines.append('      else ABSORB; // Not SCATTERED by end of GROUP: particle does not progress')
+                lines.append('      else ABSORBED=1; // Not SCATTERED by end of GROUP: particle does not progress')
             else:
                 lines.append('      else particle_restore(_particle, &_particle_save); // not SCATTERED in GROUP, restore')
 
@@ -175,9 +171,12 @@ def cogen_raytrace(source, ok_to_skip):
         "  loops = ceil((double)ncount/gpu_innerloop);",
         "  /* if on GPU, printf has been globally nullified, re-enable here */",
         "  #ifdef OPENACC",
-        "  #ifndef MULTICORE",
+        "  #undef strlen",
+        "  #undef strcmp",
+        "  #undef exit",
         "  #undef printf",
-        "  #endif",
+        "  #undef sprintf",
+        "  #undef fprintf",
         "  #endif",
         "",
         "  #ifdef OPENACC",
@@ -199,9 +198,12 @@ def cogen_raytrace(source, ok_to_skip):
         "",
         "    /* if on GPU, re-nullify printf */",
         "    #ifdef OPENACC",
-        "    #ifndef MULTICORE",
-        "    #define printf(...) noprintf()",
-        "    #endif",
+        "    #undef strlen",
+        "    #undef strcmp",
+        "    #undef exit",
+        "    #undef printf",
+        "    #undef sprintf",
+        "    #undef fprintf",
         "    #endif",
         "",
         "    #pragma acc parallel loop num_gangs(numgangs) vector_length(vecsize)",
@@ -222,9 +224,12 @@ def cogen_raytrace(source, ok_to_skip):
         "  } /* CPU for */",
         "  /* if on GPU, printf has been globally nullified, re-enable here */",
         "  #ifdef OPENACC",
-        "  #ifndef MULTICORE",
+        "  #undef strlen",
+        "  #undef strcmp",
+        "  #undef exit",
         "  #undef printf",
-        "  #endif",
+        "  #undef sprintf",
+        "  #undef fprintf",
         "  #endif",
         "  MPI_MASTER(",
         '  printf("*** TRACE end *** \\n");',
@@ -255,9 +260,12 @@ def cogen_funnel(source, ok_to_skip):
         "",
         "  /* if on GPU, printf has been globally nullified, re-enable here */",
         "  #ifdef OPENACC",
-        "  #ifndef MULTICORE",
+        "  #undef strlen",
+        "  #undef strcmp",
+        "  #undef exit",
         "  #undef printf",
-        "  #endif",
+        "  #undef sprintf",
+        "  #undef fprintf",
         "  #endif",
         "",
     ]
@@ -302,7 +310,7 @@ def cogen_funnel(source, ok_to_skip):
         "",
         #  // init batch
         "    // init particles",
-        "    #pragma acc parallel loop present(particles)",
+        "    #pragma acc parallel loop present(particles[0:livebatchsize])",
         "    for (unsigned long pidx=0 ; pidx < livebatchsize ; pidx++) {",
         "      // generate particle state, set loop index and seed",
         "      particles[pidx] = mcgenstate();",
@@ -343,7 +351,15 @@ def cogen_funnel(source, ok_to_skip):
         if index == 0 or comp.cpu != cpu_last or comp.split is not None:
             lines.append("")
             if not comp.cpu:
-                lines.append("    #pragma acc parallel loop present(particles)")
+                lines.extend([
+                    "    #pragma acc parallel loop present(particles[0:livebatchsize])"
+                ])
+            else:
+                lines.extend([
+                    "    #ifdef MULTICORE",
+                    "    #pragma acc parallel loop device_type(host)"
+                    "    #endif"
+                ])
             lines.extend([
                 "    for (unsigned long pidx=0 ; pidx < livebatchsize ; pidx++) {",
                 "      _class_particle* _particle = &particles[pidx];",
@@ -356,9 +372,12 @@ def cogen_funnel(source, ok_to_skip):
         ])
         if not ok_to_skip[index]:
             lines.extend([
+                "        #ifndef MULTICORE",
                 f"        if (_{comp.name}_var._rotation_is_identity) {{",
                 f"          coords_get(coords_add(coords_set(x,y,z), _{comp.name}_var._position_relative),&x, &y, &z);",
-                "        } else {",
+                "        } else",
+                "        #endif",
+                "        {",
                 f"          mccoordschange(_{comp.name}_var._position_relative, _{comp.name}_var._rotation_relative, _particle);",
                 '        }',
                 "        _particle_save = *_particle;",
@@ -386,7 +405,7 @@ def cogen_funnel(source, ok_to_skip):
                 #
             ])
             if index == lid:
-                lines.append('    else ABSORB; // Not SCATTERED by end of GROUP: removes left events')
+                lines.append('    else ABSORBED=1; // Not SCATTERED by end of GROUP: removes left events')
             else:
                 lines.append("      else ABSORBED=0; // not SCATTERED within GROUP: always tries next")
 
