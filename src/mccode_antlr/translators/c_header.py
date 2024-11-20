@@ -75,7 +75,13 @@ def header_pre_runtime(
      * File: {config.get('output')}
      * CFLAGS={' '.join(set(source.flags))}
      */
-     
+
+    #ifndef WIN32
+    #  ifndef OPENACC
+    #    define _GNU_SOURCE
+    #  endif
+    #  define _POSIX_C_SOURCE 200809L
+    #endif
     /* In case of cl.exe on Windows, suppress warnings about #pragma acc
        Transferred from https://github.com/McStasMcXtrace/McCode/commit/0e2785a2d3fd742d46597139234dbc47e56344bb 
     */

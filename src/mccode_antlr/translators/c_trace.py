@@ -32,13 +32,11 @@ def def_trace_section(is_mcstas: bool):
         "/* (Similar defines are available in each comp trace but */",
         "/*  those are not enough to handle external libs etc. )  */",
         "#ifdef OPENACC",
-        "#ifndef MULTICORE",
         "#define fprintf(stderr,...) printf(__VA_ARGS__)",
         "#define sprintf(string,...) printf(__VA_ARGS__)",
         "#define exit(...) noprintf()",
         "#define strcmp(a,b) str_comp(a,b)",
         "#define strlen(a) str_len(a)",
-        "#endif",
         "#endif",
         # /* define SCATTERED, ABSORB and RESTORE macros for all TRACE */"
         "#define SCATTERED (_particle->_scattered)",
