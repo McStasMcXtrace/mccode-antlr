@@ -50,6 +50,7 @@ class TargetVisitor:
 
     @property
     def registries(self):
+        # TODO always ensure this is sorted by priority?
         return self.source.registries
 
     def known(self, name: str, which: str = None):
