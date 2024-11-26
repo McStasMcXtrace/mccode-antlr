@@ -113,8 +113,10 @@ def cogen_comp_setpos(index, comp, last, instr, component_declared_parameters):
         fullname = f'_{comp.name}_var._parameters.{p.name}'
         value = f'{p.value:p}'
         if default.value.is_str or p.value.is_str:
-            # # p might be an identifier, or a string literal, in either case we need to copy it instead of assigning
-            if p.value.is_id:
+            # p might be an identifier, or a string literal, or an operation
+            # (function call, struct member access, ...)
+            # in any case we need to copy it instead of assigning
+            if p.value.is_id or p.value.is_op:
                 pl.extend([
                     f'  if ({value} && strlen({value})){{',
                     f'    stracpy({fullname}, {value}, 16384);',
