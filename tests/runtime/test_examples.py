@@ -175,3 +175,60 @@ def test_function_pointer_component_declare_parameter():
         assert lines[1] == f"first={a}"
         assert lines[2] == f"second={b}"
         assert lines[3] == f"second={b}"
+
+
+@compiled
+def test_struct_instance_parameter():
+    instr = parse_mcstas_instr(dedent(r"""
+    DEFINE INSTRUMENT templateTAS(DM=3.3539)
+    DECLARE
+    %{
+      struct machine_hkl_struct {
+        double dm;
+        double refl;
+        char refl_file[100];
+      } machine_hkl;
+    %}
+    INITIALIZE
+    %{
+    machine_hkl.dm = DM; 
+    machine_hkl.refl = 0.7;
+    memset(machine_hkl.refl_file, '\0', sizeof(machine_hkl.refl_file));
+    if (fabs(machine_hkl.dm - 3.355) < 0.2) {
+      machine_hkl.refl = 1.0;
+      strcpy(machine_hkl.refl_file, "HOPG.rfl");
+    }
+    %}
+    TRACE
+    COMPONENT Origin=Progress_bar()
+    AT (0,0,0) ABSOLUTE
+    
+    COMPONENT PG1Xtal = Monochromator_curved(
+      width  = 0.1, height = 0.1, NH=1, NV=1, RV=0, RH=0,
+      DM = machine_hkl.dm, r0 = machine_hkl.refl, reflect = machine_hkl.refl_file)
+    AT (0, 0, 0) RELATIVE Origin
+    EXTEND
+    %{
+    printf("PG1Xtal.r0=%3.1f, PG1Xtal.reflect='%s'\n", r0, reflect);
+    %}
+
+    COMPONENT PG2Xtal = Monochromator_curved(
+      width  = 0.1, height = 0.1, NH=1, NV=1, RV=0, RH=0,
+      DM = machine_hkl.dm, 
+      r0 = (fabs(machine_hkl.dm-3.355) < 0.2 ? 1: 0.7), 
+      reflect=(fabs(machine_hkl.dm-3.355) < 0.2 ? "HOPG.rfl" : ""))
+    AT (0, 0, 0) RELATIVE Origin
+    EXTEND
+    %{
+    printf("PG2Xtal.r0=%3.1f, PG2Xtal.reflect='%s'\n", r0, reflect);
+    %}
+
+    END
+    """))
+    for dm, r0, filename in ((1.55, 0.7, ''), (3.355, 1.0, 'HOPG.rfl')):
+        results, files = compile_and_run(instr, f'-n 1 DM={dm}')
+        lines = results.decode('utf-8').splitlines()
+        print('\n'.join(lines))
+        assert lines[0] == '[templateTAS] Initialize'
+        assert lines[1] == f"PG1Xtal.r0={r0:3.1f}, PG1Xtal.reflect='{filename}'"
+        assert lines[2] == f"PG2Xtal.r0={r0:3.1f}, PG2Xtal.reflect='{filename}'"
