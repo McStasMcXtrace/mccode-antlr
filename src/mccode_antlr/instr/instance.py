@@ -196,10 +196,18 @@ class Instance:
         self.group = name
 
     def EXTEND(self, *blocks):
-        self.extend += blocks_to_raw_c(*blocks)
+        # copy vanilla overwrite-COPY behavior, issue 85
+        #
+        #self.extend += blocks_to_raw_c(*blocks)
+        if len(blocks):
+            self.extend = blocks_to_raw_c(*blocks)
 
     def JUMP(self, *jumps):
-        self.jump += jumps
+        # copy vanilla overwrite-COPY behavior, issue 85
+        #
+        # self.jump += jumps
+        if len(jumps):
+            self.jump = jumps
 
     def add_metadata(self, m: MetaData):
         if any([x.name == m.name for x in self.metadata]):
