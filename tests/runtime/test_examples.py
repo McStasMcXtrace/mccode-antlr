@@ -232,3 +232,45 @@ def test_struct_instance_parameter():
         assert lines[0] == '[templateTAS] Initialize'
         assert lines[1] == f"PG1Xtal.r0={r0:3.1f}, PG1Xtal.reflect='{filename}'"
         assert lines[2] == f"PG2Xtal.r0={r0:3.1f}, PG2Xtal.reflect='{filename}'"
+
+
+@compiled
+def test_copy_extend_instance_parameter():
+    from mccode_antlr.reader.registry import InMemoryRegistry
+    in_memory_registry = InMemoryRegistry('test_components')
+    comp_name = 'has_parameter'
+    in_memory_registry.add_comp(comp_name, dedent(rf"""
+    DEFINE COMPONENT {comp_name} DEFINITION PARAMETERS ()
+    SETTING PARAMETERS (int parameter=1)
+    TRACE %{{
+        printf("%s=%d\n", NAME_CURRENT_COMP, parameter);
+    %}}
+    END
+    """))
+
+    instr = parse_mcstas_instr(dedent(rf"""
+    DEFINE INSTRUMENT with_copied_then_extended_instance(int which=0)
+    TRACE
+    COMPONENT p1 = {comp_name}() AT (0, 0, 0) ABSOLUTE
+    COMPONENT p2 = {comp_name}(parameter=2) AT (0, 0, 0) ABSOLUTE
+    EXTEND %{{
+      printf("%s=%d\n", NAME_CURRENT_COMP, parameter+10);
+    %}}
+    COMPONENT p3 = COPY(p1) AT (0, 0, 0) ABSOLUTE
+    COMPONENT p4 = COPY(p2)(parameter=4) AT (0, 0, 0) ABSOLUTE
+    COMPONENT COPY(p1) = COPY(p3)(parameter=5) AT (0, 0, 0) ABSOLUTE
+    COMPONENT COPY(p4) = COPY(p4) AT (0, 0, 0) ABSOLUTE
+    EXTEND %{{
+      printf("%s=%d\n", NAME_CURRENT_COMP, parameter+100);
+    %}}
+    END
+    """), registries=[in_memory_registry])
+
+    results, files = compile_and_run(instr, f'-n 1 which=1')
+    lines = results.decode('utf-8').splitlines()
+    print(lines)
+    name_parameter = (('p1', 1), ('p2', 2), ('p2', 12), ('p3', 1),
+                      ('p4', 4), ('p4', 14), ('p1_5', 5),
+                      ('p4_6', 4), ('p4_6', 104))
+    for (name, parameter), line in zip(name_parameter, lines):
+        assert line == f"{name}={parameter}"
