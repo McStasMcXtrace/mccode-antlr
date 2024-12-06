@@ -91,8 +91,8 @@ class CFuncPointer:
     def __hash__(self):
         return hash(str(self))
 
-    def as_struct_member(self, max_array_length):
-        dec = self.declare.as_struct_member(max_array_length=max_array_length)
+    def as_struct_member(self, dims: int, max_array_length):
+        dec = self.declare.as_struct_member(dims=dims, max_array_length=max_array_length)
         return self.string(dec)
 
 
@@ -101,9 +101,13 @@ class CDeclarator:
     declare: str | CFuncPointer
     pointer: str | None = None
     extensions: list[str] = field(default_factory=list)
-    elements: int | str | None = None
+    elements: tuple[int,...] | tuple[str,...] | None = None
     dtype: str | None = None
     init: str | None = None
+
+    def __post_init__(self):
+        if self.elements is not None and not isinstance(self.elements, tuple):
+            self.elements = tuple(self.elements)
 
     @property
     def is_pointer(self) -> bool:
@@ -164,15 +168,45 @@ class CDeclarator:
     def __hash__(self):
         return hash(str(self))
 
-    def as_struct_member(self, max_array_length: int = 16384):
+    def as_struct_member(self, dims: int = 0, max_array_length: int = 16384):
         if self.init:
-            max_array_length = min(len(self.init.split(',')), max_array_length)
-        no = self.elements if self.elements else max_array_length
+            max_array_length = extract_initializer_size(self.init)
+        dims = len(self.elements) if self.elements else 0
+        mal = max_array_length if isinstance(max_array_length, tuple) else (max_array_length,)
+        if len(mal) < dims:
+            mal *= dims // len(mal)
+        no = self.elements if self.elements else mal
+        if not isinstance(no, tuple):
+            raise RuntimeError(f'{no} should be a tuple but is a {type(no)}')
         if isinstance(self.declare, CFuncPointer):
-            return self.string(self.declare.as_struct_member(max_array_length=no))
+            return self.string(self.declare.as_struct_member(dims=dims, max_array_length=no))
         elif self.elements is not None:
-            return f'{self}[{no}]'
+            if 0 in no:
+                # Is this a bad idea?
+                no = tuple(m if x == 0 else x for x, m in zip(no, mal))
+            return f"{self}{''.join(f'[{n}]' for n in no)}"
         return str(self)
+
+
+def extract_initializer_size(init: str) -> tuple[int,...]:
+    """Assuming that the provided initializer string is for an array, possibly
+    of more statically sized arrays, and that it has been written correctly,
+    extract the size of each nested dimension
+
+    >>> extract_initializer_size("{{0, 1, 2}, {3, 4, 5}}")
+    (2, 3)
+
+    >>> extract_initializer_size('{{{0}, {1}}, {{2}, {3}}, {{4}, {5}}, {{6}, {7}}}')
+    (4, 2, 1)
+    """
+    import re
+    size = []
+    inner = re.compile('{([^{}]*)}')
+    x = init
+    while len(y:=inner.findall(x)):
+        size.append(len(y[0].split(',')))
+        x = inner.sub('_', x)
+    return tuple(reversed(size))
 
 
 class DeclaresCVisitor(CVisitor):
@@ -294,15 +328,18 @@ class DeclaresCVisitor(CVisitor):
             # dec.declare.elements = None
             pass
         elif all(x in dec for x in ('[', ']')):
-            if dec.count('[') > 1 or dec.count(']') > 1:
-                raise RuntimeError('No idea how to handle multi-level arrays')
-            dec, num_post = dec.split('[', 1)
-            num, _ = num_post.split(']', 1)
+            dec, post = dec.split('[', 1)
+            nums = tuple()
+            while ']' in post:
+                num, post = post.split(']', 1)
+                nums += (num,)
+                if '[' in post:
+                    _, post = post.split('[', 1)
             try:
-                elements = int(num) if len(num) else 0
+                elements = tuple(int(n) if len(n) else 0 for n in nums)
             except ValueError as er:
-                logger.info(f"Could not convert an integer from {num} due to {er}")
-                elements = num
+                logger.info(f"Could not convert an integer from {nums} due to {er}")
+                elements = nums
         return CDeclarator(pointer=ptr, declare=dec, extensions=extensions, elements=elements)
 
     def visitPointer(self, ctx:CParser.PointerContext):
