@@ -84,7 +84,7 @@ def test_assignments():
     expected = [
         CDeclarator(dtype='int', declare='blah', init='1'),
         CDeclarator(dtype='double', declare='yarg'),
-        CDeclarator(dtype='char', declare='mmmm', init='"0123456789"', elements=11),
+        CDeclarator(dtype='char', declare='mmmm', init='"0123456789"', elements=(11,)),
     ]
     for x in expected:
         assert x in variables
@@ -121,7 +121,7 @@ def test_typedef_declaration():
     expected = [
         CDeclarator(dtype='blah', declare='really_a_double', init='1.0f'),
         CDeclarator(dtype='blah', declare='double_ptr', pointer='*', init='NULL'),
-        CDeclarator(dtype='blah', declare='double_array', elements=10)
+        CDeclarator(dtype='blah', declare='double_array', elements=(10,))
     ]
     assert all(x in variables for x in expected)
 
@@ -178,14 +178,14 @@ def test_function_pointer_declaration():
         CDeclarator(
             dtype='int',
             declare=CFuncPointer(
-                declare=CDeclarator(pointer='*', declare='fun_ptr_ar3', elements=3),
+                declare=CDeclarator(pointer='*', declare='fun_ptr_ar3', elements=(3,)),
                 args='int, int',
             ),
         ),
         CDeclarator(
             dtype='int',
             declare=CFuncPointer(
-                declare=CDeclarator(pointer='*', declare='fun_ptr_arr', elements=0),
+                declare=CDeclarator(pointer='*', declare='fun_ptr_arr', elements=(0,)),
                 args='int, int',
             ),
             init='{add, sub, mul}',
@@ -198,5 +198,35 @@ def test_function_pointer_declaration():
         'int (* fun_ptr_ar3[3])(int, int)',
         'int (* fun_ptr_arr[3])(int, int)',
     ]
+    for x, y in zip(members, variables):
+        assert x == y.as_struct_member()
+
+def test_multi_level_static_array_types():
+    big_table=dedent("""{
+    { 2.087063,  0.23391E+00 ,7.485,  2.094,  0.55,	11.81,  63.54,  315,  12.00,  0.30000E+00},
+    { 1.80745 , 0.17544E+00  ,7.485,  2.094,  0.55,	11.81,  63.54,  315,  12.00,  0.30000E+00},
+    { 1.27806 , 0.87718E-01  ,7.485,  2.094,  0.55,	11.81,  63.54,  315,  12.00,  0.30000E+00},
+    { 1.089933,  0.63795E-01 ,7.485,  2.094,  0.55,	11.81,  63.54,  315,  12.00,  0.30000E+00},
+    { 0.903725,  0.43859E-01 ,7.485,  2.094,  0.55,	11.81,  63.54,  315,  12.00,  0.30000E+00},
+    { 0.829315,  0.36934E-01 ,7.485,  2.094,  0.55,	11.81,  63.54,  315,  12.00,  0.30000E+00},
+    { 0.808316,  0.35087E-01 ,7.485,  2.094,  0.55,	11.81,  63.54,  315,  12.00,  0.30000E+00}
+	}""") # .replace('\n','')
+    block = dedent(f"""\
+    double mmsa[2][3] = {{{{0, 1, 2}}, {{3, 4, 5}}}};
+    int mmi[][][] = {{{{{{0}}, {{1}}}}, {{{{2}}, {{3}}}}, {{{{4}}, {{5}}}}, {{{{6}}, {{7}}}}}};
+    double big_table[7][10] = {big_table};
+    """)
+    variables, types = extract(block)
+    expected = [
+        CDeclarator(dtype='double', declare='mmsa', elements=(2, 3),
+                    init='{{0, 1, 2}, {3, 4, 5}}',),
+        CDeclarator(dtype='int', declare='mmi', elements=(0, 0, 0),
+                    init='{{{0}, {1}}, {{2}, {3}}, {{4}, {5}}, {{6}, {7}}}'),
+        CDeclarator(dtype='double', declare='big_table', elements=(7, 10),
+                    init=big_table)
+    ]
+    for x, y in zip(expected, variables):
+        assert x == y
+    members = ['double mmsa[2][3]', 'int mmi[4][2][1]', 'double big_table[7][10]']
     for x, y in zip(members, variables):
         assert x == y.as_struct_member()
