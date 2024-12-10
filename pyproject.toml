@@ -11,10 +11,10 @@ dependencies = [
     'confuse>=2.0.1',
     'loguru>=0.7.2',
     'gitpython>=3.1.43',
-    "importlib_metadata; python_version<'3.8'",
 ]
 description = "ANTLR4 grammars for McStas and McXtrace"
 readme = "README.md"
+license = {text = "BSD-3-Clause"}
 requires-python = ">=3.9"
 authors = [
     { name = "Gregory Tucker", email = "gregory.tucker@ess.eu" },
