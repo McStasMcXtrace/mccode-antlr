@@ -91,7 +91,7 @@ def instrument_source(instrument: Instr, generator: dict, config: dict, verbose:
 
 
 def compile_instrument(instrument: Instr, target: CBinaryTarget, output: Union[str, Path] = None,
-                       recompile: bool = False, replace: bool = True, dump_source: bool = False, **kwargs):
+                       replace: bool = False, dump_source: bool = False, **kwargs):
     from os import R_OK, access
     from subprocess import run, CalledProcessError
     from mccode_antlr.config import config
@@ -107,8 +107,6 @@ def compile_instrument(instrument: Instr, target: CBinaryTarget, output: Union[s
         # allow for the user to specify only the output *directory*
         output = output.joinpath(instrument.name).with_suffix(config['ext'].get(str))
 
-    if output.exists() and not recompile:
-        raise RuntimeError(f"Output {output} exists but recompile is not requested.")
     if output.exists() and not replace:
         return output
 

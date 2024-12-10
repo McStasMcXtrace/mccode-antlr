@@ -93,7 +93,7 @@ class Singular:
         return self.value == other.value and self.maximum == other.maximum
 
     def __str__(self):
-        return f'{self.value}(up to {self.maximum} times)'
+        return f'{self.value}'
 
     def __repr__(self):
         return f'Singular({self.value}, {self.maximum})'
@@ -201,14 +201,15 @@ def parse_command_line_parameters(unparsed: list[str]) -> dict[str, Union[Singul
 
     :parameter unparsed: A list of parameters.
     """
+    # TODO work out why the keys for ranges were .lower()'ed before
     ranges = {}
     index = 0
     while index < len(unparsed):
         if '=' in unparsed[index]:
             k, v = unparsed[index].split('=', 1)
-            ranges[k.lower()] = _MRange_or_Singular(v)
+            ranges[k] = _MRange_or_Singular(v)
         elif index + 1 < len(unparsed) and '=' not in unparsed[index + 1]:
-            ranges[unparsed[index].lower()] = _MRange_or_Singular(unparsed[index + 1])
+            ranges[unparsed[index]] = _MRange_or_Singular(unparsed[index + 1])
             index += 1
         else:
             raise ValueError(f'Invalid parameter: {unparsed[index]}')
@@ -224,7 +225,7 @@ def parse_scan_parameters(unparsed: list[str]) -> dict[str, MRange | Singular]:
              maximum iterations of all the ranges to avoid infinite iterations.
     """
     ranges = parse_command_line_parameters(unparsed)
-    max_length = max(len(v) if isinstance(v, MRange) else 1 for v in ranges.values())
+    max_length = max(len(v) if isinstance(v, MRange) else 1 for v in ranges.values()) if len(ranges) else 1
     for k, v in ranges.items():
         if isinstance(v, Singular) and v.maximum is None:
             ranges[k] = Singular(v.value, max_length)
