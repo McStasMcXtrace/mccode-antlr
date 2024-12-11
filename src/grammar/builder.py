@@ -1,7 +1,41 @@
 from __future__ import annotations
+
+from importlib.metadata import PackageNotFoundError
+
 from loguru import logger
 from enum import Enum
-from pathlib import Path
+from functools import cache
+
+@cache
+def antlr4_version(version: str | None = None):
+    """Query maven for the most recent antlr4 version.
+
+    Note
+    ----
+    This method copies part of the antlr4-tools argument parser to allow
+    overriding any discovery by specifying an environment variable
+    `$ANTLR4_TOOLS_ANTLR_VERSION`. If that environment variable is unset,
+    maven is queried for the most up-to-date antlr4 version. If the query
+    times out, the local maven folders are checked to find a suitable version
+    (presumably the most recent one there).
+    Since the maven query takes time and could time out, and we only want
+    one version for all generated files, this method is cached to always
+    give the same output during a single runtime.
+    """
+    from os import environ
+    from antlr4_tool_runner import latest_version
+    return version or environ.get("ANTLR4_TOOLS_ANTLR_VERSION") or latest_version()
+
+
+def antlr4_runtime_version():
+    """Retrieve the ANTLR4 version used by the available antlr4-python3-runtime"""
+    from importlib import metadata
+    try:
+        return metadata.metadata('antlr4-python3-runtime').get('version')
+    except PackageNotFoundError:
+        logger.warning(f'The ANTLR4 Python runtime must match the ANTLR4 version, but is not installed')
+        logger.info(f'Install antlr4-python3-runtime=={antlr4_version()} to use the generated files')
+    return None
 
 
 class Target(Enum):
@@ -24,15 +58,13 @@ def rebuild_language(grammar_file,
                      target: Target,
                      features: list[Feature],
                      verbose=False,
-                     output=None
+                     output=None,
+                     dryrun=False,
+                     version: str | None = None,
                      ):
     from pathlib import Path
     from subprocess import Popen, PIPE
     from antlr4_tool_runner import initialize_paths, install_jre_and_antlr
-    from antlr4_tool_runner import process_args
-
-    def antlr4_version():
-        return process_args()[1]
 
     if not isinstance(grammar_file, Path):
         grammar_file = Path(grammar_file)
@@ -51,8 +83,11 @@ def rebuild_language(grammar_file,
     # The following copies the implementation of antlr4_tool_runner.tool, which pulls `args` from the system argv list
     # Setup:
     initialize_paths()
-    version = antlr4_version()
-    jar, java = install_jre_and_antlr(version)
+
+    if dryrun:
+        return
+
+    jar, java = install_jre_and_antlr(antlr4_version(version))
     # Call antlr4
     p = Popen([java, '-cp', jar, 'org.antlr.v4.Tool'] + args, stdout=PIPE, stderr=PIPE)
     out, err = [x.decode('UTF-8') for x in p.communicate()]
@@ -62,8 +97,13 @@ def rebuild_language(grammar_file,
         print(out, end='')
 
 
-def language_present_and_up_to_date(grammar_file, newest, features, path, verbose=False):
+def language_missing_or_outdated(grammar_file, newest, features, path,
+                                 verbose=False,
+                                 dryrun=False,
+                                 version: str | None = None,
+                                 ):
     from pathlib import Path
+    import re
     if not isinstance(grammar_file, Path):
         grammar_file = Path(grammar_file)
 
@@ -84,16 +124,33 @@ def language_present_and_up_to_date(grammar_file, newest, features, path, verbos
     if not all(x.exists() for x in generated_files):
         if verbose:
             logger.info(f'Not all language files exist for {grammar_file}')
-        return False
+        return True
 
     if any(x.stat().st_mtime < newest for x in generated_files):
         if verbose:
             logger.info(f'Not all language files up-to-date for {grammar_file}')
-        return False
+        return True
+
+    # Finally check if the antlr4 version of the generated file is as requested
+    version = antlr4_version(version)
+    # some antlr components use `self.checkVersion("{hard coded version string}")
+    # to verify that they correspond to the same version as the runtime.
+    r_checkversion = r'checkVersion\(\"(?P<version>[0-9]+\.[0-9]+\.[0-9]+)\"\)'
+    # others (all?) have a comment string on their first line with ANTLR {version}
+    r_antlr_version = r'ANTLR (?P<version>[0-9]+\.[0-9]+\.[0-9]+)'
+    for file in generated_files:
+        with file.open('r') as f:
+            contents = f.read()
+            checkversion_matches = re.findall(r_checkversion, contents, re.MULTILINE)
+            antlr_version_matches = re.findall(r_antlr_version, contents, re.MULTILINE)
+        if any(v != version for v in checkversion_matches + antlr_version_matches):
+            if verbose:
+                logger.info(f'Not all language files match requested ANTLR version {version}')
+            return True
 
     if verbose:
         logger.info(f'Language files for {grammar_file} are up-to-date')
-    return True
+    return False
 
 
 # def rebuild_speedy_language(grammar_file, features: list[Feature], output: Path, verbose=False):
@@ -114,7 +171,7 @@ def ensure_language_up_to_date(
         target: Target,
         features: list[Feature],
         deps=None,
-        verbose=False,
+        **kwargs
 ):
     """Ensure the ANTLR parsed language files are up-to-date."""
     from pathlib import Path
@@ -122,28 +179,43 @@ def ensure_language_up_to_date(
     # which the grammar defining files are under
     grammar_file = Path(__file__).parent / f'{grammar}.g4'
     # and we want to put Python files under src/mccode_antlr/grammar
-    output_path = Path(__file__).parent.parent / "mccode_antlr" / "grammar"
+    output = Path(__file__).parent.parent / "mccode_antlr" / "grammar"
 
     newest = grammar_file.stat().st_mtime
-    if deps:
-        for dep in deps:
-            newest = max(newest, Path(__file__).parent.joinpath(f'{dep}.g4').stat().st_mtime)
+    for dep in deps or []:
+        newest = max(newest, Path(__file__).parent.joinpath(f'{dep}.g4').stat().st_mtime)
 
-    if not language_present_and_up_to_date(grammar_file, newest, features, output_path, verbose=verbose):
-        rebuild_language(grammar_file, target, features, output=output_path, verbose=verbose)
+    if language_missing_or_outdated(grammar_file, newest, features, output, **kwargs):
+        rebuild_language(grammar_file, target, features, output=output, **kwargs)
 
 
 def main():
     from argparse import ArgumentParser
 
-    parser = ArgumentParser(prog="mccode-antlr-build", description='Ensure ANTLR files are up-to-date')
-    parser.add_argument('-v ', '--verbose', action='store_true', help='Print out more information')
+    parser = ArgumentParser(prog="mccode-antlr-build", description='Ensure ANTLR files are up-to-date', allow_abbrev=False)
+    parser.add_argument('-v', '--version', type=str, default=None, help='Version of ANTLR to build with')
+    parser.add_argument('--verbose', action='store_true', help='Print out more information')
+    parser.add_argument('--dryrun', action='store_true', help='Setup but do not exectute build')
     args = parser.parse_args()
-    verbose = args.verbose
+    kwargs = {
+        'version': args.version, 'verbose' : args.verbose, 'dryrun' : args.dryrun
+    }
+    mc_kwargs = {
+        'target': Target.python,
+        'features': [Feature.visitor],
+        'deps': ('McCommon', 'c99'),
+    }
+    c_kwargs = {
+        'target': Target.python,
+        'features': [Feature.visitor, Feature.listener],
+    }
+    if kwargs['version'] is None:
+        kwargs['version'] = antlr4_runtime_version()
 
-    ensure_language_up_to_date('McComp', target=Target.python, features=[Feature.visitor], deps=('McCommon', 'c99'), verbose=verbose)
-    ensure_language_up_to_date('McInstr', target=Target.python, features=[Feature.visitor], deps=('McCommon', 'c99'), verbose=verbose)
-    ensure_language_up_to_date('C', target=Target.python, features=[Feature.visitor, Feature.listener], verbose=verbose)
+    ensure_language_up_to_date('McComp', **mc_kwargs, **kwargs)
+    ensure_language_up_to_date('McInstr', **mc_kwargs, **kwargs)
+    ensure_language_up_to_date('C', **c_kwargs, **kwargs)
 
 if __name__ == '__main__':
+    # __name__ = 'builder.py'
     main()
