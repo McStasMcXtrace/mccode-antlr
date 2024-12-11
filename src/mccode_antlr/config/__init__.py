@@ -1,12 +1,13 @@
 import confuse
+from os import environ
 
 # Try and simplify handling configuration values need for, e.g., compiling different versions of the runtimes
 # under different operating systems, while allowing a user to 'easily' override defaults if necessary.
 #
 # Any platform independent configuration settings can go in 'config_default.yaml'
-config = confuse.LazyConfig('mccode_antlr', __name__)
+config = confuse.LazyConfig('mccodeantlr', __name__)
 
-# use environment variables specified as 'MCCODE_XYZ' as configuration entries 'xyz'
+# use environment variables specified as 'MCCODEANTLR_XYZ' as configuration entries 'xyz'
 config.set_env()
 
 
@@ -72,3 +73,8 @@ def registry_defaults(libc_registry, projects: list[str]):
 config.add(_platform_defaults())
 #
 config.add(_common_defaults())
+
+# Allow overriding with pseudo-standard environment variables:
+for env in ('CC',):
+    if env in environ:
+        config[env.lower()] = environ[env]

@@ -2,7 +2,6 @@ from __future__ import annotations
 from pathlib import Path
 from mccode_antlr.reader import Registry
 
-
 def regular_mccode_runtime_dict(args: dict) -> dict:
     def insert_best_of(src: dict, snk: dict, names: tuple):
         def get_best_of():
@@ -97,7 +96,6 @@ def mccode_run_script_parser(prog: str):
     aa('-n', '--ncount', nargs=1, type=int, default=None, help='Number of neutrons to simulate')
     aa('-m', '--mesh', action='store_true', default=False, help='N-dimensional mesh scan')
     aa('-s', '--seed', nargs=1, type=int, default=None, help='Random number generator seed')
-    aa('-t', '--trace', action='store_true', default=False, help='Enable tracing')
     aa('-g', '--gravitation', action='store_true', default=False,
        help='Enable gravitation for all trajectories')
     aa('--bufsiz', nargs=1, type=int, default=None, help='Monitor_nD list/buffer-size')
@@ -142,12 +140,9 @@ def mccode_compile(instr, directory, generator, target: dict | None = None, conf
 
     try:
         binary = compile_instrument(instr, def_target, directory, generator=generator, config=def_config, **kwargs)
-    except RuntimeError as e:
-        logger.error(f'Failed to compile instrument: {e}')
-        raise e
-    # binary = Path(directory).joinpath(f'{instr.name}{module_config["ext"].get(str)}')
-    # if not binary.exists() or not binary.is_file() or not access(binary, R_OK):
-    #    raise FileNotFoundError(f"No executable binary, {binary}, produced")
+    except RuntimeError as compilation_error:
+        logger.error(f'Failed to compile instrument: {compilation_error}')
+        raise compilation_error
 
     return binary, def_target
 
@@ -188,6 +183,7 @@ def mccode_run_scan(name: str, binary, target, parameters, directory, grid: bool
         return results
     else:
         directory.parent.mkdir(parents=True, exist_ok=True)
+        print(parameters)
         pars = mccode_runtime_parameters(args, parameters)
         return mccode_run_compiled(binary, target, directory, pars, capture=capture, dry_run=dry_run)
 
@@ -237,11 +233,12 @@ def mccode_run_cmd(flavor: str, registry: Registry, generator: dict):
     from os import R_OK, access
 
     args, parameters = parse_mccode_run_script(flavor)
+    filename = args.filename if isinstance(args.filename, str) else next(iter(args.filename))
     config = dict(
         enable_trace=args.trace if args.trace is not None else False,
         embed_instrument_file=args.source if args.source is not None else False,
         verbose=args.verbose if args.verbose is not None else False,
-        output=args.output_file if args.output_file is not None else args.filename.with_suffix('.c')
+        output=args.output_file if args.output_file is not None else filename.with_suffix('.c')
     )
     target = dict(
         mpi=args.parallel,
@@ -260,9 +257,9 @@ def mccode_run_cmd(flavor: str, registry: Registry, generator: dict):
         capture=(not args.verbose) if args.verbose is not None else False,
     )
     # check if the filename is actually a compiled instrument already:
-    if args.output_file is None and args.filename.exists() and access(args.filename, R_OK):
-        binary = args.filename
-        name = args.filename.stem
+    if args.output_file is None and filename.exists() and access(filename, R_OK):
+        binary = filename
+        name = filename.stem
     else:
         # McCode always requires access to a remote Pooch repository:
         registries = [registry]
@@ -274,11 +271,17 @@ def mccode_run_cmd(flavor: str, registry: Registry, generator: dict):
         # Construct the object which will read the instrument and component files, producing Python objects
         reader = Reader(registries=registries)
         # Read the provided .instr file, including all specified .instr and .comp files along the way
-        instrument = reader.get_instrument(args.filename)
+        instrument = reader.get_instrument(filename)
         name = instrument.name
         # Generate the C binary for the instrument -- will output to, e.g., {instrument.name}.out, in the current directory
         # unless if output_file was specified
         binary, target = mccode_compile(instrument, args.output_file, generator, target=target, config=config)
+
+    if not len(parameters):
+        from loguru import logger
+        logger.error("Interactive parameter entry does not currently work")
+        logger.info(f"Execute `{binary} --list-parameters` to check expected parameters")
+        return
 
     mccode_run_scan(name, binary, target, parameters, args.directory, args.mesh, **runtime)
 

@@ -5,6 +5,7 @@ from pathlib import Path
 from mccode_antlr.instr import Instr
 from mccode_antlr.translators.c import CTargetVisitor
 from loguru import logger
+from .check import compiled, gpu_only, mpi_only
 
 
 class CBinaryTarget:
@@ -90,8 +91,38 @@ def instrument_source(instrument: Instr, generator: dict, config: dict, verbose:
     return visitor.contents()
 
 
-def compile_instrument(instrument: Instr, target: CBinaryTarget, output: Union[str, Path] = None,
-                       recompile: bool = False, replace: bool = True, dump_source: bool = False, **kwargs):
+def get_compiler_linker_flags(instrument: Instr, target: CBinaryTarget):
+    # the type of binary requested determines (some of) the required flags:
+    compiler_flags = target.flags + target.extra_flags
+    linker_flags = target.linker_flags
+    # the instrument-defined flags are always(?) linker flags:
+    # the flags in an instrument *might* contain ENV, CMD, GETPATH directives which need to be expanded via decode:
+    linker_flags.extend(
+        [word for flag in instrument.decoded_flags() for word in flag.split()])
+
+    # Why is this addition necessary?
+    if any('OPENACC' in word for word in compiler_flags) and any(
+            'NeXus' in word for word in compiler_flags):
+        compiler_flags.append('-D__GNUC__')
+    return compiler_flags, linker_flags
+
+
+def _compile_instrument(
+        instrument: Instr,
+        target: CBinaryTarget,
+        output: Union[str, Path] = None,
+        replace: bool = False,
+        dump_source: bool = False,
+        **kwargs
+):
+    """Do the actual compilation -- should not be called directly by users
+
+    Note
+    ----
+    If you are a user of the mccode-antlr module, call the `compile_instrument`
+    gateway method instead to enable a cached check that your system compiler is
+    configured correctly.
+    """
     from os import R_OK, access
     from subprocess import run, CalledProcessError
     from mccode_antlr.config import config
@@ -107,26 +138,10 @@ def compile_instrument(instrument: Instr, target: CBinaryTarget, output: Union[s
         # allow for the user to specify only the output *directory*
         output = output.joinpath(instrument.name).with_suffix(config['ext'].get(str))
 
-    if output.exists() and not recompile:
-        raise RuntimeError(f"Output {output} exists but recompile is not requested.")
     if output.exists() and not replace:
         return output
 
-    logger.info(f'Sort out flags for compilation')
-
-    # the type of binary requested determines (some of) the required flags:
-    compiler_flags = target.flags + target.extra_flags
-    linker_flags = target.linker_flags
-    # the instrument-defined flags are always(?) linker flags:
-    # the flags in an instrument *might* contain ENV, CMD, GETPATH directives which need to be expanded via decode:
-    linker_flags.extend([word for flag in instrument.decoded_flags() for word in flag.split()])
-
-    logger.info(f'{compiler_flags = }')
-    logger.info(f'{linker_flags = }')
-
-    # Why is this addition necessary?
-    if any('OPENACC' in word for word in compiler_flags) and any('NeXus' in word for word in compiler_flags):
-        compiler_flags.append('-D__GNUC__')
+    compiler_flags, linker_flags = get_compiler_linker_flags(instrument, target)
 
     # The solitary '-' specifies *where* the stdin source should be processed, which is critical for getting
     # linking flags right on (some) Linux systems
@@ -140,18 +155,57 @@ def compile_instrument(instrument: Instr, target: CBinaryTarget, output: Union[s
     result = run(command, input=source, text=True, capture_output=True)
     if result.returncode:
         raise RuntimeError(f"Compilation\n{command}\nfailed with output\n{result.stdout}\nand error\n{result.stderr}")
-    #
-    # try:
-    #     run(command, input=instrument_source(instrument, **kwargs), text=True, check=True)
-    # except CalledProcessError as error:
-    #     raise RuntimeError(f'Compilation failed, raising error {error}')
-
     if not output.exists():
         raise RuntimeError(f"Compilation should have produced {output}, but it does not appear to exist")
     if not access(output, R_OK):
         raise RuntimeError(f"{output} exists but is not an executable")
-
     return output
+
+
+@gpu_only
+def compile_acc_instrument(*args, **kwargs):
+    return _compile_instrument(*args, **kwargs)
+
+
+@mpi_only
+def compile_mpi_instrument(*args, **kwargs):
+    return _compile_instrument(*args, **kwargs)
+
+
+@compiled
+def compile_c_instrument(*args, **kwargs):
+    return _compile_instrument(*args, **kwargs)
+
+
+def compile_instrument(
+        instrument: Instr,
+        target: CBinaryTarget,
+        output: Union[str, Path] = None,
+        replace: bool = False,
+        dump_source: bool = False,
+        **kwargs
+):
+    """Compile an Instr object to one of the possible C targets
+
+    Parameters
+    ----------
+    instrument: Instr
+        The Instr to turn into a compiled binary
+    target: CBinaryTarget
+        The type of binary to produce: C99, OpenACC, MPI, etc.
+    output:
+        The path (and optionally name) where to store the produced binary
+    replace:
+        If true compilation will proceed even if a same-named path exists already
+    dump_source:
+        A diagnostic mode that outputs the generated C code into the current working
+        directory
+    """
+    if target.type & CBinaryTarget.Type.acc:
+        return compile_acc_instrument(instrument, target, output, replace, dump_source, **kwargs)
+    if target.type & CBinaryTarget.Type.mpi:
+        return compile_mpi_instrument(instrument, target, output, replace, dump_source, **kwargs)
+    return compile_c_instrument(instrument, target, output, replace, dump_source, **kwargs)
 
 
 def run_compiled_instrument(binary: Path, target: CBinaryTarget, options: str, capture=False, dry_run: bool = False):
