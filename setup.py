@@ -57,6 +57,7 @@ def BuildANTLRCommand(source: Path, destination: str, grammars):
             '-o', output.resolve(),
             grammar_file.name
         ]
+        print(f"Generating ANTLR {target} {' '.join(str(f) for f in features)} in {output} for {grammar_file}")
         # The following copies the implementation of antlr4_tool_runner.tool,
         # which pulls `args` from the system argv list
         initialize_paths()
@@ -132,7 +133,6 @@ def BuildANTLRCommand(source: Path, destination: str, grammars):
                 files.append(source / f"{grammar}.g4")
                 if deps := options.get("deps"):
                     files.extend(source / f"{dep}.g4" for dep in deps)
-            print(files)
             return [str(file) for file in files]
 
     return BuildANTLR
