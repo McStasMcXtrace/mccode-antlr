@@ -143,9 +143,6 @@ def mccode_compile(instr, directory, generator, target: dict | None = None, conf
     except RuntimeError as e:
         logger.error(f'Failed to compile instrument: {e}')
         raise e
-    # binary = Path(directory).joinpath(f'{instr.name}{module_config["ext"].get(str)}')
-    # if not binary.exists() or not binary.is_file() or not access(binary, R_OK):
-    #    raise FileNotFoundError(f"No executable binary, {binary}, produced")
 
     return binary, def_target
 

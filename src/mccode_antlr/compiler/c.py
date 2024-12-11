@@ -5,7 +5,7 @@ from pathlib import Path
 from mccode_antlr.instr import Instr
 from mccode_antlr.translators.c import CTargetVisitor
 from loguru import logger
-
+from .check import compiled
 
 class CBinaryTarget:
     class Type(Flag):
@@ -90,6 +90,22 @@ def instrument_source(instrument: Instr, generator: dict, config: dict, verbose:
     return visitor.contents()
 
 
+def get_compiler_linker_flags(instrument: Instr, target: CBinaryTarget):
+    # the type of binary requested determines (some of) the required flags:
+    compiler_flags = target.flags + target.extra_flags
+    linker_flags = target.linker_flags
+    # the instrument-defined flags are always(?) linker flags:
+    # the flags in an instrument *might* contain ENV, CMD, GETPATH directives which need to be expanded via decode:
+    linker_flags.extend(
+        [word for flag in instrument.decoded_flags() for word in flag.split()])
+
+    # Why is this addition necessary?
+    if any('OPENACC' in word for word in compiler_flags) and any(
+            'NeXus' in word for word in compiler_flags):
+        compiler_flags.append('-D__GNUC__')
+    return compiler_flags, linker_flags
+
+@compiled
 def compile_instrument(instrument: Instr, target: CBinaryTarget, output: Union[str, Path] = None,
                        replace: bool = False, dump_source: bool = False, **kwargs):
     from os import R_OK, access
@@ -110,21 +126,7 @@ def compile_instrument(instrument: Instr, target: CBinaryTarget, output: Union[s
     if output.exists() and not replace:
         return output
 
-    logger.info(f'Sort out flags for compilation')
-
-    # the type of binary requested determines (some of) the required flags:
-    compiler_flags = target.flags + target.extra_flags
-    linker_flags = target.linker_flags
-    # the instrument-defined flags are always(?) linker flags:
-    # the flags in an instrument *might* contain ENV, CMD, GETPATH directives which need to be expanded via decode:
-    linker_flags.extend([word for flag in instrument.decoded_flags() for word in flag.split()])
-
-    logger.info(f'{compiler_flags = }')
-    logger.info(f'{linker_flags = }')
-
-    # Why is this addition necessary?
-    if any('OPENACC' in word for word in compiler_flags) and any('NeXus' in word for word in compiler_flags):
-        compiler_flags.append('-D__GNUC__')
+    compiler_flags, linker_flags = get_compiler_linker_flags(instrument, target)
 
     # The solitary '-' specifies *where* the stdin source should be processed, which is critical for getting
     # linking flags right on (some) Linux systems
@@ -138,12 +140,6 @@ def compile_instrument(instrument: Instr, target: CBinaryTarget, output: Union[s
     result = run(command, input=source, text=True, capture_output=True)
     if result.returncode:
         raise RuntimeError(f"Compilation\n{command}\nfailed with output\n{result.stdout}\nand error\n{result.stderr}")
-    #
-    # try:
-    #     run(command, input=instrument_source(instrument, **kwargs), text=True, check=True)
-    # except CalledProcessError as error:
-    #     raise RuntimeError(f'Compilation failed, raising error {error}')
-
     if not output.exists():
         raise RuntimeError(f"Compilation should have produced {output}, but it does not appear to exist")
     if not access(output, R_OK):

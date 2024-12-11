@@ -77,5 +77,4 @@ config.add(_common_defaults())
 # Allow overriding with pseudo-standard environment variables:
 for env in ('CC',):
     if env in environ:
-        print(f'over ride {env.lower()} with {environ[env]}')
         config[env.lower()] = environ[env]
