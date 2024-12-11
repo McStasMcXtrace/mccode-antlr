@@ -1,11 +1,16 @@
 [build-system]
-requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2"]
+requires = [
+    "setuptools>=45",
+    "setuptools_scm[toml]>=6.2",
+    "antlr4-tools>=0.2.1",
+    'antlr4-python3-runtime>=4.13.2'
+]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "mccode-antlr"
 dependencies = [
-    'antlr4-python3-runtime==4.13.2',  # should match the version of antlr4 used
+    'antlr4-python3-runtime>=4.13.2',
     'numpy>=2',
     'pooch>=1.7.0',
     'confuse>=2.0.1',
@@ -34,7 +39,6 @@ dynamic = ["version"]
 [project.optional-dependencies]
 test = ["gputil==1.4.0", 'pytest']
 hdf5 = ["h5py>=3.11.0"]
-antlr = ['antlr4-tools==0.2.1']
 
 [project.urls]
 "Homepage" = "https://github.com/McStasMcXtrace/mccode-antlr"
