@@ -140,9 +140,9 @@ def mccode_compile(instr, directory, generator, target: dict | None = None, conf
 
     try:
         binary = compile_instrument(instr, def_target, directory, generator=generator, config=def_config, **kwargs)
-    except RuntimeError as e:
-        logger.error(f'Failed to compile instrument: {e}')
-        raise e
+    except RuntimeError as compilation_error:
+        logger.error(f'Failed to compile instrument: {compilation_error}')
+        raise compilation_error
 
     return binary, def_target
 

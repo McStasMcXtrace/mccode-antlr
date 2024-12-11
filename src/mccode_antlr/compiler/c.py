@@ -5,7 +5,8 @@ from pathlib import Path
 from mccode_antlr.instr import Instr
 from mccode_antlr.translators.c import CTargetVisitor
 from loguru import logger
-from .check import compiled
+from .check import compiled, gpu_only, mpi_only
+
 
 class CBinaryTarget:
     class Type(Flag):
@@ -105,9 +106,23 @@ def get_compiler_linker_flags(instrument: Instr, target: CBinaryTarget):
         compiler_flags.append('-D__GNUC__')
     return compiler_flags, linker_flags
 
-@compiled
-def compile_instrument(instrument: Instr, target: CBinaryTarget, output: Union[str, Path] = None,
-                       replace: bool = False, dump_source: bool = False, **kwargs):
+
+def _compile_instrument(
+        instrument: Instr,
+        target: CBinaryTarget,
+        output: Union[str, Path] = None,
+        replace: bool = False,
+        dump_source: bool = False,
+        **kwargs
+):
+    """Do the actual compilation -- should not be called directly by users
+
+    Note
+    ----
+    If you are a user of the mccode-antlr module, call the `compile_instrument`
+    gateway method instead to enable a cached check that your system compiler is
+    configured correctly.
+    """
     from os import R_OK, access
     from subprocess import run, CalledProcessError
     from mccode_antlr.config import config
@@ -144,8 +159,53 @@ def compile_instrument(instrument: Instr, target: CBinaryTarget, output: Union[s
         raise RuntimeError(f"Compilation should have produced {output}, but it does not appear to exist")
     if not access(output, R_OK):
         raise RuntimeError(f"{output} exists but is not an executable")
-
     return output
+
+
+@gpu_only
+def compile_acc_instrument(*args, **kwargs):
+    return _compile_instrument(*args, **kwargs)
+
+
+@mpi_only
+def compile_mpi_instrument(*args, **kwargs):
+    return _compile_instrument(*args, **kwargs)
+
+
+@compiled
+def compile_c_instrument(*args, **kwargs):
+    return _compile_instrument(*args, **kwargs)
+
+
+def compile_instrument(
+        instrument: Instr,
+        target: CBinaryTarget,
+        output: Union[str, Path] = None,
+        replace: bool = False,
+        dump_source: bool = False,
+        **kwargs
+):
+    """Compile an Instr object to one of the possible C targets
+
+    Parameters
+    ----------
+    instrument: Instr
+        The Instr to turn into a compiled binary
+    target: CBinaryTarget
+        The type of binary to produce: C99, OpenACC, MPI, etc.
+    output:
+        The path (and optionally name) where to store the produced binary
+    replace:
+        If true compilation will proceed even if a same-named path exists already
+    dump_source:
+        A diagnostic mode that outputs the generated C code into the current working
+        directory
+    """
+    if target.type & CBinaryTarget.Type.acc:
+        return compile_acc_instrument(instrument, target, output, replace, dump_source, **kwargs)
+    if target.type & CBinaryTarget.Type.mpi:
+        return compile_mpi_instrument(instrument, target, output, replace, dump_source, **kwargs)
+    return compile_c_instrument(instrument, target, output, replace, dump_source, **kwargs)
 
 
 def run_compiled_instrument(binary: Path, target: CBinaryTarget, options: str, capture=False, dry_run: bool = False):

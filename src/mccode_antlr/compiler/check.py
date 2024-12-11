@@ -42,7 +42,7 @@ def compiles(compiler: str, instr):
     from .c import CBinaryTarget, get_compiler_linker_flags, instrument_source
     from ..config import config as module_config
 
-    target = CBinaryTarget(mpi=False, acc=compiler == 'acc', count=1, nexus=False)
+    target = CBinaryTarget(mpi='mpi' in compiler, acc=compiler == 'acc', count=1, nexus=False)
 
     compile_config = dict(default_main=True, enable_trace=False, portable=False,
                   include_runtime=True, embed_instrument_file=False, verbose=False)
@@ -68,18 +68,19 @@ def compiles(compiler: str, instr):
 
 @cache
 def simple_instr_compiles(which: str) -> bool:
+    from subprocess import CalledProcessError
     if not check_for_mccode_antlr_compiler(which):
         return False
     try:
         from mccode_antlr.loader import parse_mcstas_instr
         instr = parse_mcstas_instr("define instrument check() trace component a = Arm() at (0,0,0) absolute end")
-        compiles(which, instr)
+        return compiles(which, instr)
     except RuntimeError:
         return False
     except FileNotFoundError:
         return False
-
-    return True
+    except CalledProcessError:
+        return False
 
 
 def compiled(method, compiler: str | None = None):
@@ -100,6 +101,7 @@ def compiled(method, compiler: str | None = None):
 
 
 def gpu_only(method):
+    from loguru import logger
     # GPU compiled instruments need the specific OpenACC compiler
     # **PLUS** they need to _actually_ have the openACC header (macOS and Windows don't use different compilers)
     return compiled(method, 'acc')

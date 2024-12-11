@@ -21,7 +21,7 @@ Darwin:
   flags:
     cc: -g -O2 -std=c99 -x c -D_DARWIN_C_SOURCE
     ld: -lm
-    acc: -lm -ta:multicore -DOPENACC -x c -D_DARWIN_C_SOURCE -fopenacc
+    acc: -lm -ta:multicore -DOPENACC -x c -D_DARWIN_C_SOURCE
     nexus: -DUSE_NEXUS -lNeXus
     mpi:  -DUSE_MPI -lmpi
     gsl: -lgsl -lgslcblas
