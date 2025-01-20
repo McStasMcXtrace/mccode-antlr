@@ -1,7 +1,7 @@
 import unittest
 from textwrap import dedent
 from mccode_antlr.loader import parse_mcstas_instr
-from .compiled import compiled, gpu_only, compile_and_run
+from .compiled import compile_and_run, compiled_test, gpu_compiled_test
 
 
 class CRuntimeTestCase(unittest.TestCase):
@@ -21,11 +21,11 @@ class CRuntimeTestCase(unittest.TestCase):
         self.assertEqual(1, sum(line == 'visited a' for line in lines))
         self.assertEqual(1, sum(line == 'visited b' for line in lines))
 
-    @compiled
+    @compiled_test
     def test_raytrace_traces_visited(self):
         self._do_trace_tests(with_acc=False)
 
-    @gpu_only
+    @gpu_compiled_test
     def test_funnel_raytrace_traces_visited(self):
         # The FUNNEL define is only followed if OpenACC is enabled :/
         # And real OpenACC can only be enabled if we have a GPU :(
@@ -44,7 +44,7 @@ class CRuntimeTestCase(unittest.TestCase):
         times = [int(x.split('=')[-1]) for x in filter(lambda y: y.startswith('time='), lines)]
         self.assertEqual(((jumps + 1) * jumps) >> 1, sum(times))
 
-    @compiled
+    @compiled_test
     def test_jump_iterate(self):
         contents = dedent("""\
                           DEFINE INSTRUMENT test_jump_iterate(int jumps)
@@ -58,7 +58,7 @@ class CRuntimeTestCase(unittest.TestCase):
                           """)
         self._do_jump_tests(contents, 10)
 
-    @compiled
+    @compiled_test
     def test_jump_when(self):
         contents = dedent("""\
                           DEFINE INSTRUMENT test_jump_when(int jumps)
@@ -75,7 +75,7 @@ class CRuntimeTestCase(unittest.TestCase):
                           """)
         self._do_jump_tests(contents, 100)
 
-    @compiled
+    @compiled_test
     def test_split(self):
         contents = dedent("""\
                           define instrument test_split(int splits) trace
@@ -96,7 +96,7 @@ class CRuntimeTestCase(unittest.TestCase):
         for ex, ln in zip(expected, lines):
             self.assertEqual(ex, ln)
 
-    @compiled
+    @compiled_test
     def test_when(self):
         instr = parse_mcstas_instr(dedent("""\
             define instrument test_when(dummy) 
@@ -115,7 +115,7 @@ class CRuntimeTestCase(unittest.TestCase):
         for ex, ln in zip(expected, lines):
             self.assertEqual(ex, ln)
 
-    @compiled
+    @compiled_test
     def test_group(self):
         instr = parse_mcstas_instr(dedent("""\
             define instrument test_group(dummy)
