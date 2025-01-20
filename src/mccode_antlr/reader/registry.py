@@ -56,7 +56,7 @@ class Registry:
     def to_file(self, output, wrapper):
         print('Registry<>', file=output)
 
-    def known(self, name: str, ext: str = None):
+    def known(self, name: str, ext: str = None, strict: bool = False):
         pass
 
     def unique(self, name: str):
@@ -134,7 +134,7 @@ class RemoteRegistry(Registry):
         contents = '(' + ', '.join([wp(n) + '=' + wv(v) for n, v in self.file_contents().items()]) + ')'
         print(wrapper.line(self.__class__.__name__, [contents], ''), file=output)
 
-    def known(self, name: str, ext: str = None):
+    def known(self, name: str, ext: str = None, strict: bool = False):
         compare = _name_plus_suffix(name, ext)
         # the files *in* the registry are already posix paths, so that makes life easier
         if any(x.endswith(compare) for x in self.pooch.registry_files):
@@ -143,7 +143,7 @@ class RemoteRegistry(Registry):
         if any(Path(x).with_suffix('').as_posix().endswith(compare) for x in self.pooch.registry_files):
             return True
         # Or matching *any* file that contains name
-        return any(name in x for x in self.pooch.registry_files)
+        return False if strict else any(name in x for x in self.pooch.registry_files)
 
     def unique(self, name: str):
         return sum(name in x for x in self.pooch.registry_files) == 1
@@ -282,7 +282,7 @@ class LocalRegistry(Registry):
     def _exact_file_iterator(self, name: str):
         return self.root.glob(name)
 
-    def known(self, name: str, ext: str = None):
+    def known(self, name: str, ext: str = None, strict: bool = False):
         compare = _name_plus_suffix(name, ext)
         return len(list(self._file_iterator(compare))) > 0
 
@@ -363,7 +363,7 @@ class InMemoryRegistry(Registry):
         full_name = name if ext is None else name + ext
         return full_name if full_name in self.components else None
 
-    def known(self, name: str, ext: str | None = None):
+    def known(self, name: str, ext: str | None = None, strict: bool = False):
         full_name = self.fullname(name, ext=ext)
         if full_name is not None and full_name in self.components:
             return True

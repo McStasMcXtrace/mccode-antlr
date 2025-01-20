@@ -65,50 +65,50 @@ class Reader:
     def add_c_flags(self, flags):
         self.c_flags.append(flags)
 
-    def locate(self, name: str, which: str = None, ext: str = None):
+    def locate(self, name: str, which: str = None, ext: str = None, strict: bool = False):
         registries = self.registries if which is None else [x for x in self.registries if x.name in which]
         for reg in registries:
-            if reg.known(name, ext):
+            if reg.known(name, ext, strict=strict):
                 return reg.path(name, ext)
         names = [reg.name for reg in registries]
         msg = "registry " + names[0] if len(names) == 1 else 'registries: ' + ','.join(names)
         raise RuntimeError(f'{name} not found in {msg}')
 
-    def contents(self, name: str, which: str = None, ext: str = None):
+    def contents(self, name: str, which: str = None, ext: str = None, strict: bool = False):
         registries = self.registries if which is None else [x for x in self.registries
                                                             if x.name in which]
         for reg in registries:
-            if reg.known(name, ext):
+            if reg.known(name, ext, strict=strict):
                 return reg.contents(name, ext)
         names = [reg.name for reg in registries]
         msg = "registry " + names[0] if len(names) == 1 else 'registries: ' + ','.join(
             names)
         raise RuntimeError(f'{name} not found in {msg}')
 
-    def fullname(self, name: str, which: str = None, ext: str=None):
+    def fullname(self, name: str, which: str = None, ext: str=None, strict: bool = False):
         registries = self.registries if which is None else [x for x in self.registries if x.name in which]
         for reg in registries:
-            if reg.known(name, ext):
+            if reg.known(name, ext, strict=strict):
                 return reg.fullname(name, ext)
         names = [reg.name for reg in registries]
         msg = "registry " + names[0] if len(names) == 1 else 'registries: ' + ','.join(names)
         raise RuntimeError(f'{name} not found in {msg}')
 
-    def known(self, name: str, which: str = None):
+    def known(self, name: str, which: str = None, strict: bool = False):
         registries = self.registries if which is None else [x for x in self.registries if x.name in which]
-        return any([reg.known(name) for reg in registries])
+        return any([reg.known(name, strict=strict) for reg in registries])
 
     def unique(self, name: str, which: str = None):
         registries = self.registries if which is None else [x for x in self.registries if x.name in which]
         return sum([1 for reg in registries if reg.unique(name)]) == 1
 
-    def contain(self, name: str, which: str = None):
+    def contain(self, name: str, which: str = None, strict: bool = False):
         registries = self.registries if which is None else [x for x in self.registries if x.name in which]
-        return [reg.name for reg in registries if reg.known(name)]
+        return [reg.name for reg in registries if reg.known(name, strict=strict)]
 
-    def stream(self, name: str, which: str = None):
+    def stream(self, name: str, which: str = None, strict: bool = False):
         from antlr4 import InputStream
-        return InputStream(self.contents(name, which=which))
+        return InputStream(self.contents(name, which=which, strict=strict))
 
     def add_component(self, name: str, current_instance_name=None):
         if name in self.components:
@@ -116,8 +116,8 @@ class Reader:
         from antlr4 import InputStream
         from ..grammar import McComp_ErrorListener, McComp_parse
         from ..comp import CompVisitor
-        source = self.contents(name, ext='.comp')
-        filename = str(self.locate(name, ext='.comp'))
+        source = self.contents(name, ext='.comp', strict=True)
+        filename = str(self.locate(name, ext='.comp', strict=True))
 
         stream = InputStream(source)
         error_listener = make_reader_error_listener(McComp_ErrorListener, 'Component', name, source)
@@ -129,7 +129,7 @@ class Reader:
             raise RuntimeError(f'Parsing component file {filename} did not produce a component object!')
         if res.category is None:
             # guess the component category from the registered filename (not fully resolved path)
-            fullname = self.fullname(name, ext='.comp')
+            fullname = self.fullname(name, ext='.comp', strict=True)
             fullname = fullname if isinstance(fullname, Path) else Path(fullname)
             # if fullname is an absolute path, it comes from a local repository -- so we don't know what to do
             res.category = 'UNKNOWN' if fullname.is_absolute() else fullname.parts[0]
