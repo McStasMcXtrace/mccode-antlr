@@ -107,6 +107,24 @@ def get_compiler_linker_flags(instrument: Instr, target: CBinaryTarget):
     return compiler_flags, linker_flags
 
 
+def linux_compile(compiler, compiler_flags, target, linker_flags, source):
+    from subprocess import run
+    # The solitary '-' specifies *where* the stdin source should be processed, which is critical for getting
+    # linking flags right on (some) Linux systems
+    command = [compiler, *compiler_flags, '-o', str(target), '-', *linker_flags]
+    result = run(command, input=source, text=True, capture_output=True)
+    return command, result
+
+
+def windows_compile(compiler, compiler_flags, target, linker_flags, source):
+    from subprocess import run
+    write_to = target.with_suffix('.c')
+    write_to.writelines(source)
+    command = [compiler, *compiler_flags, str(write_to), '/link', *linker_flags, f'/out:{target}']
+    result = run(command, capture_output=True)
+    return command, result
+
+
 def _compile_instrument(
         instrument: Instr,
         target: CBinaryTarget,
@@ -125,6 +143,7 @@ def _compile_instrument(
     """
     from os import R_OK, access
     from subprocess import run, CalledProcessError
+    from platform import system
     from mccode_antlr.config import config
     logger.info(f'Compile {instrument.name}')
     # determine a name and location for the binary file
@@ -142,17 +161,16 @@ def _compile_instrument(
         return output
 
     compiler_flags, linker_flags = get_compiler_linker_flags(instrument, target)
-
-    # The solitary '-' specifies *where* the stdin source should be processed, which is critical for getting
-    # linking flags right on (some) Linux systems
-    command = [target.compiler, *compiler_flags, '-o', str(output), '-', *linker_flags]
     source = instrument_source(instrument, **kwargs)
-    if dump_source:
+    if 'Windows' != system() and dump_source:
         source_file = Path().joinpath(output.parts[-1]).with_suffix('.c')
         logger.info(f'Source written in {source_file}')
         with open(source_file, 'w') as cfile:
             cfile.write(source)
-    result = run(command, input=source, text=True, capture_output=True)
+
+    _compile = windows_compile if 'Windows' == system() else linux_compile
+    command, result = _compile(target.compiler, compiler_flags, output, linker_flags, source)
+
     if result.returncode:
         raise RuntimeError(f"Compilation\n{command}\nfailed with output\n{result.stdout}\nand error\n{result.stderr}")
     if not output.exists():

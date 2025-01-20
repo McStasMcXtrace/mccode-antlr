@@ -1,68 +1,22 @@
 from __future__ import annotations
 from functools import cache
 
-def subprocess_fails(args: list[str]):
-    from subprocess import run, CalledProcessError
-    try:
-        run(args, check=True, capture_output=True)
-        return False
-    except CalledProcessError:
-        pass
-    except FileNotFoundError:
-        pass
-    except RuntimeError:
-        pass
-    return True
-
-
-def windows_check(cc: str) -> bool:
-    from tempfile import TemporaryDirectory
-    from pathlib import Path
-    with TemporaryDirectory as td:
-        tf = Path(td).joinpath('version.c')
-        with tf.open('w') as f:
-            f.write('_MSC_VER')
-        return subprocess_fails([cc, '/nologo', '/EP', tf])
-
-
-def linux_check(cc: str) -> bool:
-    # different compilers support different 'version' or 'help' command line options?
-    options = '--version', '/?' , '--help'
-    return all(subprocess_fails([cc, opt]) for opt in options)
-
-
 @cache
-def check_for_mccode_antlr_compiler(which: str) -> bool:
-    from platform import system
+def check_for_mccode_antlr_compiler(path: str) -> bool:
+    from shutil import which
     from loguru import logger
     from ..config import config
     cc = config
-    for key in which.split('/'):
+    for key in path.split('/'):
         cc = cc[key]
     cc = cc.get(str)
 
-    if ('Windows' == system() and windows_check(cc)) or linux_check(cc):
+    if not which(cc):
         logger.info(f"Compiler '{cc}' not found.")
-        which = which.replace('/','_')
-        logger.info(f'Provide alternate via MCCODE_ANTLR_{which} environment variable')
+        path = path.replace('/','_')
+        logger.info(f'Provide alternate via MCCODE_ANTLR_{path} environment variable')
         return False
     return True
-
-
-def linux_compiles(compiler, compiler_flags, target, linker_flags, source):
-    from subprocess import run
-    command = [compiler, *compiler_flags, '-o', str(target), '-', *linker_flags]
-    result = run(command, input=source, text=True, capture_output=True)
-    return result
-
-def windows_compiles(compiler, compiler_flags, target, linker_flags, source):
-    from subprocess import run
-    write_to = target.with_suffix('.c')
-    write_to.writelines(source)
-    command = [compiler, *compiler_flags, str(write_to), '/link', *linker_flags, f'/out:{target}']
-    result = run(command, capture_output=True)
-    return result
-
 
 
 def compiles(compiler: str, instr):
@@ -71,9 +25,9 @@ def compiles(compiler: str, instr):
     from loguru import logger
     from pathlib import Path
     from tempfile import TemporaryDirectory
-    from subprocess import run
     from mccode_antlr.translators.target import MCSTAS_GENERATOR
-    from .c import CBinaryTarget, get_compiler_linker_flags, instrument_source
+    from .c import (CBinaryTarget, get_compiler_linker_flags, instrument_source,
+                    linux_compile, windows_compile)
     from ..config import config as module_config
 
     target = CBinaryTarget(mpi='mpi' in compiler, acc=compiler == 'acc', count=1, nexus=False)
@@ -86,11 +40,11 @@ def compiles(compiler: str, instr):
     with TemporaryDirectory() as directory:
         binary = Path(directory) / f"output{module_config['ext'].get(str)}"
         source = instrument_source(instr, generator=MCSTAS_GENERATOR, config=compile_config)
-        compiles_func = windows_compiles if 'Windows' == system() else linux_compiles
-        result = compiles_func(compiler, compiler_flags, binary, linker_flags, source)
+        compile_func = windows_compile if 'Windows' == system() else linux_compile
+        command, result = compile_func(compiler, compiler_flags, binary, linker_flags, source)
 
         if result.returncode:
-            logger.info(f'Failed compiling simple instrument with error: {result.stderr}')
+            logger.info(f'Failed compiling {command} with error: {result.stderr}')
             logger.info(f"Verify compiler {target.compiler} accepts {compiler_flags} and linker accepts {linker_flags}")
             return False
         if not binary.exists() or not binary.is_file() or not access(binary, R_OK):
