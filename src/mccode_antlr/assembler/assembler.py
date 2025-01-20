@@ -75,6 +75,8 @@ class Assembler:
         See `Assembler._handle_at` and `Assembler._handle_rotate` for details on the at and rotate arguments.
         """
         comp_type = self.reader.get_component(type_name)
+        if type_name != comp_type.name:
+            raise RuntimeError(f"Component resolution failed for {type_name}, found {comp_type.name} instead")
         if self.reader.c_flags:
             unique_flags = list(self.instrument.flags)
             unique_flags.extend(self.reader.c_flags)
