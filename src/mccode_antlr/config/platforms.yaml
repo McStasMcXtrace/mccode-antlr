@@ -32,14 +32,14 @@ Darwin:
     nodes: auto
   ext: .out
 Windows:
-  cc: gcc
-  acc: gcc
+  cc: cl.exe
+  acc: cl.exe
   flags:
-    cc: -g -O2 -std=c99 -x c -D_POSIX_C_SOURCE
-    ld: -lm
-    acc: -lm -ta:multicore -DOPENACC -x c -D_POSIX_C_SOURCE
+    cc: /Zi /O2 /std:c99 /D_POSIX_C_SOURCE
+    ld:
+    acc: /Zi /O2 /std:c99 /D_POSIX_C_SOURCE
     nexus: -Wl,-rpath,"C:/Program Files/NeXus Data Format/bin" -L"C:/Program Files/NeXus Data Format/bin" -DUSE_NEXUS -lNeXus-0 -I"C:/Program Files/Nexus Data Format/include/nexus"
-    mpi: -DUSE_MPI -lmsmpi
+    mpi: /DUSE_MPI msmpi.lib
     gsl: -lgsl -lgslcblas
     xrl: -lxrl
   mpi:

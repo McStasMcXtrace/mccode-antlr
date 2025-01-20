@@ -2,10 +2,12 @@ from __future__ import annotations
 from functools import cache
 
 def subprocess_fails(args: list[str]):
-    import subprocess
+    from subprocess import run, CalledProcessError
     try:
-        subprocess.run(args, check=True)
+        run(args, check=True, capture_output=True)
         return False
+    except CalledProcessError:
+        pass
     except FileNotFoundError:
         pass
     except RuntimeError:
@@ -13,8 +15,25 @@ def subprocess_fails(args: list[str]):
     return True
 
 
+def windows_check(cc: str) -> bool:
+    from tempfile import TemporaryDirectory
+    from pathlib import Path
+    with TemporaryDirectory as td:
+        tf = Path(td).joinpath('version.c')
+        with tf.open('w') as f:
+            f.write('_MSC_VER')
+        return subprocess_fails([cc, '/nologo', '/EP', tf])
+
+
+def linux_check(cc: str) -> bool:
+    # different compilers support different 'version' or 'help' command line options?
+    options = '--version', '/?' , '--help'
+    return all(subprocess_fails([cc, opt]) for opt in options)
+
+
 @cache
 def check_for_mccode_antlr_compiler(which: str) -> bool:
+    from platform import system
     from loguru import logger
     from ..config import config
     cc = config
@@ -22,9 +41,7 @@ def check_for_mccode_antlr_compiler(which: str) -> bool:
         cc = cc[key]
     cc = cc.get(str)
 
-    # different compilers support different 'version' or 'help' command line options
-    options = '--version', '/?', '--help'
-    if all(subprocess_fails([cc, opt]) for opt in options):
+    if ('Windows' == system() and windows_check(cc)) or linux_check(cc):
         logger.info(f"Compiler '{cc}' not found.")
         which = which.replace('/','_')
         logger.info(f'Provide alternate via MCCODE_ANTLR_{which} environment variable')
@@ -32,8 +49,25 @@ def check_for_mccode_antlr_compiler(which: str) -> bool:
     return True
 
 
+def linux_compiles(compiler, compiler_flags, target, linker_flags, source):
+    from subprocess import run
+    command = [compiler, *compiler_flags, '-o', str(target), '-', *linker_flags]
+    result = run(command, input=source, text=True, capture_output=True)
+    return result
+
+def windows_compiles(compiler, compiler_flags, target, linker_flags, source):
+    from subprocess import run
+    write_to = target.with_suffix('.c')
+    write_to.writelines(source)
+    command = [compiler, *compiler_flags, str(write_to), '/link', *linker_flags, f'/out:{target}']
+    result = run(command, capture_output=True)
+    return result
+
+
+
 def compiles(compiler: str, instr):
     from os import access, R_OK
+    from platform import system
     from loguru import logger
     from pathlib import Path
     from tempfile import TemporaryDirectory
@@ -51,9 +85,9 @@ def compiles(compiler: str, instr):
 
     with TemporaryDirectory() as directory:
         binary = Path(directory) / f"output{module_config['ext'].get(str)}"
-        command = [target.compiler, *compiler_flags, '-o', str(binary), '-', *linker_flags]
         source = instrument_source(instr, generator=MCSTAS_GENERATOR, config=compile_config)
-        result = run(command, input=source, text=True, capture_output=True)
+        compiles_func = windows_compiles if 'Windows' == system() else linux_compiles
+        result = compiles_func(compiler, compiler_flags, binary, linker_flags, source)
 
         if result.returncode:
             logger.info(f'Failed compiling simple instrument with error: {result.stderr}')
