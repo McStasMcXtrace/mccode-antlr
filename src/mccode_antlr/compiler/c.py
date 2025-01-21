@@ -119,7 +119,8 @@ def linux_compile(compiler, compiler_flags, target, linker_flags, source):
 def windows_compile(compiler, compiler_flags, target, linker_flags, source):
     from subprocess import run
     write_to = target.with_suffix('.c')
-    write_to.writelines(source)
+    with write_to.open('w') as file:
+        file.writelines(source)
     command = [compiler, *compiler_flags, str(write_to), '/link', *linker_flags, f'/out:{target}']
     result = run(command, capture_output=True)
     return command, result

@@ -233,7 +233,7 @@ class TestCompiledInstr(TestCase):
                 after_data = read_mccode_dat(after_file)
                 self.assertTrue(allclose(instr_data.data, after_data.data))
 
-
+    @compiled_test
     def test_assemble_a3_rotation(self):
         from mccode_antlr.assembler import Assembler
         from mccode_antlr.reader import MCSTAS_REGISTRY
