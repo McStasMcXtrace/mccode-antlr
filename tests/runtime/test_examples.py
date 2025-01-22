@@ -1,3 +1,5 @@
+from pytest import mark
+from platform import system
 from mccode_antlr.loader.loader import parse_mcstas_instr
 from textwrap import dedent
 
@@ -46,6 +48,10 @@ def test_template_instr():
 
 
 @compiled_test
+@mark.skipif(
+    system() == 'Windows',
+    reason='This test fails to compile on Windows due to https://github.com/McStasMcXtrace/McCode/issues/1817'
+)
 def test_component_declare_variable_initialised():
     instr = parse_mcstas_instr(dedent("""\
     DEFINE INSTRUMENT namedsomething(dummy=0)
