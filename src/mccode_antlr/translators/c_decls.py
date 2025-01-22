@@ -42,7 +42,7 @@ def declarations_pre_libraries(source, typedefs: list, component_declared_parame
             f'  long Split_{i.name}; {c1}\n  _class_particle Split_{i.name}_particle; {c2}'
             for i in source.components if i.split is not None)
         if len(lines) == no:
-            lines += "int no_groups_or_split_dummy;\n"
+            lines += "char no_groups_or_split_dummy;\n"
             logger.warning("An empty instrument_logic control struct would have been created because of no groups or splits!")
         lines += '};\n'
         return lines
