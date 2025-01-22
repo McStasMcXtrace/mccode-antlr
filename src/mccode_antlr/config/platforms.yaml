@@ -36,7 +36,7 @@ Windows:
   acc: cl.exe
   flags:
     cc: /DWIN32 /D_WINDOWS /Zi /O2 /Ob1 /DNDEBUG /std:c99 /D_POSIX_C_SOURCE
-    ld:
+    ld: /link
     acc: /Zi /O2 /std:c99 /D_POSIX_C_SOURCE
     nexus: /DUSE_NEXUS NeXus.lib
     mpi: /DUSE_MPI /link msmpi.lib

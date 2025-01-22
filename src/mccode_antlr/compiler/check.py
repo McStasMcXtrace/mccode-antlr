@@ -41,7 +41,7 @@ def compiles(compiler: str, instr):
         binary = Path(directory) / f"output{module_config['ext'].get(str)}"
         source = instrument_source(instr, generator=MCSTAS_GENERATOR, config=compile_config)
         compile_func = windows_compile if 'Windows' == system() else linux_compile
-        command, result = compile_func(compiler, compiler_flags, binary, linker_flags, source)
+        command, result = compile_func(target.compiler, compiler_flags, binary, linker_flags, source)
 
         if result.returncode:
             logger.info(f'Failed compiling {command} with error: {result.stderr}')
