@@ -1,10 +1,12 @@
+from pytest import mark
+from platform import system
 from mccode_antlr.loader.loader import parse_mcstas_instr
 from textwrap import dedent
 
-from .compiled import compiled, compile_and_run
+from .compiled import compile_and_run, compiled_test
 
 
-@compiled
+@compiled_test
 def test_without_components():
     instr = parse_mcstas_instr(dedent("""\
     DEFINE INSTRUMENT without_components(int dummy=0)
@@ -27,7 +29,7 @@ def test_without_components():
 
 
 
-@compiled
+@compiled_test
 def test_template_instr():
     """
     This test failed previously because its name is a reserved word in C++ (template)
@@ -45,7 +47,11 @@ def test_template_instr():
     compile_and_run(instr, "-n 1 Par1=2")
 
 
-@compiled
+@compiled_test
+@mark.skipif(
+    system() == 'Windows',
+    reason='This test fails to compile on Windows due to https://github.com/McStasMcXtrace/McCode/issues/1817'
+)
 def test_component_declare_variable_initialised():
     instr = parse_mcstas_instr(dedent("""\
     DEFINE INSTRUMENT namedsomething(dummy=0)
@@ -64,7 +70,7 @@ def test_component_declare_variable_initialised():
     compile_and_run(instr, '-n 1 dummy=1')
 
 
-@compiled
+@compiled_test
 def test_function_pointer_declare_parameter():
     instr = parse_mcstas_instr(dedent("""\
     DEFINE INSTRUMENT with_function_pointers(int which=0)
@@ -111,7 +117,7 @@ def test_function_pointer_declare_parameter():
         assert lines[1] == f"second={res}"
 
 
-@compiled
+@compiled_test
 def test_function_pointer_component_declare_parameter():
     from mccode_antlr.reader.registry import InMemoryRegistry
     in_memory_registry = InMemoryRegistry('test_components')
@@ -177,7 +183,7 @@ def test_function_pointer_component_declare_parameter():
         assert lines[3] == f"second={b}"
 
 
-@compiled
+@compiled_test
 def test_struct_instance_parameter():
     instr = parse_mcstas_instr(dedent(r"""
     DEFINE INSTRUMENT templateTAS(DM=3.3539)
@@ -234,7 +240,7 @@ def test_struct_instance_parameter():
         assert lines[2] == f"PG2Xtal.r0={r0:3.1f}, PG2Xtal.reflect='{filename}'"
 
 
-@compiled
+@compiled_test
 def test_copy_extend_instance_parameter():
     from mccode_antlr.reader.registry import InMemoryRegistry
     in_memory_registry = InMemoryRegistry('test_components')

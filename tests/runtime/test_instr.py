@@ -1,10 +1,10 @@
 from unittest import TestCase
 from loguru import logger
-from .compiled import compiled, mcpl_compiled, compile_and_run
+from .compiled import compiled_test, mcpl_compiled_test, compile_and_run
 
 
 class TestCompiledInstr(TestCase):
-    @compiled
+    @compiled_test
     def test_one_axis(self):
         from math import pi, asin, sqrt
         from mccode_antlr.loader import parse_mcstas_instr
@@ -56,7 +56,7 @@ class TestCompiledInstr(TestCase):
         # The detector has been positioned correctly to collect intensity
         self.assertTrue(dats['detector']['I'] > 0)
 
-    @compiled
+    @compiled_test
     def test_assembled_parameters(self):
         """Check that setting an instance parameter to a value that is an instrument parameter name works"""
         from mccode_antlr.assembler import Assembler
@@ -69,7 +69,7 @@ class TestCompiledInstr(TestCase):
 
         compile_and_run(assembler.instrument, None, run=False)
 
-    @compiled
+    @compiled_test
     def test_vector_component_parameter(self):
         """Some components can use vector parameters, which must be initialized by initializer lists"""
         from mccode_antlr.common import Value
@@ -94,7 +94,7 @@ class TestCompiledInstr(TestCase):
             logger.error(f'Failed to compile instrument: {e}')
             self.fail(f'Failed to compile instrument {e}')
 
-    @compiled
+    @compiled_test
     def test_split_broken_reference_compiles(self):
         from mccode_antlr.loader import parse_mcstas_instr
         from textwrap import dedent
@@ -124,7 +124,7 @@ class TestCompiledInstr(TestCase):
             logger.error(f'Failed to compile instrument: {e}')
             self.fail(f'Failed to compile instrument {e}')
 
-    @mcpl_compiled
+    @mcpl_compiled_test
     def test_mcpl_split_run(self):
         # Adapted from Test_MCPL_*.instr in ${MCCODE}/mcstas-comps/examples
         from mccode_antlr.instr import Instr
@@ -233,7 +233,7 @@ class TestCompiledInstr(TestCase):
                 after_data = read_mccode_dat(after_file)
                 self.assertTrue(allclose(instr_data.data, after_data.data))
 
-
+    @compiled_test
     def test_assemble_a3_rotation(self):
         from mccode_antlr.assembler import Assembler
         from mccode_antlr.reader import MCSTAS_REGISTRY

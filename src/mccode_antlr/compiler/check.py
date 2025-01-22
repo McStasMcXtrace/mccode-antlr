@@ -1,45 +1,33 @@
 from __future__ import annotations
 from functools import cache
 
-def subprocess_fails(args: list[str]):
-    import subprocess
-    try:
-        subprocess.run(args, check=True)
-        return False
-    except FileNotFoundError:
-        pass
-    except RuntimeError:
-        pass
-    return True
-
-
 @cache
-def check_for_mccode_antlr_compiler(which: str) -> bool:
+def check_for_mccode_antlr_compiler(path: str) -> bool:
+    from shutil import which
     from loguru import logger
     from ..config import config
     cc = config
-    for key in which.split('/'):
+    for key in path.split('/'):
         cc = cc[key]
     cc = cc.get(str)
 
-    # different compilers support different 'version' or 'help' command line options
-    options = '--version', '/?', '--help'
-    if all(subprocess_fails([cc, opt]) for opt in options):
+    if not which(cc):
         logger.info(f"Compiler '{cc}' not found.")
-        which = which.replace('/','_')
-        logger.info(f'Provide alternate via MCCODE_ANTLR_{which} environment variable')
+        path = path.replace('/','_')
+        logger.info(f'Provide alternate via MCCODE_ANTLR_{path} environment variable')
         return False
     return True
 
 
 def compiles(compiler: str, instr):
     from os import access, R_OK
+    from platform import system
     from loguru import logger
     from pathlib import Path
     from tempfile import TemporaryDirectory
-    from subprocess import run
     from mccode_antlr.translators.target import MCSTAS_GENERATOR
-    from .c import CBinaryTarget, get_compiler_linker_flags, instrument_source
+    from .c import (CBinaryTarget, get_compiler_linker_flags, instrument_source,
+                    linux_compile, windows_compile)
     from ..config import config as module_config
 
     target = CBinaryTarget(mpi='mpi' in compiler, acc=compiler == 'acc', count=1, nexus=False)
@@ -51,12 +39,12 @@ def compiles(compiler: str, instr):
 
     with TemporaryDirectory() as directory:
         binary = Path(directory) / f"output{module_config['ext'].get(str)}"
-        command = [target.compiler, *compiler_flags, '-o', str(binary), '-', *linker_flags]
         source = instrument_source(instr, generator=MCSTAS_GENERATOR, config=compile_config)
-        result = run(command, input=source, text=True, capture_output=True)
+        compile_func = windows_compile if 'Windows' == system() else linux_compile
+        command, result = compile_func(target.compiler, compiler_flags, binary, linker_flags, source)
 
         if result.returncode:
-            logger.info(f'Failed compiling simple instrument with error: {result.stderr}')
+            logger.info(f'Failed compiling {command} with error: {result.stderr}')
             logger.info(f"Verify compiler {target.compiler} accepts {compiler_flags} and linker accepts {linker_flags}")
             return False
         if not binary.exists() or not binary.is_file() or not access(binary, R_OK):

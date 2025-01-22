@@ -1,6 +1,6 @@
-from .compiled import compiled, compile_and_run
+from .compiled import compile_and_run, compiled_test
 
-@compiled
+@compiled_test
 def test_parameters():
     """Ensure that instrument parameters are available for 'when' statements, e.g., in the raytrace section"""
     from mccode_antlr.loader.loader import parse_mcstas_instr
@@ -37,7 +37,7 @@ def test_parameters():
             assert ex == ln
 
 
-@compiled
+@compiled_test
 def test_declared_component_setting_parameter():
     """Ensure that instrument parameters are available for 'when' statements, e.g., in the raytrace section"""
     from mccode_antlr.loader.loader import parse_mcstas_instr

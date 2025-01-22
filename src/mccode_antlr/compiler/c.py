@@ -107,6 +107,35 @@ def get_compiler_linker_flags(instrument: Instr, target: CBinaryTarget):
     return compiler_flags, linker_flags
 
 
+def linux_compile(compiler, compiler_flags, target, linker_flags, source):
+    from subprocess import run
+    # The solitary '-' specifies *where* the stdin source should be processed, which is critical for getting
+    # linking flags right on (some) Linux systems
+    command = [compiler, *compiler_flags, '-o', str(target), '-', *linker_flags]
+    result = run(command, input=source, text=True, capture_output=True)
+    return command, result
+
+
+def windows_compile(compiler, compiler_flags, target, linker_flags, source):
+    from subprocess import run
+    parent = target.parent
+    if not parent.is_dir():
+        parent.mkdir(parents=True)
+    write_to = target.with_suffix('.c')
+    with write_to.open('w') as file:
+        file.writelines(source)
+    if '/link' not in linker_flags:
+        linker_flags = ['/link'] + linker_flags
+    # Specifying either of
+    #   obj = [] if parent == Path() else [f'/Fo"{parent}\\"']
+    # as *obj, would move generated object files next to the executable, but breaks
+    # some aspect of compilation when done from Python (but not the command line)
+    # FIXME Re-evaluate the need/advisability for no compiler warnings
+    command = [compiler, *compiler_flags, str(write_to), '/W0', *linker_flags, f'/out:{target}']
+    result = run(command, capture_output=True)
+    return command, result
+
+
 def _compile_instrument(
         instrument: Instr,
         target: CBinaryTarget,
@@ -125,6 +154,7 @@ def _compile_instrument(
     """
     from os import R_OK, access
     from subprocess import run, CalledProcessError
+    from platform import system
     from mccode_antlr.config import config
     logger.info(f'Compile {instrument.name}')
     # determine a name and location for the binary file
@@ -142,19 +172,20 @@ def _compile_instrument(
         return output
 
     compiler_flags, linker_flags = get_compiler_linker_flags(instrument, target)
-
-    # The solitary '-' specifies *where* the stdin source should be processed, which is critical for getting
-    # linking flags right on (some) Linux systems
-    command = [target.compiler, *compiler_flags, '-o', str(output), '-', *linker_flags]
     source = instrument_source(instrument, **kwargs)
-    if dump_source:
+    if 'Windows' != system() and dump_source:
         source_file = Path().joinpath(output.parts[-1]).with_suffix('.c')
         logger.info(f'Source written in {source_file}')
         with open(source_file, 'w') as cfile:
             cfile.write(source)
-    result = run(command, input=source, text=True, capture_output=True)
+
+    _compile = windows_compile if 'Windows' == system() else linux_compile
+    command, result = _compile(target.compiler, compiler_flags, output, linker_flags, source)
+
     if result.returncode:
-        raise RuntimeError(f"Compilation\n{command}\nfailed with output\n{result.stdout}\nand error\n{result.stderr}")
+        stdout = result.stdout.decode() if isinstance(result.stdout, bytes) else result.stdout
+        stderr = result.stderr.decode() if isinstance(result.stderr, bytes) else result.stderr
+        raise RuntimeError(f"Compilation\n{' '.join(command)}\nfailed with output\n{stdout}\nand error\n{stderr}")
     if not output.exists():
         raise RuntimeError(f"Compilation should have produced {output}, but it does not appear to exist")
     if not access(output, R_OK):

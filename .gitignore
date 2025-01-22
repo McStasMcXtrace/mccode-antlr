@@ -12,3 +12,5 @@
 *.so
 *.dll
 *.dynlib
+*.obj
+*.pdb

@@ -33,12 +33,17 @@ def declarations_pre_libraries(source, typedefs: list, component_declared_parame
         if count == 0:
             return ""
         lines = "\n/* instrument SPLIT and GROUP control logic */\nstruct instrument_logic_struct{\n"
+        no = len(lines)
         comment = '/* equals index of scattering comp when in group */'
         lines += '\n'.join(f'  long Group_{name}; {comment}' for name in source.groups)
         c1 = '/* this is the SPLIT counter decremented down to 0 */'
         c2 = '/* this is the particle to duplicate */'
-        lines += '\n'.join(f'  long Split_{i.name}; {c1}\n  _class_particle Split_{i.name}_particle; {c2}'
-                           for i in source.components if i.split is not None)
+        lines += '\n'.join(
+            f'  long Split_{i.name}; {c1}\n  _class_particle Split_{i.name}_particle; {c2}'
+            for i in source.components if i.split is not None)
+        if len(lines) == no:
+            lines += "char no_groups_or_split_dummy;\n"
+            logger.warning("An empty instrument_logic control struct would have been created because of no groups or splits!")
         lines += '};\n'
         return lines
 

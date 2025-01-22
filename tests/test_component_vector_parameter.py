@@ -1,5 +1,7 @@
 import unittest
 
+from tests.runtime.compiled import compiled_test
+
 FAKE_COMPONENTS = dict(component_with_vector_parameter="""
 DEFINE COMPONENT component_with_vector_parameter
 SETTING PARAMETERS (int n, vector easy_to_spot, vector dont_set_me)
@@ -57,14 +59,6 @@ class ComponentVectorParameterTestCase(unittest.TestCase):
         self.assembler = Assembler('test', registries=[MCSTAS_REGISTRY])
         for name, contents in FAKE_COMPONENTS.items():
             self._parse_comp(name, contents)
-
-    def _compiler_check(self):
-        import subprocess
-        from mccode_antlr.config import config
-        try:
-            subprocess.run([config['cc'].get(str), '--version'], check=True)
-        except FileNotFoundError:
-            self.skipTest(f"C compiler {config['cc']} not found")
 
     def _compile_and_run(self, instr, parameters):
         from mccode_antlr.compiler.c import compile_instrument, CBinaryTarget, run_compiled_instrument
@@ -153,13 +147,13 @@ class ComponentVectorParameterTestCase(unittest.TestCase):
     def test_instr_0_assembled(self):
         self._check_instr_0_properties(self._assemble_instr_0())
 
+    @compiled_test
     def test_parsed_instr_0_compiled(self):
-        self._compiler_check()
         easy_to_spot = self._compile_and_run(self._parse_instr_0(), '')
         self.assertEqual(easy_to_spot, [1, 2, 3])
 
+    @compiled_test
     def test_assembled_instr_0_compiled(self):
-        self._compiler_check()
         easy_to_spot = self._compile_and_run(self._assemble_instr_0(), '')
         self.assertEqual(easy_to_spot, [1, 2, 3])
 

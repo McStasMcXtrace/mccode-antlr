@@ -32,16 +32,16 @@ Darwin:
     nodes: auto
   ext: .out
 Windows:
-  cc: gcc
-  acc: gcc
+  cc: cl.exe
+  acc: there_is_no_acc_compiler_for_windows.exe
   flags:
-    cc: -g -O2 -std=c99 -x c -D_POSIX_C_SOURCE
-    ld: -lm
-    acc: -lm -ta:multicore -DOPENACC -x c -D_POSIX_C_SOURCE
-    nexus: -Wl,-rpath,"C:/Program Files/NeXus Data Format/bin" -L"C:/Program Files/NeXus Data Format/bin" -DUSE_NEXUS -lNeXus-0 -I"C:/Program Files/Nexus Data Format/include/nexus"
-    mpi: -DUSE_MPI -lmsmpi
-    gsl: -lgsl -lgslcblas
-    xrl: -lxrl
+    cc: /DWIN32 /D_WINDOWS /Zi /O2 /Ob1 /DNDEBUG /DPATH_MAX=4096
+    ld: /link
+    acc: /O2
+    nexus: /DUSE_NEXUS NeXus.lib
+    mpi: /DUSE_MPI /link msmpi.lib
+    gsl: /link gsl.lib gslcblas.lib
+    xrl: /lib xrl.lib
   mpi:
     cc: mpicc.bat
     run: mpiexec.exe
