@@ -118,10 +118,20 @@ def linux_compile(compiler, compiler_flags, target, linker_flags, source):
 
 def windows_compile(compiler, compiler_flags, target, linker_flags, source):
     from subprocess import run
+    parent = target.parent
+    if not parent.is_dir():
+        parent.mkdir(parents=True)
     write_to = target.with_suffix('.c')
     with write_to.open('w') as file:
         file.writelines(source)
-    command = [compiler, *compiler_flags, str(write_to), '/link', *linker_flags, f'/out:{target}']
+    if '/link' not in linker_flags:
+        linker_flags = ['/link'] + linker_flags
+    # Specifying either of
+    #   obj = [] if parent == Path() else [f'/Fo"{parent}\\"']
+    # as *obj, would move generated object files next to the executable, but breaks
+    # some aspect of compilation when done from Python (but not the command line)
+    # FIXME Re-evaluate the need/advisability for no compiler warnings
+    command = [compiler, *compiler_flags, str(write_to), '/W0', *linker_flags, f'/out:{target}']
     result = run(command, capture_output=True)
     return command, result
 
@@ -173,7 +183,9 @@ def _compile_instrument(
     command, result = _compile(target.compiler, compiler_flags, output, linker_flags, source)
 
     if result.returncode:
-        raise RuntimeError(f"Compilation\n{command}\nfailed with output\n{result.stdout}\nand error\n{result.stderr}")
+        stdout = result.stdout.decode() if isinstance(result.stdout, bytes) else result.stdout
+        stderr = result.stderr.decode() if isinstance(result.stderr, bytes) else result.stderr
+        raise RuntimeError(f"Compilation\n{' '.join(command)}\nfailed with output\n{stdout}\nand error\n{stderr}")
     if not output.exists():
         raise RuntimeError(f"Compilation should have produced {output}, but it does not appear to exist")
     if not access(output, R_OK):

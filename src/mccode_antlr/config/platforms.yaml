@@ -33,11 +33,11 @@ Darwin:
   ext: .out
 Windows:
   cc: cl.exe
-  acc: cl.exe
+  acc: there_is_no_acc_compiler_for_windows.exe
   flags:
-    cc: /DWIN32 /D_WINDOWS /Zi /O2 /Ob1 /DNDEBUG /std:c99 /D_POSIX_C_SOURCE
+    cc: /DWIN32 /D_WINDOWS /Zi /O2 /Ob1 /DNDEBUG /DPATH_MAX=4096
     ld: /link
-    acc: /Zi /O2 /std:c99 /D_POSIX_C_SOURCE
+    acc: /O2
     nexus: /DUSE_NEXUS NeXus.lib
     mpi: /DUSE_MPI /link msmpi.lib
     gsl: /link gsl.lib gslcblas.lib
