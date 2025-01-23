@@ -25,15 +25,10 @@ def declarations_pre_libraries(source, typedefs: list, component_declared_parame
                  'typedef struct _struct_instrument_parameters _class_instrument_parameters;']
         return '\n'.join(lines)
 
-    count = len(source.groups) + sum(len(i.jump) + (0 if i.split is None else 1) for i in source.components)
+    control_needed = len(source.groups) or any(inst.split for inst in source.components)
 
     def control_statement_logic():
-        #TODO FIXME Why do we care about jump counts here? The struct only contains GROUP and SPLIT counters
-        # count number of groups, all jump lengths and splits
-        if count == 0:
-            return ""
         lines = "\n/* instrument SPLIT and GROUP control logic */\nstruct instrument_logic_struct{\n"
-        no = len(lines)
         comment = '/* equals index of scattering comp when in group */'
         lines += '\n'.join(f'  long Group_{name}; {comment}' for name in source.groups)
         c1 = '/* this is the SPLIT counter decremented down to 0 */'
@@ -41,11 +36,8 @@ def declarations_pre_libraries(source, typedefs: list, component_declared_parame
         lines += '\n'.join(
             f'  long Split_{i.name}; {c1}\n  _class_particle Split_{i.name}_particle; {c2}'
             for i in source.components if i.split is not None)
-        if len(lines) == no:
-            lines += "char no_groups_or_split_dummy;\n"
-            logger.warning("An empty instrument_logic control struct would have been created because of no groups or splits!")
         lines += '};\n'
-        return lines
+        return lines if control_needed else ""
 
     def instrument_structure():
         n2 = len(source.components) + 1  # offset enables 1-based indexing at the cost of binary size/memory use
@@ -59,7 +51,7 @@ def declarations_pre_libraries(source, typedefs: list, component_declared_parame
                  f"  Coords _position_relative[{n2}]; /* positions of all components */",
                  f"  Coords _position_absolute[{n2}];",
                  "  _class_instrument_parameters _parameters; /* instrument parameters */"]
-        if count:
+        if control_needed:
             lines.append("struct instrument_logic_struct logic; /* instrument logic */")
         lines.append("} _instrument_var;")
         lines.append("struct _instrument_struct *instrument = & _instrument_var;")
