@@ -109,6 +109,11 @@ def visitExpressionTrinaryLogic(obj, ctx):
     test, true, false = [obj.visit(x) for x in ctx.expr()]
     return Expr(TrinaryOp('__trinary__', test, true, false))
 
+def visitExpressionBinaryNotEqual(obj, ctx):
+    # `ctx.left` and `ctx.right` are not exposed by speedy-antlr-tool
+    left, right = [obj.visit(ex) for ex in ctx.expr()]
+    return Expr(BinaryOp('__neq__', left, right))
+
 def visitExpressionBinaryEqual(obj, ctx):
     # `ctx.left` and `ctx.right` are not exposed by speedy-antlr-tool
     left, right = [obj.visit(ex) for ex in ctx.expr()]
@@ -161,6 +166,7 @@ common_visitors = (
     ('visitExpressionUnaryLogic', visitExpressionUnaryLogic),
     ('visitExpressionBinaryLogic', visitExpressionBinaryLogic),
     ('visitExpressionTrinaryLogic', visitExpressionTrinaryLogic),
+    ('visitExpressionBinaryNotEqual', visitExpressionBinaryNotEqual),
     ('visitExpressionBinaryEqual', visitExpressionBinaryEqual),
     ('visitExpressionBinaryLessEqual', visitExpressionBinaryLessEqual),
     ('visitExpressionBinaryGreaterEqual', visitExpressionBinaryGreaterEqual),

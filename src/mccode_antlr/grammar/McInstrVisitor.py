@@ -309,6 +309,11 @@ class McInstrVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by McInstrParser#ExpressionBinaryNotEqual.
+    def visitExpressionBinaryNotEqual(self, ctx:McInstrParser.ExpressionBinaryNotEqualContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by McInstrParser#ExpressionStructAccess.
     def visitExpressionStructAccess(self, ctx:McInstrParser.ExpressionStructAccessContext):
         return self.visitChildren(ctx)

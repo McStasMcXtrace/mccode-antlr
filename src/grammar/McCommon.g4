@@ -54,6 +54,7 @@ expr
   | left=expr '>>' right=expr                       #ExpressionBinaryRightShift
   | left=expr '<<' right=expr                       #ExpressionBinaryLeftShift
   | Identifier                                      #ExpressionIdentifier
+  | left=expr '!=' right=expr                       #ExpressionBinaryNotEqual
   | left=expr '==' right=expr                       #ExpressionBinaryEqual
   | left=expr '<=' right=expr                       #ExpressionBinaryLessEqual
   | left=expr '>=' right=expr                       #ExpressionBinaryGreaterEqual
@@ -61,7 +62,7 @@ expr
   | left=expr '>' right=expr                        #ExpressionBinaryGreater
   | Not expr                                        #ExpressionUnaryLogic
   | left=expr (AndAnd | OrOr) right=expr            #ExpressionBinaryLogic
-  | test=expr '?' true_=expr ':' false_=expr          #ExpressionTrinaryLogic
+  | test=expr '?' true_=expr ':' false_=expr        #ExpressionTrinaryLogic
   | Previous                                        #ExpressionPrevious
   | Myself                                          #ExpressionMyself
   ;
