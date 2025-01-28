@@ -429,6 +429,8 @@ class BinaryOp(Op):
             return f'{lstr}<={rstr}'
         if '__ge__' == self.op:
             return f'{lstr}>={rstr}'
+        if '__neq__' == self.op:
+            return f'{lstr}!={rstr}'
         if '__eq__' == self.op:
             return f'{lstr}=={rstr}'
         if '__or__' == self.op:

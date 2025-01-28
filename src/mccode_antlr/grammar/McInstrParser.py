@@ -10,7 +10,7 @@ else:
 
 def serializedATN():
     return [
-        4,1,156,514,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,
+        4,1,156,517,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,
         7,6,2,7,7,7,2,8,7,8,2,9,7,9,2,10,7,10,2,11,7,11,2,12,7,12,2,13,7,
         13,2,14,7,14,2,15,7,15,2,16,7,16,2,17,7,17,2,18,7,18,2,19,7,19,2,
         20,7,20,2,21,7,21,2,22,7,22,2,23,7,23,2,24,7,24,2,25,7,25,2,26,7,
@@ -50,64 +50,64 @@ def serializedATN():
         1,35,1,35,1,35,1,35,1,35,1,35,1,35,1,35,1,35,1,35,1,35,1,35,1,35,
         1,35,1,35,1,35,1,35,1,35,1,35,1,35,1,35,1,35,1,35,1,35,1,35,1,35,
         1,35,1,35,1,35,1,35,1,35,1,35,1,35,1,35,1,35,1,35,1,35,1,35,1,35,
-        1,35,1,35,1,35,5,35,497,8,35,10,35,12,35,500,9,35,1,36,1,36,1,36,
-        1,37,1,37,1,37,1,37,1,37,3,37,510,8,37,1,38,1,38,1,38,0,1,70,39,
-        0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,42,44,
-        46,48,50,52,54,56,58,60,62,64,66,68,70,72,74,76,0,7,3,0,1,1,48,48,
-        52,52,1,0,33,34,2,0,30,30,32,32,2,0,52,52,143,143,1,0,102,103,1,
-        0,104,105,1,0,129,130,566,0,78,1,0,0,0,2,81,1,0,0,0,4,115,1,0,0,
-        0,6,161,1,0,0,0,8,163,1,0,0,0,10,166,1,0,0,0,12,177,1,0,0,0,14,181,
-        1,0,0,0,16,185,1,0,0,0,18,228,1,0,0,0,20,236,1,0,0,0,22,238,1,0,
-        0,0,24,260,1,0,0,0,26,262,1,0,0,0,28,267,1,0,0,0,30,270,1,0,0,0,
-        32,274,1,0,0,0,34,278,1,0,0,0,36,282,1,0,0,0,38,286,1,0,0,0,40,305,
-        1,0,0,0,42,307,1,0,0,0,44,317,1,0,0,0,46,319,1,0,0,0,48,333,1,0,
-        0,0,50,335,1,0,0,0,52,347,1,0,0,0,54,349,1,0,0,0,56,361,1,0,0,0,
-        58,372,1,0,0,0,60,383,1,0,0,0,62,385,1,0,0,0,64,390,1,0,0,0,66,393,
-        1,0,0,0,68,404,1,0,0,0,70,452,1,0,0,0,72,501,1,0,0,0,74,509,1,0,
-        0,0,76,511,1,0,0,0,78,79,3,2,1,0,79,80,5,0,0,1,80,1,1,0,0,0,81,82,
-        5,9,0,0,82,83,5,16,0,0,83,84,5,143,0,0,84,86,3,4,2,0,85,87,3,72,
-        36,0,86,85,1,0,0,0,86,87,1,0,0,0,87,89,1,0,0,0,88,90,3,74,37,0,89,
-        88,1,0,0,0,89,90,1,0,0,0,90,92,1,0,0,0,91,93,3,12,6,0,92,91,1,0,
-        0,0,92,93,1,0,0,0,93,95,1,0,0,0,94,96,3,50,25,0,95,94,1,0,0,0,95,
-        96,1,0,0,0,96,98,1,0,0,0,97,99,3,52,26,0,98,97,1,0,0,0,98,99,1,0,
-        0,0,99,101,1,0,0,0,100,102,3,54,27,0,101,100,1,0,0,0,101,102,1,0,
-        0,0,102,104,1,0,0,0,103,105,3,56,28,0,104,103,1,0,0,0,104,105,1,
-        0,0,0,105,106,1,0,0,0,106,108,3,10,5,0,107,109,3,58,29,0,108,107,
-        1,0,0,0,108,109,1,0,0,0,109,111,1,0,0,0,110,112,3,60,30,0,111,110,
-        1,0,0,0,111,112,1,0,0,0,112,113,1,0,0,0,113,114,5,12,0,0,114,3,1,
-        0,0,0,115,124,5,96,0,0,116,121,3,6,3,0,117,118,5,133,0,0,118,120,
-        3,6,3,0,119,117,1,0,0,0,120,123,1,0,0,0,121,119,1,0,0,0,121,122,
-        1,0,0,0,122,125,1,0,0,0,123,121,1,0,0,0,124,116,1,0,0,0,124,125,
-        1,0,0,0,125,126,1,0,0,0,126,127,5,97,0,0,127,5,1,0,0,0,128,130,5,
-        68,0,0,129,128,1,0,0,0,129,130,1,0,0,0,130,131,1,0,0,0,131,133,5,
-        143,0,0,132,134,3,8,4,0,133,132,1,0,0,0,133,134,1,0,0,0,134,137,
-        1,0,0,0,135,136,5,112,0,0,136,138,3,70,35,0,137,135,1,0,0,0,137,
-        138,1,0,0,0,138,162,1,0,0,0,139,140,5,79,0,0,140,142,5,143,0,0,141,
-        143,3,8,4,0,142,141,1,0,0,0,142,143,1,0,0,0,143,146,1,0,0,0,144,
-        145,5,112,0,0,145,147,3,70,35,0,146,144,1,0,0,0,146,147,1,0,0,0,
-        147,162,1,0,0,0,148,152,5,43,0,0,149,150,5,62,0,0,150,152,5,104,
-        0,0,151,148,1,0,0,0,151,149,1,0,0,0,152,153,1,0,0,0,153,155,5,143,
-        0,0,154,156,3,8,4,0,155,154,1,0,0,0,155,156,1,0,0,0,156,159,1,0,
-        0,0,157,158,5,112,0,0,158,160,7,0,0,0,159,157,1,0,0,0,159,160,1,
-        0,0,0,160,162,1,0,0,0,161,129,1,0,0,0,161,139,1,0,0,0,161,151,1,
-        0,0,0,162,7,1,0,0,0,163,164,5,105,0,0,164,165,5,52,0,0,165,9,1,0,
-        0,0,166,174,5,24,0,0,167,171,3,16,8,0,168,171,3,74,37,0,169,171,
-        3,14,7,0,170,167,1,0,0,0,170,168,1,0,0,0,170,169,1,0,0,0,171,172,
-        1,0,0,0,172,170,1,0,0,0,172,173,1,0,0,0,173,175,1,0,0,0,174,170,
-        1,0,0,0,174,175,1,0,0,0,175,11,1,0,0,0,176,178,3,62,31,0,177,176,
-        1,0,0,0,178,179,1,0,0,0,179,177,1,0,0,0,179,180,1,0,0,0,180,13,1,
-        0,0,0,181,182,5,47,0,0,182,183,5,52,0,0,183,15,1,0,0,0,184,186,5,
-        36,0,0,185,184,1,0,0,0,185,186,1,0,0,0,186,188,1,0,0,0,187,189,5,
-        37,0,0,188,187,1,0,0,0,188,189,1,0,0,0,189,191,1,0,0,0,190,192,3,
-        26,13,0,191,190,1,0,0,0,191,192,1,0,0,0,192,193,1,0,0,0,193,194,
-        5,7,0,0,194,195,3,18,9,0,195,196,5,112,0,0,196,198,3,20,10,0,197,
-        199,3,22,11,0,198,197,1,0,0,0,198,199,1,0,0,0,199,201,1,0,0,0,200,
-        202,3,28,14,0,201,200,1,0,0,0,201,202,1,0,0,0,202,203,1,0,0,0,203,
-        205,3,30,15,0,204,206,3,32,16,0,205,204,1,0,0,0,205,206,1,0,0,0,
-        206,208,1,0,0,0,207,209,3,34,17,0,208,207,1,0,0,0,208,209,1,0,0,
-        0,209,211,1,0,0,0,210,212,3,42,21,0,211,210,1,0,0,0,211,212,1,0,
-        0,0,212,214,1,0,0,0,213,215,3,36,18,0,214,213,1,0,0,0,214,215,1,
-        0,0,0,215,219,1,0,0,0,216,218,3,62,31,0,217,216,1,0,0,0,218,221,
+        1,35,1,35,1,35,1,35,1,35,1,35,5,35,500,8,35,10,35,12,35,503,9,35,
+        1,36,1,36,1,36,1,37,1,37,1,37,1,37,1,37,3,37,513,8,37,1,38,1,38,
+        1,38,0,1,70,39,0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,
+        36,38,40,42,44,46,48,50,52,54,56,58,60,62,64,66,68,70,72,74,76,0,
+        7,3,0,1,1,48,48,52,52,1,0,33,34,2,0,30,30,32,32,2,0,52,52,143,143,
+        1,0,102,103,1,0,104,105,1,0,129,130,570,0,78,1,0,0,0,2,81,1,0,0,
+        0,4,115,1,0,0,0,6,161,1,0,0,0,8,163,1,0,0,0,10,166,1,0,0,0,12,177,
+        1,0,0,0,14,181,1,0,0,0,16,185,1,0,0,0,18,228,1,0,0,0,20,236,1,0,
+        0,0,22,238,1,0,0,0,24,260,1,0,0,0,26,262,1,0,0,0,28,267,1,0,0,0,
+        30,270,1,0,0,0,32,274,1,0,0,0,34,278,1,0,0,0,36,282,1,0,0,0,38,286,
+        1,0,0,0,40,305,1,0,0,0,42,307,1,0,0,0,44,317,1,0,0,0,46,319,1,0,
+        0,0,48,333,1,0,0,0,50,335,1,0,0,0,52,347,1,0,0,0,54,349,1,0,0,0,
+        56,361,1,0,0,0,58,372,1,0,0,0,60,383,1,0,0,0,62,385,1,0,0,0,64,390,
+        1,0,0,0,66,393,1,0,0,0,68,404,1,0,0,0,70,452,1,0,0,0,72,504,1,0,
+        0,0,74,512,1,0,0,0,76,514,1,0,0,0,78,79,3,2,1,0,79,80,5,0,0,1,80,
+        1,1,0,0,0,81,82,5,9,0,0,82,83,5,16,0,0,83,84,5,143,0,0,84,86,3,4,
+        2,0,85,87,3,72,36,0,86,85,1,0,0,0,86,87,1,0,0,0,87,89,1,0,0,0,88,
+        90,3,74,37,0,89,88,1,0,0,0,89,90,1,0,0,0,90,92,1,0,0,0,91,93,3,12,
+        6,0,92,91,1,0,0,0,92,93,1,0,0,0,93,95,1,0,0,0,94,96,3,50,25,0,95,
+        94,1,0,0,0,95,96,1,0,0,0,96,98,1,0,0,0,97,99,3,52,26,0,98,97,1,0,
+        0,0,98,99,1,0,0,0,99,101,1,0,0,0,100,102,3,54,27,0,101,100,1,0,0,
+        0,101,102,1,0,0,0,102,104,1,0,0,0,103,105,3,56,28,0,104,103,1,0,
+        0,0,104,105,1,0,0,0,105,106,1,0,0,0,106,108,3,10,5,0,107,109,3,58,
+        29,0,108,107,1,0,0,0,108,109,1,0,0,0,109,111,1,0,0,0,110,112,3,60,
+        30,0,111,110,1,0,0,0,111,112,1,0,0,0,112,113,1,0,0,0,113,114,5,12,
+        0,0,114,3,1,0,0,0,115,124,5,96,0,0,116,121,3,6,3,0,117,118,5,133,
+        0,0,118,120,3,6,3,0,119,117,1,0,0,0,120,123,1,0,0,0,121,119,1,0,
+        0,0,121,122,1,0,0,0,122,125,1,0,0,0,123,121,1,0,0,0,124,116,1,0,
+        0,0,124,125,1,0,0,0,125,126,1,0,0,0,126,127,5,97,0,0,127,5,1,0,0,
+        0,128,130,5,68,0,0,129,128,1,0,0,0,129,130,1,0,0,0,130,131,1,0,0,
+        0,131,133,5,143,0,0,132,134,3,8,4,0,133,132,1,0,0,0,133,134,1,0,
+        0,0,134,137,1,0,0,0,135,136,5,112,0,0,136,138,3,70,35,0,137,135,
+        1,0,0,0,137,138,1,0,0,0,138,162,1,0,0,0,139,140,5,79,0,0,140,142,
+        5,143,0,0,141,143,3,8,4,0,142,141,1,0,0,0,142,143,1,0,0,0,143,146,
+        1,0,0,0,144,145,5,112,0,0,145,147,3,70,35,0,146,144,1,0,0,0,146,
+        147,1,0,0,0,147,162,1,0,0,0,148,152,5,43,0,0,149,150,5,62,0,0,150,
+        152,5,104,0,0,151,148,1,0,0,0,151,149,1,0,0,0,152,153,1,0,0,0,153,
+        155,5,143,0,0,154,156,3,8,4,0,155,154,1,0,0,0,155,156,1,0,0,0,156,
+        159,1,0,0,0,157,158,5,112,0,0,158,160,7,0,0,0,159,157,1,0,0,0,159,
+        160,1,0,0,0,160,162,1,0,0,0,161,129,1,0,0,0,161,139,1,0,0,0,161,
+        151,1,0,0,0,162,7,1,0,0,0,163,164,5,105,0,0,164,165,5,52,0,0,165,
+        9,1,0,0,0,166,174,5,24,0,0,167,171,3,16,8,0,168,171,3,74,37,0,169,
+        171,3,14,7,0,170,167,1,0,0,0,170,168,1,0,0,0,170,169,1,0,0,0,171,
+        172,1,0,0,0,172,170,1,0,0,0,172,173,1,0,0,0,173,175,1,0,0,0,174,
+        170,1,0,0,0,174,175,1,0,0,0,175,11,1,0,0,0,176,178,3,62,31,0,177,
+        176,1,0,0,0,178,179,1,0,0,0,179,177,1,0,0,0,179,180,1,0,0,0,180,
+        13,1,0,0,0,181,182,5,47,0,0,182,183,5,52,0,0,183,15,1,0,0,0,184,
+        186,5,36,0,0,185,184,1,0,0,0,185,186,1,0,0,0,186,188,1,0,0,0,187,
+        189,5,37,0,0,188,187,1,0,0,0,188,189,1,0,0,0,189,191,1,0,0,0,190,
+        192,3,26,13,0,191,190,1,0,0,0,191,192,1,0,0,0,192,193,1,0,0,0,193,
+        194,5,7,0,0,194,195,3,18,9,0,195,196,5,112,0,0,196,198,3,20,10,0,
+        197,199,3,22,11,0,198,197,1,0,0,0,198,199,1,0,0,0,199,201,1,0,0,
+        0,200,202,3,28,14,0,201,200,1,0,0,0,201,202,1,0,0,0,202,203,1,0,
+        0,0,203,205,3,30,15,0,204,206,3,32,16,0,205,204,1,0,0,0,205,206,
+        1,0,0,0,206,208,1,0,0,0,207,209,3,34,17,0,208,207,1,0,0,0,208,209,
+        1,0,0,0,209,211,1,0,0,0,210,212,3,42,21,0,211,210,1,0,0,0,211,212,
+        1,0,0,0,212,214,1,0,0,0,213,215,3,36,18,0,214,213,1,0,0,0,214,215,
+        1,0,0,0,215,219,1,0,0,0,216,218,3,62,31,0,217,216,1,0,0,0,218,221,
         1,0,0,0,219,217,1,0,0,0,219,220,1,0,0,0,220,17,1,0,0,0,221,219,1,
         0,0,0,222,223,5,34,0,0,223,224,5,96,0,0,224,225,5,143,0,0,225,229,
         5,97,0,0,226,229,7,1,0,0,227,229,5,143,0,0,228,222,1,0,0,0,228,226,
@@ -167,42 +167,43 @@ def serializedATN():
         1,0,0,410,453,5,49,0,0,411,453,5,51,0,0,412,414,5,52,0,0,413,412,
         1,0,0,0,414,417,1,0,0,0,415,413,1,0,0,0,415,416,1,0,0,0,416,453,
         1,0,0,0,417,415,1,0,0,0,418,419,5,143,0,0,419,420,5,135,0,0,420,
-        453,3,70,35,23,421,422,5,143,0,0,422,423,5,140,0,0,423,453,3,70,
-        35,22,424,425,5,143,0,0,425,426,5,98,0,0,426,427,3,70,35,0,427,428,
+        453,3,70,35,24,421,422,5,143,0,0,422,423,5,140,0,0,423,453,3,70,
+        35,23,424,425,5,143,0,0,425,426,5,98,0,0,426,427,3,70,35,0,427,428,
         5,99,0,0,428,453,1,0,0,0,429,430,5,143,0,0,430,431,5,96,0,0,431,
         436,3,70,35,0,432,433,5,133,0,0,433,435,3,70,35,0,434,432,1,0,0,
         0,435,438,1,0,0,0,436,434,1,0,0,0,436,437,1,0,0,0,437,439,1,0,0,
         0,438,436,1,0,0,0,439,440,5,97,0,0,440,453,1,0,0,0,441,442,5,96,
         0,0,442,443,3,70,35,0,443,444,5,97,0,0,444,453,1,0,0,0,445,446,7,
-        4,0,0,446,453,3,70,35,18,447,453,5,143,0,0,448,449,5,111,0,0,449,
+        4,0,0,446,453,3,70,35,19,447,453,5,143,0,0,448,449,5,111,0,0,449,
         453,3,70,35,5,450,453,5,22,0,0,451,453,5,33,0,0,452,408,1,0,0,0,
         452,410,1,0,0,0,452,411,1,0,0,0,452,415,1,0,0,0,452,418,1,0,0,0,
         452,421,1,0,0,0,452,424,1,0,0,0,452,429,1,0,0,0,452,441,1,0,0,0,
         452,445,1,0,0,0,452,447,1,0,0,0,452,448,1,0,0,0,452,450,1,0,0,0,
-        452,451,1,0,0,0,453,498,1,0,0,0,454,455,10,17,0,0,455,456,5,107,
-        0,0,456,497,3,70,35,17,457,458,10,16,0,0,458,459,7,5,0,0,459,497,
-        3,70,35,17,460,461,10,15,0,0,461,462,7,4,0,0,462,497,3,70,35,16,
-        463,464,10,14,0,0,464,465,5,106,0,0,465,497,3,70,35,15,466,467,10,
-        13,0,0,467,468,5,2,0,0,468,497,3,70,35,14,469,470,10,12,0,0,470,
-        471,5,3,0,0,471,497,3,70,35,13,472,473,10,10,0,0,473,474,5,125,0,
-        0,474,497,3,70,35,11,475,476,10,9,0,0,476,477,5,127,0,0,477,497,
-        3,70,35,10,478,479,10,8,0,0,479,480,5,128,0,0,480,497,3,70,35,9,
-        481,482,10,7,0,0,482,483,5,113,0,0,483,497,3,70,35,8,484,485,10,
-        6,0,0,485,486,5,114,0,0,486,497,3,70,35,7,487,488,10,4,0,0,488,489,
-        7,6,0,0,489,497,3,70,35,5,490,491,10,3,0,0,491,492,5,136,0,0,492,
-        493,3,70,35,0,493,494,5,137,0,0,494,495,3,70,35,4,495,497,1,0,0,
-        0,496,454,1,0,0,0,496,457,1,0,0,0,496,460,1,0,0,0,496,463,1,0,0,
-        0,496,466,1,0,0,0,496,469,1,0,0,0,496,472,1,0,0,0,496,475,1,0,0,
-        0,496,478,1,0,0,0,496,481,1,0,0,0,496,484,1,0,0,0,496,487,1,0,0,
-        0,496,490,1,0,0,0,497,500,1,0,0,0,498,496,1,0,0,0,498,499,1,0,0,
-        0,499,71,1,0,0,0,500,498,1,0,0,0,501,502,5,40,0,0,502,503,5,52,0,
-        0,503,73,1,0,0,0,504,505,5,41,0,0,505,510,5,52,0,0,506,507,5,41,
-        0,0,507,508,5,40,0,0,508,510,5,52,0,0,509,504,1,0,0,0,509,506,1,
-        0,0,0,510,75,1,0,0,0,511,512,5,46,0,0,512,77,1,0,0,0,63,86,89,92,
-        95,98,101,104,108,111,121,124,129,133,137,142,146,151,155,159,161,
-        170,172,174,179,185,188,191,198,201,205,208,211,214,219,228,236,
-        244,247,260,265,284,295,302,305,314,317,331,333,345,347,359,361,
-        370,372,381,383,399,415,436,452,496,498,509
+        452,451,1,0,0,0,453,501,1,0,0,0,454,455,10,18,0,0,455,456,5,107,
+        0,0,456,500,3,70,35,18,457,458,10,17,0,0,458,459,7,5,0,0,459,500,
+        3,70,35,18,460,461,10,16,0,0,461,462,7,4,0,0,462,500,3,70,35,17,
+        463,464,10,15,0,0,464,465,5,106,0,0,465,500,3,70,35,16,466,467,10,
+        14,0,0,467,468,5,2,0,0,468,500,3,70,35,15,469,470,10,13,0,0,470,
+        471,5,3,0,0,471,500,3,70,35,14,472,473,10,11,0,0,473,474,5,126,0,
+        0,474,500,3,70,35,12,475,476,10,10,0,0,476,477,5,125,0,0,477,500,
+        3,70,35,11,478,479,10,9,0,0,479,480,5,127,0,0,480,500,3,70,35,10,
+        481,482,10,8,0,0,482,483,5,128,0,0,483,500,3,70,35,9,484,485,10,
+        7,0,0,485,486,5,113,0,0,486,500,3,70,35,8,487,488,10,6,0,0,488,489,
+        5,114,0,0,489,500,3,70,35,7,490,491,10,4,0,0,491,492,7,6,0,0,492,
+        500,3,70,35,5,493,494,10,3,0,0,494,495,5,136,0,0,495,496,3,70,35,
+        0,496,497,5,137,0,0,497,498,3,70,35,4,498,500,1,0,0,0,499,454,1,
+        0,0,0,499,457,1,0,0,0,499,460,1,0,0,0,499,463,1,0,0,0,499,466,1,
+        0,0,0,499,469,1,0,0,0,499,472,1,0,0,0,499,475,1,0,0,0,499,478,1,
+        0,0,0,499,481,1,0,0,0,499,484,1,0,0,0,499,487,1,0,0,0,499,490,1,
+        0,0,0,499,493,1,0,0,0,500,503,1,0,0,0,501,499,1,0,0,0,501,502,1,
+        0,0,0,502,71,1,0,0,0,503,501,1,0,0,0,504,505,5,40,0,0,505,506,5,
+        52,0,0,506,73,1,0,0,0,507,508,5,41,0,0,508,513,5,52,0,0,509,510,
+        5,41,0,0,510,511,5,40,0,0,511,513,5,52,0,0,512,507,1,0,0,0,512,509,
+        1,0,0,0,513,75,1,0,0,0,514,515,5,46,0,0,515,77,1,0,0,0,63,86,89,
+        92,95,98,101,104,108,111,121,124,129,133,137,142,146,151,155,159,
+        161,170,172,174,179,185,188,191,198,201,205,208,211,214,219,228,
+        236,244,247,260,265,284,295,302,305,314,317,331,333,345,347,359,
+        361,370,372,381,383,399,415,436,452,499,501,512
     ]
 
 class McInstrParser ( Parser ):
@@ -3705,6 +3706,30 @@ class McInstrParser ( Parser ):
                 return visitor.visitChildren(self)
 
 
+    class ExpressionBinaryNotEqualContext(ExprContext):
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a McInstrParser.ExprContext
+            super().__init__(parser)
+            self.left = None # ExprContext
+            self.right = None # ExprContext
+            self.copyFrom(ctx)
+
+        def NotEqual(self):
+            return self.getToken(McInstrParser.NotEqual, 0)
+        def expr(self, i:int=None):
+            if i is None:
+                return self.getTypedRuleContexts(McInstrParser.ExprContext)
+            else:
+                return self.getTypedRuleContext(McInstrParser.ExprContext,i)
+
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitExpressionBinaryNotEqual" ):
+                return visitor.visitExpressionBinaryNotEqual(self)
+            else:
+                return visitor.visitChildren(self)
+
+
     class ExpressionStructAccessContext(ExprContext):
 
         def __init__(self, parser, ctx:ParserRuleContext): # actually a McInstrParser.ExprContext
@@ -4131,7 +4156,7 @@ class McInstrParser ( Parser ):
                 self.state = 419
                 self.match(McInstrParser.Arrow)
                 self.state = 420
-                self.expr(23)
+                self.expr(24)
                 pass
 
             elif la_ == 6:
@@ -4143,7 +4168,7 @@ class McInstrParser ( Parser ):
                 self.state = 422
                 self.match(McInstrParser.Dot)
                 self.state = 423
-                self.expr(22)
+                self.expr(23)
                 pass
 
             elif la_ == 7:
@@ -4212,7 +4237,7 @@ class McInstrParser ( Parser ):
                     self._errHandler.reportMatch(self)
                     self.consume()
                 self.state = 446
-                self.expr(18)
+                self.expr(19)
                 pass
 
             elif la_ == 11:
@@ -4251,7 +4276,7 @@ class McInstrParser ( Parser ):
 
 
             self._ctx.stop = self._input.LT(-1)
-            self.state = 498
+            self.state = 501
             self._errHandler.sync(self)
             _alt = self._interp.adaptivePredict(self._input,61,self._ctx)
             while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
@@ -4259,7 +4284,7 @@ class McInstrParser ( Parser ):
                     if self._parseListeners is not None:
                         self.triggerExitRuleEvent()
                     _prevctx = localctx
-                    self.state = 496
+                    self.state = 499
                     self._errHandler.sync(self)
                     la_ = self._interp.adaptivePredict(self._input,60,self._ctx)
                     if la_ == 1:
@@ -4267,13 +4292,13 @@ class McInstrParser ( Parser ):
                         localctx.base = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 454
-                        if not self.precpred(self._ctx, 17):
+                        if not self.precpred(self._ctx, 18):
                             from antlr4.error.Errors import FailedPredicateException
-                            raise FailedPredicateException(self, "self.precpred(self._ctx, 17)")
+                            raise FailedPredicateException(self, "self.precpred(self._ctx, 18)")
                         self.state = 455
                         self.match(McInstrParser.Caret)
                         self.state = 456
-                        localctx.exponent = self.expr(17)
+                        localctx.exponent = self.expr(18)
                         pass
 
                     elif la_ == 2:
@@ -4281,9 +4306,9 @@ class McInstrParser ( Parser ):
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 457
-                        if not self.precpred(self._ctx, 16):
+                        if not self.precpred(self._ctx, 17):
                             from antlr4.error.Errors import FailedPredicateException
-                            raise FailedPredicateException(self, "self.precpred(self._ctx, 16)")
+                            raise FailedPredicateException(self, "self.precpred(self._ctx, 17)")
                         self.state = 458
                         _la = self._input.LA(1)
                         if not(_la==104 or _la==105):
@@ -4292,7 +4317,7 @@ class McInstrParser ( Parser ):
                             self._errHandler.reportMatch(self)
                             self.consume()
                         self.state = 459
-                        localctx.right = self.expr(17)
+                        localctx.right = self.expr(18)
                         pass
 
                     elif la_ == 3:
@@ -4300,9 +4325,9 @@ class McInstrParser ( Parser ):
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 460
-                        if not self.precpred(self._ctx, 15):
+                        if not self.precpred(self._ctx, 16):
                             from antlr4.error.Errors import FailedPredicateException
-                            raise FailedPredicateException(self, "self.precpred(self._ctx, 15)")
+                            raise FailedPredicateException(self, "self.precpred(self._ctx, 16)")
                         self.state = 461
                         _la = self._input.LA(1)
                         if not(_la==102 or _la==103):
@@ -4311,7 +4336,7 @@ class McInstrParser ( Parser ):
                             self._errHandler.reportMatch(self)
                             self.consume()
                         self.state = 462
-                        localctx.right = self.expr(16)
+                        localctx.right = self.expr(17)
                         pass
 
                     elif la_ == 4:
@@ -4319,13 +4344,13 @@ class McInstrParser ( Parser ):
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 463
-                        if not self.precpred(self._ctx, 14):
+                        if not self.precpred(self._ctx, 15):
                             from antlr4.error.Errors import FailedPredicateException
-                            raise FailedPredicateException(self, "self.precpred(self._ctx, 14)")
+                            raise FailedPredicateException(self, "self.precpred(self._ctx, 15)")
                         self.state = 464
                         self.match(McInstrParser.Mod)
                         self.state = 465
-                        localctx.right = self.expr(15)
+                        localctx.right = self.expr(16)
                         pass
 
                     elif la_ == 5:
@@ -4333,13 +4358,13 @@ class McInstrParser ( Parser ):
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 466
-                        if not self.precpred(self._ctx, 13):
+                        if not self.precpred(self._ctx, 14):
                             from antlr4.error.Errors import FailedPredicateException
-                            raise FailedPredicateException(self, "self.precpred(self._ctx, 13)")
+                            raise FailedPredicateException(self, "self.precpred(self._ctx, 14)")
                         self.state = 467
                         self.match(McInstrParser.T__1)
                         self.state = 468
-                        localctx.right = self.expr(14)
+                        localctx.right = self.expr(15)
                         pass
 
                     elif la_ == 6:
@@ -4347,124 +4372,138 @@ class McInstrParser ( Parser ):
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 469
-                        if not self.precpred(self._ctx, 12):
+                        if not self.precpred(self._ctx, 13):
                             from antlr4.error.Errors import FailedPredicateException
-                            raise FailedPredicateException(self, "self.precpred(self._ctx, 12)")
+                            raise FailedPredicateException(self, "self.precpred(self._ctx, 13)")
                         self.state = 470
                         self.match(McInstrParser.T__2)
                         self.state = 471
-                        localctx.right = self.expr(13)
+                        localctx.right = self.expr(14)
                         pass
 
                     elif la_ == 7:
-                        localctx = McInstrParser.ExpressionBinaryEqualContext(self, McInstrParser.ExprContext(self, _parentctx, _parentState))
+                        localctx = McInstrParser.ExpressionBinaryNotEqualContext(self, McInstrParser.ExprContext(self, _parentctx, _parentState))
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 472
-                        if not self.precpred(self._ctx, 10):
+                        if not self.precpred(self._ctx, 11):
                             from antlr4.error.Errors import FailedPredicateException
-                            raise FailedPredicateException(self, "self.precpred(self._ctx, 10)")
+                            raise FailedPredicateException(self, "self.precpred(self._ctx, 11)")
                         self.state = 473
-                        self.match(McInstrParser.Equal)
+                        self.match(McInstrParser.NotEqual)
                         self.state = 474
-                        localctx.right = self.expr(11)
+                        localctx.right = self.expr(12)
                         pass
 
                     elif la_ == 8:
-                        localctx = McInstrParser.ExpressionBinaryLessEqualContext(self, McInstrParser.ExprContext(self, _parentctx, _parentState))
+                        localctx = McInstrParser.ExpressionBinaryEqualContext(self, McInstrParser.ExprContext(self, _parentctx, _parentState))
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 475
-                        if not self.precpred(self._ctx, 9):
+                        if not self.precpred(self._ctx, 10):
                             from antlr4.error.Errors import FailedPredicateException
-                            raise FailedPredicateException(self, "self.precpred(self._ctx, 9)")
+                            raise FailedPredicateException(self, "self.precpred(self._ctx, 10)")
                         self.state = 476
-                        self.match(McInstrParser.LessEqual)
+                        self.match(McInstrParser.Equal)
                         self.state = 477
-                        localctx.right = self.expr(10)
+                        localctx.right = self.expr(11)
                         pass
 
                     elif la_ == 9:
-                        localctx = McInstrParser.ExpressionBinaryGreaterEqualContext(self, McInstrParser.ExprContext(self, _parentctx, _parentState))
+                        localctx = McInstrParser.ExpressionBinaryLessEqualContext(self, McInstrParser.ExprContext(self, _parentctx, _parentState))
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 478
-                        if not self.precpred(self._ctx, 8):
+                        if not self.precpred(self._ctx, 9):
                             from antlr4.error.Errors import FailedPredicateException
-                            raise FailedPredicateException(self, "self.precpred(self._ctx, 8)")
+                            raise FailedPredicateException(self, "self.precpred(self._ctx, 9)")
                         self.state = 479
-                        self.match(McInstrParser.GreaterEqual)
+                        self.match(McInstrParser.LessEqual)
                         self.state = 480
-                        localctx.right = self.expr(9)
+                        localctx.right = self.expr(10)
                         pass
 
                     elif la_ == 10:
-                        localctx = McInstrParser.ExpressionBinaryLessContext(self, McInstrParser.ExprContext(self, _parentctx, _parentState))
+                        localctx = McInstrParser.ExpressionBinaryGreaterEqualContext(self, McInstrParser.ExprContext(self, _parentctx, _parentState))
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 481
-                        if not self.precpred(self._ctx, 7):
+                        if not self.precpred(self._ctx, 8):
                             from antlr4.error.Errors import FailedPredicateException
-                            raise FailedPredicateException(self, "self.precpred(self._ctx, 7)")
+                            raise FailedPredicateException(self, "self.precpred(self._ctx, 8)")
                         self.state = 482
-                        self.match(McInstrParser.Less)
+                        self.match(McInstrParser.GreaterEqual)
                         self.state = 483
-                        localctx.right = self.expr(8)
+                        localctx.right = self.expr(9)
                         pass
 
                     elif la_ == 11:
-                        localctx = McInstrParser.ExpressionBinaryGreaterContext(self, McInstrParser.ExprContext(self, _parentctx, _parentState))
+                        localctx = McInstrParser.ExpressionBinaryLessContext(self, McInstrParser.ExprContext(self, _parentctx, _parentState))
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 484
-                        if not self.precpred(self._ctx, 6):
+                        if not self.precpred(self._ctx, 7):
                             from antlr4.error.Errors import FailedPredicateException
-                            raise FailedPredicateException(self, "self.precpred(self._ctx, 6)")
+                            raise FailedPredicateException(self, "self.precpred(self._ctx, 7)")
                         self.state = 485
-                        self.match(McInstrParser.Greater)
+                        self.match(McInstrParser.Less)
                         self.state = 486
-                        localctx.right = self.expr(7)
+                        localctx.right = self.expr(8)
                         pass
 
                     elif la_ == 12:
-                        localctx = McInstrParser.ExpressionBinaryLogicContext(self, McInstrParser.ExprContext(self, _parentctx, _parentState))
+                        localctx = McInstrParser.ExpressionBinaryGreaterContext(self, McInstrParser.ExprContext(self, _parentctx, _parentState))
                         localctx.left = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 487
+                        if not self.precpred(self._ctx, 6):
+                            from antlr4.error.Errors import FailedPredicateException
+                            raise FailedPredicateException(self, "self.precpred(self._ctx, 6)")
+                        self.state = 488
+                        self.match(McInstrParser.Greater)
+                        self.state = 489
+                        localctx.right = self.expr(7)
+                        pass
+
+                    elif la_ == 13:
+                        localctx = McInstrParser.ExpressionBinaryLogicContext(self, McInstrParser.ExprContext(self, _parentctx, _parentState))
+                        localctx.left = _prevctx
+                        self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
+                        self.state = 490
                         if not self.precpred(self._ctx, 4):
                             from antlr4.error.Errors import FailedPredicateException
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 4)")
-                        self.state = 488
+                        self.state = 491
                         _la = self._input.LA(1)
                         if not(_la==129 or _la==130):
                             self._errHandler.recoverInline(self)
                         else:
                             self._errHandler.reportMatch(self)
                             self.consume()
-                        self.state = 489
+                        self.state = 492
                         localctx.right = self.expr(5)
                         pass
 
-                    elif la_ == 13:
+                    elif la_ == 14:
                         localctx = McInstrParser.ExpressionTrinaryLogicContext(self, McInstrParser.ExprContext(self, _parentctx, _parentState))
                         localctx.test = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
-                        self.state = 490
+                        self.state = 493
                         if not self.precpred(self._ctx, 3):
                             from antlr4.error.Errors import FailedPredicateException
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 3)")
-                        self.state = 491
-                        self.match(McInstrParser.Question)
-                        self.state = 492
-                        localctx.true_ = self.expr(0)
-                        self.state = 493
-                        self.match(McInstrParser.Colon)
                         self.state = 494
+                        self.match(McInstrParser.Question)
+                        self.state = 495
+                        localctx.true_ = self.expr(0)
+                        self.state = 496
+                        self.match(McInstrParser.Colon)
+                        self.state = 497
                         localctx.false_ = self.expr(4)
                         pass
 
              
-                self.state = 500
+                self.state = 503
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,61,self._ctx)
 
@@ -4508,9 +4547,9 @@ class McInstrParser ( Parser ):
         self.enterRule(localctx, 72, self.RULE_shell)
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 501
+            self.state = 504
             self.match(McInstrParser.Shell)
-            self.state = 502
+            self.state = 505
             self.match(McInstrParser.StringLiteral)
         except RecognitionException as re:
             localctx.exception = re
@@ -4582,26 +4621,26 @@ class McInstrParser ( Parser ):
         localctx = McInstrParser.SearchContext(self, self._ctx, self.state)
         self.enterRule(localctx, 74, self.RULE_search)
         try:
-            self.state = 509
+            self.state = 512
             self._errHandler.sync(self)
             la_ = self._interp.adaptivePredict(self._input,62,self._ctx)
             if la_ == 1:
                 localctx = McInstrParser.SearchPathContext(self, localctx)
                 self.enterOuterAlt(localctx, 1)
-                self.state = 504
+                self.state = 507
                 self.match(McInstrParser.Search)
-                self.state = 505
+                self.state = 508
                 self.match(McInstrParser.StringLiteral)
                 pass
 
             elif la_ == 2:
                 localctx = McInstrParser.SearchShellContext(self, localctx)
                 self.enterOuterAlt(localctx, 2)
-                self.state = 506
+                self.state = 509
                 self.match(McInstrParser.Search)
-                self.state = 507
+                self.state = 510
                 self.match(McInstrParser.Shell)
-                self.state = 508
+                self.state = 511
                 self.match(McInstrParser.StringLiteral)
                 pass
 
@@ -4643,7 +4682,7 @@ class McInstrParser ( Parser ):
         self.enterRule(localctx, 76, self.RULE_unparsed_block)
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 511
+            self.state = 514
             self.match(McInstrParser.UnparsedBlock)
         except RecognitionException as re:
             localctx.exception = re
@@ -4667,54 +4706,58 @@ class McInstrParser ( Parser ):
 
     def expr_sempred(self, localctx:ExprContext, predIndex:int):
             if predIndex == 0:
-                return self.precpred(self._ctx, 17)
+                return self.precpred(self._ctx, 18)
          
 
             if predIndex == 1:
-                return self.precpred(self._ctx, 16)
+                return self.precpred(self._ctx, 17)
          
 
             if predIndex == 2:
-                return self.precpred(self._ctx, 15)
+                return self.precpred(self._ctx, 16)
          
 
             if predIndex == 3:
-                return self.precpred(self._ctx, 14)
+                return self.precpred(self._ctx, 15)
          
 
             if predIndex == 4:
-                return self.precpred(self._ctx, 13)
+                return self.precpred(self._ctx, 14)
          
 
             if predIndex == 5:
-                return self.precpred(self._ctx, 12)
+                return self.precpred(self._ctx, 13)
          
 
             if predIndex == 6:
-                return self.precpred(self._ctx, 10)
+                return self.precpred(self._ctx, 11)
          
 
             if predIndex == 7:
-                return self.precpred(self._ctx, 9)
+                return self.precpred(self._ctx, 10)
          
 
             if predIndex == 8:
-                return self.precpred(self._ctx, 8)
+                return self.precpred(self._ctx, 9)
          
 
             if predIndex == 9:
-                return self.precpred(self._ctx, 7)
+                return self.precpred(self._ctx, 8)
          
 
             if predIndex == 10:
-                return self.precpred(self._ctx, 6)
+                return self.precpred(self._ctx, 7)
          
 
             if predIndex == 11:
-                return self.precpred(self._ctx, 4)
+                return self.precpred(self._ctx, 6)
          
 
             if predIndex == 12:
+                return self.precpred(self._ctx, 4)
+         
+
+            if predIndex == 13:
                 return self.precpred(self._ctx, 3)
          
 

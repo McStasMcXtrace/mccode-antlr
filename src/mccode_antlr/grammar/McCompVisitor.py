@@ -254,6 +254,11 @@ class McCompVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by McCompParser#ExpressionBinaryNotEqual.
+    def visitExpressionBinaryNotEqual(self, ctx:McCompParser.ExpressionBinaryNotEqualContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by McCompParser#ExpressionStructAccess.
     def visitExpressionStructAccess(self, ctx:McCompParser.ExpressionStructAccessContext):
         return self.visitChildren(ctx)
