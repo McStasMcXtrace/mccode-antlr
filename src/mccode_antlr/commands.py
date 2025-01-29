@@ -27,7 +27,7 @@ def mccode_script_parse(prog: str):
         from sys import exit
         from mccode_antlr.version import version
         print(f'mccode_antlr code generator version {version()}')
-        print(' Copyright (c) European Spallation Source ERIC, 2023-2024')
+        print(' Copyright (c) European Spallation Source ERIC, 2023-2025')
         print('Based on McStas/McXtrace version 3')
         print(' Copyright (c) DTU Physics and Risoe National Laboratory, 1997-2023')
         print(' Additions (c) Institut Laue Langevin, 2003-2019')
@@ -65,11 +65,16 @@ def mccode(flavor: str, registry: Registry, generator: dict):
     # And McCode-3 users expect to always have access to files in the current working directory
     registries.append(LocalRegistry('working_directory', f'{Path().resolve()}'))
 
-    # Construct the object which will read the instrument and component files, producing Python objects
-    reader = Reader(registries=registries)
-    # Read the provided .instr file, including all specified .instr and .comp files along the way
-    # In minimal mode, the component orientations are not resolved -- to speed up the process
-    instrument = reader.get_instrument(args.filename, mode=Mode.minimal)
+    if args.filename.suffix.lower() == '.h5':
+        from mccode_antlr.io import load_hdf5
+        instrument = load_hdf5(args.filename)
+    else:
+        # Construct the object which will read the instrument and component files, producing Python objects
+        reader = Reader(registries=registries)
+        # Read the provided .instr file, including all specified .instr and .comp files along the way
+        # In minimal mode, the component orientations are not resolved -- to speed up the process
+        instrument = reader.get_instrument(args.filename, mode=Mode.minimal)
+
     # Construct the object which will translate the Python instrument to C
     visitor = CTargetVisitor(instrument, generate=generator, config=config, verbose=config['verbose'])
     # Go through the instrument, finish by writing the output file:
