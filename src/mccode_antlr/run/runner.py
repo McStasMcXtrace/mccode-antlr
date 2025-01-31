@@ -230,10 +230,12 @@ def mccode_run_cmd(flavor: str, registry: Registry, generator: dict):
     from pathlib import Path
     from mccode_antlr.reader import Reader
     from mccode_antlr.reader import LocalRegistry
-    from os import R_OK, access
+    from os import X_OK, R_OK, access
 
     args, parameters = parse_mccode_run_script(flavor)
-    filename = args.filename if isinstance(args.filename, str) else next(iter(args.filename))
+    filename = args.filename if isinstance(args.filename, Path) else next(iter(args.filename))
+    if not isinstance(filename, Path):
+        raise ValueError(f'{filename} should be a Path but is {type(filename)}')
     config = dict(
         enable_trace=args.trace if args.trace is not None else False,
         embed_instrument_file=args.source if args.source is not None else False,
@@ -257,21 +259,27 @@ def mccode_run_cmd(flavor: str, registry: Registry, generator: dict):
         capture=(not args.verbose) if args.verbose is not None else False,
     )
     # check if the filename is actually a compiled instrument already:
-    if args.output_file is None and filename.exists() and access(filename, R_OK):
+    if args.output_file is None and filename.exists() and access(filename, X_OK):
         binary = filename
         name = filename.stem
+    elif not filename.exists() or not access(filename, R_OK):
+        raise RuntimeError(f'{filename} does not exist or is not readable')
     else:
-        # McCode always requires access to a remote Pooch repository:
-        registries = [registry]
-        # A user can specify extra (local) directories to search for included files using -I or --search-dir
-        if args.search_dir is not None and len(args.search_dir):
-            registries.extend([LocalRegistry(d.stem, d) for d in args.search_dir])
-        # And McCode-3 users expect to always have access to files in the current working directory
-        registries.append(LocalRegistry('working_directory', f'{Path().resolve()}'))
-        # Construct the object which will read the instrument and component files, producing Python objects
-        reader = Reader(registries=registries)
-        # Read the provided .instr file, including all specified .instr and .comp files along the way
-        instrument = reader.get_instrument(filename)
+        if filename.suffix.lower() == '.h5':
+            from mccode_antlr.io import load_hdf5
+            instrument = load_hdf5(filename)
+        else:
+            # McCode always requires access to a remote Pooch repository:
+            registries = [registry]
+            # A user can specify extra (local) directories to search for included files using -I or --search-dir
+            if args.search_dir is not None and len(args.search_dir):
+                registries.extend([LocalRegistry(d.stem, d) for d in args.search_dir])
+            # And McCode-3 users expect to always have access to files in the current working directory
+            registries.append(LocalRegistry('working_directory', f'{Path().resolve()}'))
+            # Construct the object which will read the instrument and component files, producing Python objects
+            reader = Reader(registries=registries)
+            # Read the provided .instr file, including all specified .instr and .comp files along the way
+            instrument = reader.get_instrument(filename)
         name = instrument.name
         # Generate the C binary for the instrument -- will output to, e.g., {instrument.name}.out, in the current directory
         # unless if output_file was specified
