@@ -201,7 +201,7 @@ class ModuleRemoteRegistry(RemoteRegistry):
     def __init__(self, name: str, url: str, filename=None, version=None, priority: int = 0):
         super().__init__(name, url, version, filename, priority)
         self.pooch = pooch.create(
-            path=pooch.os_cache(f'mccode_antlr-{self.name}'),
+            path=pooch.os_cache(f'mccode_antlr/mccode_antlr-{self.name}'),
             base_url=self.url,
             version=self.version or mccode_antlr_version(),
             version_dev="main",
@@ -222,23 +222,40 @@ class GitHubRegistry(RemoteRegistry):
         if filename is None:
             filename = f'{name}-registry.txt'
         super().__init__(name, url, version, filename, priority)
-        import requests
-        base_url = f'{self.url}/raw/{self.version}/'
+
         # If registry is a string url, we expect the registry file to be available from _that_ url
         self._stashed_registry = None
         if isinstance(registry, str) and simple_url_validator(registry, file_ok=True):
             self._stashed_registry = registry
             registry = f'{registry}/raw/{self.version}/'
-        # We allow a full-dictionary to be provided, otherwise we expect the registry file to be available from the
-        # base_url where all subsequent files are also expected to be available
-        if not isinstance(registry, dict):
-            r = requests.get((registry or base_url) + (self.filename or 'pooch-registry.txt'))
-            if not r.ok:
-                raise RuntimeError(f"Could not retrieve {r.url} because {r.reason}")
-            registry = {k: v for k, v in [x.split(maxsplit=1) for x in r.text.split('\n') if len(x)]}
+
+        base_url = f'{self.url}/raw/{self.version}/'
+        cache_path = pooch.os_cache(f'mccode_antlr/{self.name}')
+        registry_file = self.filename or 'pooch-registry.txt'
+        registry_file_path = cache_path.joinpath(self.version, registry_file)
+        if registry_file_path.exists() and registry_file_path.is_file():
+            from os import access, R_OK
+            if not access(registry_file_path, R_OK):
+                from loguru import logger
+                logger.error(f'Registry file {registry_file_path} exists but is not readable')
+            with registry_file_path.open('r') as file:
+                registry = {k: v for k, v in [x.strip().split(maxsplit=1) for x in file.readlines() if len(x)]}
+        else:
+            import requests
+            # We allow a full-dictionary to be provided, otherwise we expect the registry file to be available from the
+            # base_url where all subsequent files are also expected to be available
+            if not isinstance(registry, dict):
+                r = requests.get((registry or base_url) + registry_file)
+                if not r.ok:
+                    raise RuntimeError(f"Could not retrieve {r.url} because {r.reason}")
+                registry = {k: v for k, v in [x.split(maxsplit=1) for x in r.text.split('\n') if len(x)]}
+            # stash-away the registry file to be re-read next time
+            registry_file_path.parent.mkdir(parents=True, exist_ok=True)
+            with registry_file_path.open('w') as file:
+                file.writelines('\n'.join([f'{k} {v}' for k, v in registry.items()]))
 
         self.pooch = pooch.create(
-            path=pooch.os_cache(self.name),
+            path=cache_path,
             base_url=base_url,
             version=version if version.startswith('v') else None,
             version_dev="main",
