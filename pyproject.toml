@@ -44,10 +44,11 @@ hdf5 = ["h5py>=3.11.0"]
 "Homepage" = "https://github.com/McStasMcXtrace/mccode-antlr"
 
 [project.scripts]
-mcstas-antlr = "mccode_antlr.commands:mcstas"
-mcxtrace-antlr = "mccode_antlr.commands:mcxtrace"
+mcstas-antlr = "mccode_antlr.cli.commands:mcstas"
+mcxtrace-antlr = "mccode_antlr.cli.commands:mcxtrace"
 mcrun-antlr = "mccode_antlr.run.runner:mcstas_cmd"
 mxrun-antlr = "mccode_antlr.run.runner:mcxtrace_cmd"
+mccode-antlr = "mccode_antlr.cli.management:mccode_management"
 
 [tool.setuptools_scm]
 
