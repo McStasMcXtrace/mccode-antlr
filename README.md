@@ -9,7 +9,7 @@ $ python -m pip install git+https://github.com/McStasMcXtrace/mccode-antlr.git
 ```
 or the latest release from PyPI with
 ```Bash
-$ python -p pip install mccode_antlr
+$ python -m pip install mccode_antlr
 ```
 
 # Use
