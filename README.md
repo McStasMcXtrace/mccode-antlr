@@ -2,6 +2,37 @@
 
 Implementing the `mccode-3` language and targeting the `mcstas` and `mcxtrace` runtimes.
 
+# Installation
+Install the latest development version from GitHub with
+```Bash
+$ python -m pip install git+https://github.com/McStasMcXtrace/mccode-antlr.git
+```
+or the latest release from PyPI with
+```Bash
+$ python -p pip install mccode_antlr
+```
+
+# Use
+The `mccode-antlr` package provides a command-line interface to the `McCode` language parsers
+and translators. To avoid shadowing the `McCode-3` translators, the command-line interface
+are suffixed with `-antlr`.
+
+```Bash
+$ mcstas-antlr --help
+```
+
+```Bash
+$ mcxtrace-antlr --help
+```
+
+A local cache is usedfor storing instrument component files and
+runtime library files obtained from [the McCode repository](https://github.com/McStasMcXtrace/McCode.git).
+The cache and configuration parameters for the whole `mccode-antlr` module can be
+accessed via a third command-line interface:
+```Bash
+$ mccode-antlr --help
+```
+
 ## Language parsing with ANTLR4
 The traditional `McCode` `lex|flex` tokenizer and `yacc|bison` parser
 included in-rule code to implement some language features and called
@@ -31,6 +62,9 @@ While `McCode-3` uses a single `language.l` and `language.y` file pair for lexin
 it actually implemented _at least two_ related languages: one for component definitions in `.comp` files,
 one for instrument definitions in `.instr` files,
 plus arguably more for other specialised tasks.
+Notably the `mcdisplay` utilities of `McCode` make use of a special runtime output mode
+to identify the positions and shapes of components, and the paths of particles, which
+is then read by an independent `ply` parser to generated visualizations.
 
 This project makes use of `ANTLR`'s language dependency feature to separate the languages
 into `McComp` for components and `McInstr` for instruments, with common language features
@@ -53,26 +87,3 @@ This project uses the `Python` target so that language-translation can proceed i
 which is well suited to new-feature development, while removing memory handling issues and
 making cross-platform development significantly easier.
 
-
-# Installation
-Install the latest development version from GitHub with
-```Bash
-$ python -m pip install git+https://github.com/McStasMcXtrace/mccode-antlr.git
-```
-or the latest release from PyPI with
-```Bash
-$ python -p pip install mccode_antlr
-```
-
-# Use
-The `mccode-antlr` package provides a command-line interface to the `McCode` language parsers
-and translators. To avoid shadowing the `McCode-3` translators, the command-line interface
-are suffixed with `-antlr`.
-
-```Bash
-$ mcstas-antlr --help
-```
-
-```Bash
-$ mcxtrace-antlr --help
-```
