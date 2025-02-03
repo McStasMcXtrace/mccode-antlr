@@ -230,10 +230,18 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
         languages. (A different target language would not include the same libraries in its raw blocks)
         """
         # Make sure the registry list contains the C library registry, so that we can find and include files
+        from packaging.version import Version
         from ..reader.registry import ordered_registries
         if not any(reg == LIBC_REGISTRY for reg in self.registries):
             self.source.registries += (LIBC_REGISTRY, )
         self.source.registries = tuple(ordered_registries(list(self.source.registries)))
+
+        # Check that the LIBC registry is not too old for current translation
+        for reg in self.source.registries:
+            # NeXus interface changed in v3.5.20 release of McStas/McXtrace == McCode
+            if 'libc' == reg.name and Version(reg.version) < Version("3.5.20"):
+                logger.warning(f"Requested McCode libc version {reg.version} may"
+                               " cause errors since it is less than v3.5.20")
 
         includes = []
         inst = self.source

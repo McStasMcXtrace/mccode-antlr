@@ -149,6 +149,31 @@ def cogen_comp_setpos(index, comp, last, instr, component_declared_parameters):
             pl.append(f'  {fullname} = {p.value if p.value.has_value else 0};')
         return '\n'.join(pl)
 
+    def nexus_lines():
+        # If NeXus output is requested, add a group for this instance,
+        # and loop over its parameter values, adding them to the group:
+        gstr = f'"{index:04d}_{comp.name}"'
+        pos_id = f'_{comp.name}_var._position_absolute'
+        rot_id = f'_{comp.name}_var._rotation_absolute'
+        lns = [
+            '#ifdef USE_NEXUS',
+            '  if (nxhandle) {',
+            '    if ((!mcdotrace) && mcformat && strcasestr(mcformat, "NeXus")) {',
+            '    MPI_MASTER(',
+            f'    mccomp_placement_type_nexus(nxhandle, {gstr}, {pos_id}, {rot_id}, "{comp.type.name}");'
+        ]
+        # loop over component instance parameters and set their values in the NeXus group ...
+        for default in comp.type.setting:
+            p = comp.get_parameter(default.name)
+            dstr = f'{default.value:p}'
+            vstr = f'{p.value:p}'
+            tstr = f'"{default.value.mccode_c_type}"'
+            if not (default.value.is_str or p.value.is_str):
+                dstr, vstr = [f'"{x}"' for x in (dstr, vstr)]
+            lns.append(f'    mccomp_param_nexus(nxhandle, {gstr}, "{default.name}", {dstr}, {vstr}, {tstr});')
+
+        return '\n'.join(lns + ['    );','    }','  }', '#endif'])
+
     f, n = comp.type.initialize[0].fn if len(comp.type.initialize) else (comp.name, 0)
 
     lines = [
@@ -192,6 +217,7 @@ def cogen_comp_setpos(index, comp, last, instr, component_declared_parameters):
     lines.extend([
         f'  instrument->counter_N[{i1}] = instrument->counter_P[{i1}] = instrument->counter_P2[{i1}] = 0;',
         f'  instrument->counter_AbsorbProp[{i1}] = 0;',
+        nexus_lines(),
         f'  return(0);',
         f'}} /* _{comp.name}_setpos */'
     ])
