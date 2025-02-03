@@ -55,14 +55,12 @@ def undef_trace_section(is_mcstas: bool):
     lines = [f'#undef {x}' for x in _runtime_parameters(is_mcstas)]
     lines.extend([
         "#ifdef OPENACC",
-        "#ifndef MULTICORE",
         "#undef strlen",
         "#undef strcmp",
         "#undef exit",
         "#undef printf",
         "#undef sprintf",
         "#undef fprintf",
-        "#endif",
         "#endif",
         "#undef SCATTERED",
         "#undef RESTORE",
