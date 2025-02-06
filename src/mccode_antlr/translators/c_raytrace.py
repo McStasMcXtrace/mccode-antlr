@@ -328,7 +328,6 @@ def cogen_funnel(source, ok_to_skip):
     cpu_last = not source.components[0].cpu if len(source.components) else False
     for index, comp in enumerate(source.components):
         if not comp.type.acc:
-            print(f'Component {comp.name} is NOACC, CPUONLY={comp.cpu}')
             print('->FUNNEL mode enabled, SPLIT within buffer.')
             lines.append('        #define JUMP_FUNNEL')
         if index > 0 and (comp.cpu != cpu_last or comp.split is not None):
@@ -357,7 +356,7 @@ def cogen_funnel(source, ok_to_skip):
             else:
                 lines.extend([
                     "    #ifdef MULTICORE",
-                    "    #pragma acc parallel loop device_type(host)"
+                    "    #pragma acc parallel loop device_type(host)",
                     "    #endif"
                 ])
             lines.extend([

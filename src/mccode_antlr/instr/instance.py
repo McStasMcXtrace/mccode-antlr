@@ -39,7 +39,7 @@ class Instance:
 
     def to_file(self, output, wrapper=None, full=True):
         if self.cpu:
-            print(wrapper.line('CPU', []), file=output)
+            print(wrapper.line('CPU', []), file=output, end='')
 
         instance_parameters = wrapper.hide(', '.join(p.to_string(wrapper=wrapper) for p in self.parameters))
         line = wrapper.bold('COMPONENT') + f' {self.name} = {self.type.name}({instance_parameters}) '
@@ -55,7 +55,7 @@ class Instance:
         # The "AT ..." statement is required even when it is "AT (0, 0, 0) ABSOLUTE"
         line += rf('AT', self.at_relative, required=True) + ' '
         line += rf('ROTATED', self.rotate_relative) + wrapper.br()
-        print(line, file=output)
+        print(line, file=output, end='')
 
         if not full:
             return  # Skip the rest of the output
@@ -108,6 +108,9 @@ class Instance:
             rt = rr[0] if isinstance(rr[0], Angles) else Angles(*rr[0])
             rn, rr = (rr[1].name, rr[1].orientation) if rr[1] else (an, ar)
             self.orientation = Orient.from_dependent_orientations(ar, at, rr, rt)
+        # check if the defining component is marked noacc, in which case this _is_ cpu only
+        if not self.type.acc:
+            self.cpu = True
 
     def set_parameter(self, name: str, value, overwrite=False, allow_repeated=True):
         if not parameter_name_present(self.type.define, name) and not parameter_name_present(self.type.setting, name):
