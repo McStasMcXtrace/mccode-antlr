@@ -328,8 +328,6 @@ def cogen_funnel(source, ok_to_skip):
     cpu_last = not source.components[0].cpu if len(source.components) else False
     for index, comp in enumerate(source.components):
         if not comp.type.acc:
-            # NOACC implies to exclusively generate code for CPU via FUNNEL mode
-            comp.cpu=True
             print(f'Component {comp.name} is NOACC, CPUONLY={comp.cpu}')
             print('->FUNNEL mode enabled, SPLIT within buffer.')
             lines.append('        #define JUMP_FUNNEL')
