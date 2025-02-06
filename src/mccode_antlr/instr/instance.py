@@ -39,10 +39,12 @@ class Instance:
 
     def to_file(self, output, wrapper=None, full=True):
         if self.cpu:
-            print(wrapper.line('CPU', []), file=output)
+            line = wrapper.bold('CPU ')
+        else:
+            line = ''
 
         instance_parameters = wrapper.hide(', '.join(p.to_string(wrapper=wrapper) for p in self.parameters))
-        line = wrapper.bold('COMPONENT') + f' {self.name} = {self.type.name}({instance_parameters}) '
+        line = line + wrapper.bold('COMPONENT') + f' {self.name} = {self.type.name}({instance_parameters}) '
 
         if self.when is not None:
             line += wrapper.bold('WHEN') + ' ' + wrapper.escape(str(self.when)) + ' '
