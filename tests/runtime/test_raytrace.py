@@ -22,13 +22,15 @@ FAKE_COMPONENTS = dict(
     SETTING PARAMETERS (int n)
     TRACE
     %{
-      for (int i= 0; i < n; i++) {
-        printf("%d\\n", i);
+      double store = 3.14159;
+      for (int i = 0; i < n; i++) {
+        store /= 2.0;
       }
     %}
     END
     """),
 )
+
 
 in_memory = InMemoryRegistry("test_components")
 for comp, repr in FAKE_COMPONENTS.items():

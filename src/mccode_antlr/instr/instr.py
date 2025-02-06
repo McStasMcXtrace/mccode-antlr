@@ -290,6 +290,9 @@ class Instr:
         # Each 'flag' in self.flags is from a single instrument component DEPENDENCY, and might contain duplicates:
         # If we accept that white space differences matter, we can deduplicate the strings 'easily'
         unique_flags = set(self.flags)
+        if any(inst.cpu for inst in self.components):
+            unique_flags.add('-DFUNNEL')
+
         # The dependency strings are allowed to contain any of
         #       '@NEXUSFLAGS@', @MCCODE_LIB@, CMD(...), ENV(...), GETPATH(...)
         # each of which should be replaced by ... something. Start by replacing the 'static' (old-style) keywords
