@@ -424,3 +424,9 @@ class CTargetVisitor(TargetVisitor, target_language='c'):
         self.embed_file('metadata-r.c')
         self.embed_file('mccode_main.c')
         self.out(f'/* end of generated C code for {self.source.name} */')
+
+    def visit_flags(self):
+        """Output compilation flags to STDOUT, so that (e.g.) mcrun can pick them up"""
+        flags = self.source.decoded_flags()
+        if len(flags):
+            print(f'CFLAGS= {" ".join(flags)}')

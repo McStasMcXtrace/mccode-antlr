@@ -173,6 +173,8 @@ class TargetVisitor:
         self.visit_display()
         self.info('visit macros')
         self.visit_macros()
+        self.info('visit flags')
+        self.visit_flags()
         if self.verbose and self.warnings:
             print(f"Build of instrument {self.source.name} had {self.warnings} warnings")
         return self.output
@@ -267,6 +269,7 @@ class TargetVisitor:
     def visit_macros(self):
         pass
 
-        
+    def visit_flags(self):
+        pass
         
 
