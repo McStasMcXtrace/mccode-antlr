@@ -4,7 +4,37 @@ from .compiled import compiled_test, gpu_compiled_test, compile_and_run
 from mccode_antlr.config import config
 from mccode_antlr.reader.registry import InMemoryRegistry
 
+
 # config['flags']['acc'] = "-lm -fast -Minfo=accel -acc=host -DOPENACC -x c -D_POSIX_C_SOURCE=2"
+
+
+class Capturing(list):
+    def __enter__(self):
+        from io import StringIO
+        import sys
+        self._stdout = sys.stdout
+        sys.stdout = self._stringio = StringIO()
+        return self
+
+    def __exit__(self, *args):
+        import sys
+        self.extend(self._stringio.getvalue().splitlines())
+        del self._stringio  # free up some memory
+        sys.stdout = self._stdout
+
+
+def instrument_translation_prints_funnel(instr):
+    import re
+    from mccode_antlr.compiler.c import instrument_source
+    from mccode_antlr.translators.target import MCSTAS_GENERATOR
+    # Check that the McStas-parsing of the instrument prints '-DFUNNEL' to STDOUT
+    with Capturing() as output:
+        instrument_source(instr, MCSTAS_GENERATOR, {}, False)
+
+    flags_line = re.compile('^CFLAGS=.*$')
+
+    return any('-DFUNNEL' in line for line in output if flags_line.match(line))
+
 
 FAKE_COMPONENTS = dict(
     with_noacc=dedent("""DEFINE COMPONENT with_noacc
@@ -45,6 +75,7 @@ def test_simple_acc():
     component origin = without_noacc() at (0, 0, 0) absolute
     end
     """), registries=[in_memory])
+    assert not instrument_translation_prints_funnel(instr)
     compile_and_run(instr, '-n 1 dummy=2', target={'acc': True})
 
 
@@ -58,6 +89,7 @@ def test_cpu_only_instance():
     component disordered = without_noacc() at (0, 0, 2) absolute
     end
     """), registries=[in_memory])
+    assert instrument_translation_prints_funnel(instr)
     compile_and_run(instr, '-n 1 dummy=2', target={'acc': True})
 
 
@@ -71,6 +103,7 @@ def test_noacc_component():
     component ordered = with_noacc() at (0, 0, 1) absolute
     end
     """), registries=[in_memory])
+    assert instrument_translation_prints_funnel(instr)
     compile_and_run(instr, '-n 1 dummy=2', target={'acc': True})
 
 
@@ -83,6 +116,7 @@ def test_cpu_and_noacc_component():
     cpu component ordered = with_noacc() at (0, 0, 1) absolute
     end
     """), registries=[in_memory])
+    assert instrument_translation_prints_funnel(instr)
     compile_and_run(instr, '-n 1 dummy=2', target={'acc': True})
 
 
