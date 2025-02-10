@@ -357,7 +357,7 @@ def cogen_funnel(source, ok_to_skip):
             else:
                 lines.extend([
                     "    #ifdef MULTICORE",
-                    "    #pragma acc parallel loop device_type(host)"
+                    "    #pragma acc parallel loop device_type(host)",
                     "    #endif"
                 ])
             lines.extend([

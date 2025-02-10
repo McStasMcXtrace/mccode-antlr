@@ -5,7 +5,7 @@ Linux:
   flags:
     cc: -g -O2 -std=c99 -x c -D_POSIX_C_SOURCE=2
     ld: -lm
-    acc: -lm -fast -Minfo=accel -acc=gpu -gpu=managed -DOPENACC -x c -D_POSIX_C_SOURCE
+    acc: -lm -fast -Minfo=accel -acc=gpu -gpu=mem:managed -DOPENACC -x c -D_POSIX_C_SOURCE=2
     nexus: -DUSE_NEXUS -lNeXus
     mpi: -DUSE_MPI -lmpi
     gsl: -lgsl -lgslcblas

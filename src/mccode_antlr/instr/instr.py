@@ -286,14 +286,21 @@ class Instr:
                 logger.warning(f'Unknown keyword @{replace}@ in dependency string')
         return flag
 
+    @property
+    def unique_flags(self) -> set[str]:
+        # Each 'flag' in self.flags is from a single instrument component DEPENDENCY,
+        # and might contain duplicates: If we accept that white space differences
+        # matter, we can deduplicate the strings 'easily'
+        uf = set(self.flags)
+        if any(inst.cpu for inst in self.components):
+            uf.add('-DFUNNEL')
+        return uf
+
     def decoded_flags(self) -> list[str]:
-        # Each 'flag' in self.flags is from a single instrument component DEPENDENCY, and might contain duplicates:
-        # If we accept that white space differences matter, we can deduplicate the strings 'easily'
-        unique_flags = set(self.flags)
         # The dependency strings are allowed to contain any of
         #       '@NEXUSFLAGS@', @MCCODE_LIB@, CMD(...), ENV(...), GETPATH(...)
         # each of which should be replaced by ... something. Start by replacing the 'static' (old-style) keywords
-        replaced_flags = [self._replace_keywords(flag) for flag in unique_flags]
+        replaced_flags = [self._replace_keywords(flag) for flag in self.unique_flags]
         # Then use the above decoder method to replace any instances of CMD, ENV, or GETPATH
         return [self._replace_env_getpath_cmd(flag) for flag in replaced_flags]
 
