@@ -26,7 +26,8 @@ def compiles(compiler: str, instr):
     from pathlib import Path
     from tempfile import TemporaryDirectory
     from mccode_antlr.translators.target import MCSTAS_GENERATOR
-    from .c import (CBinaryTarget, get_compiler_linker_flags, instrument_source,
+    from .c import (CBinaryTarget, instrument_source,
+                    linux_split_flags, windows_split_flags,
                     linux_compile, windows_compile)
     from ..config import config as module_config
 
@@ -35,7 +36,9 @@ def compiles(compiler: str, instr):
     compile_config = dict(default_main=True, enable_trace=False, portable=False,
                   include_runtime=True, embed_instrument_file=False, verbose=False)
 
-    compiler_flags, linker_flags = get_compiler_linker_flags(instr, target)
+    split_flags = windows_split_flags if 'Windows' == system() else linux_split_flags
+
+    compiler_flags, linker_flags = split_flags(instr, target)
 
     with TemporaryDirectory() as directory:
         binary = Path(directory) / f"output{module_config['ext'].get(str)}"
