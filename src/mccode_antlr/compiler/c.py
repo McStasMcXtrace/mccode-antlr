@@ -118,12 +118,12 @@ def windows_split_flags(instrument: Instr, target: CBinaryTarget):
         flag = flag.strip()
         if (flag.startswith('/D') or flag.startswith('-D')) and not flag == '/DYNAMICBASE':
             # assume this is a macro definition for cl.exe
-            compiler_flags.extend(flag)
+            compiler_flags.append(flag)
         elif flag.startswith('/p:') and '=' in flag:
             # this is _always_(?) a macro define to have a specific value
-            compiler_flags.extend(flag)
+            compiler_flags.append(flag)
         else:
-            linker_flags.extend(flag)
+            linker_flags.append(flag)
 
     # Check for OpenACC or NeXus in flags?
     return compiler_flags, linker_flags
