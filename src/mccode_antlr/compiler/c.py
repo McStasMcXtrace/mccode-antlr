@@ -91,7 +91,7 @@ def instrument_source(instrument: Instr, generator: dict, config: dict, verbose:
     return visitor.contents()
 
 
-def get_compiler_linker_flags(instrument: Instr, target: CBinaryTarget):
+def linux_split_flags(instrument: Instr, target: CBinaryTarget):
     # the type of binary requested determines (some of) the required flags:
     compiler_flags = target.flags + target.extra_flags
     linker_flags = target.linker_flags
@@ -104,6 +104,28 @@ def get_compiler_linker_flags(instrument: Instr, target: CBinaryTarget):
     if any('OPENACC' in word for word in compiler_flags) and any(
             'NeXus' in word for word in compiler_flags):
         compiler_flags.append('-D__GNUC__')
+    return compiler_flags, linker_flags
+
+
+def windows_split_flags(instrument: Instr, target: CBinaryTarget):
+    # the type of binary requested determines (some of) the required flags:
+    compiler_flags = target.flags + target.extra_flags
+    linker_flags = target.linker_flags
+    # instrument-defined flags may be for the compiler or linker.
+    # cl.exe accepts a _wide_ array of flags, most of which we can't support
+    # so, instead we are forced to handle things piecemeal.
+    for flag in instrument.decoded_flags():
+        flag = flag.strip()
+        if (flag.startswith('/D') or flag.startswith('-D')) and not flag == '/DYNAMICBASE':
+            # assume this is a macro definition for cl.exe
+            compiler_flags.extend(flag)
+        elif flag.startswith('/p:') and '=' in flag:
+            # this is _always_(?) a macro define to have a specific value
+            compiler_flags.extend(flag)
+        else:
+            linker_flags.extend(flag)
+
+    # Check for OpenACC or NeXus in flags?
     return compiler_flags, linker_flags
 
 
@@ -171,7 +193,6 @@ def _compile_instrument(
     if output.exists() and not replace:
         return output
 
-    compiler_flags, linker_flags = get_compiler_linker_flags(instrument, target)
     source = instrument_source(instrument, **kwargs)
     if 'Windows' != system() and dump_source:
         source_file = Path().joinpath(output.parts[-1]).with_suffix('.c')
@@ -180,6 +201,8 @@ def _compile_instrument(
             cfile.write(source)
 
     _compile = windows_compile if 'Windows' == system() else linux_compile
+    _handle_flags = windows_split_flags if 'Windows' == system() else linux_split_flags
+    compiler_flags, linker_flags = _handle_flags(instrument, target)
     command, result = _compile(target.compiler, compiler_flags, output, linker_flags, source)
 
     if result.returncode:
