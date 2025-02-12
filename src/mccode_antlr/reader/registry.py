@@ -357,7 +357,7 @@ class InMemoryRegistry(Registry):
         self.name = name
         self.root = '/proc/memory/'  # Something pathlike is needed?
         self.version = mccode_antlr_version()
-        self.components = {k: v for k, v in components.items()}
+        self.components = {k if k.lower().endswith('.comp') else f'{k}.comp': v for k, v in components.items()}
         self.priority = priority
 
     def add(self, name: str, definition: str):

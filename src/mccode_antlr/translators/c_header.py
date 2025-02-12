@@ -12,6 +12,10 @@ def header_pre_runtime(
 ):
     from datetime import datetime
     from mccode_antlr import version
+    from .c_particle import (
+        accessible_struct_members, restorable_struct_members,
+        setstate_signature_members, getstate_signature_members, setstate_signature_call
+    )
 
     def jump_line(instance, jump):
         return f'long Jump_{instance.name}_{jump.target}; /* the JUMP connection <from>_<to> */'
@@ -36,23 +40,34 @@ def header_pre_runtime(
     uservar_string = '//user variables and comp - injections:\n' if len(uservars) else ''
     uservar_string += '\n'.join([f'  {x};' for x in uservars])
 
+    members = list(accessible_struct_members(is_mcstas)) + [x.name for x in uservars]
     # Shouldn't we exclude array-valued names here?
     getvar = '\n'.join(
-        [f'  if(!str_comp("{x.name}",name)){{rval=*((double*)(&(p->{x.name})));s=0;}}' for x in uservars])
+        [f'  if(!str_comp("{x}",name)){{rval=*((double*)(&(p->{x})));s=0;}}' for x in members]
+    )
 
     # Array valued names seem OK here, since a user can type-cast correctly
     getvar_void = '\n'.join(
-        [f'  if (!str_comp("{x.name}", name)){{rval=(void * ) & (p->{x.name});s=0;}}' for x in uservars])
+        [f'  if (!str_comp("{x}", name)){{rval=(void * ) & (p->{x});s=0;}}' for x in members]
+    )
 
     # For non-array values we can safely use memcpy (probably)
+    members_types = ([(x, y) for x, y in accessible_struct_members(is_mcstas).items()]
+                     + [(x.name, x.dtype) for x in uservars if not x.is_array and not x.is_pointer]
+                     )
     setvar_void = '\n'.join(
-        [f'  if(!str_comp("{x.name}",name)){{memcpy(&(p->{x.name}), value, sizeof({x.dtype})); rval=0;}}'
-         for x in uservars if not x.is_array and not x.is_pointer])
+        [f'  if(!str_comp("{x}",name)){{memcpy(&(p->{x}), value, sizeof({y})); rval=0;}}'
+         for x, y in members_types]
+    )
 
     # an array -- need to know how many elements we're copying
     setvar_void_array = '\n'.join(
         [f'  if(!str_comp("{x.name}",name)){{memcpy(&(p->{x.name}), value, elements * sizeof({x.dtype})); rval=0;}}'
          for x in uservars if x.is_array or x.is_pointer])
+
+    restore = '\n'.join(
+        [f'  p->{x} = p0->{x};' for x in restorable_struct_members(is_mcstas)]
+    )
 
     getuservar_byid = '\n'.join(
         [f'  case {i}: {{rval=*( (double *)(&(p->{x.name})) ); s=0; break;}}' for i, x in enumerate(uservars)])
@@ -65,6 +80,10 @@ def header_pre_runtime(
             print('  --> and may need specific per-particle initialization through an EXTEND block!\n')
         else:
             uservar_init += f'\np->{x.name}={0 if x.init is None else x.init};'
+
+    mcsetstate = ', '.join(f'{t} {n}' for n, t in setstate_signature_members(is_mcstas).items())
+    mcgetstate = ', '.join(f'{t} {n}' for n, t in getstate_signature_members(is_mcstas).items())
+    mcinitstate = ', '.join(setstate_signature_call(is_mcstas))
 
     contents = dedent(f"""/* Automatically generated file. Do not edit.
      * Format:     ANSI C source code
@@ -142,8 +161,9 @@ def header_pre_runtime(
     #pragma acc routine
     _class_particle mcgenstate(void);
     #pragma acc routine
-    _class_particle mcsetstate(double x, double y, double z, double vx, double vy, double vz,
-        double t, double sx, double sy, double sz, double p, int mcgravitation, void *mcMagnet, int mcallowbackprop);
+    _class_particle mcsetstate({mcsetstate});
+    #pragma acc routine
+    _class_particle mcgetstate({mcgetstate});
     
     extern int mcgravitation;      /* flag to enable gravitation */
     #pragma acc declare create ( mcgravitation )
@@ -151,7 +171,7 @@ def header_pre_runtime(
     #pragma acc declare create ( mcallowbackprop )
     
     _class_particle mcgenstate(void) {{
-      _class_particle particle = mcsetstate(0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, mcgravitation, NULL, mcallowbackprop);
+      _class_particle particle = mcsetstate({mcinitstate});
       return(particle);
     }}
     /*Generated user variable handlers:*/
@@ -170,20 +190,6 @@ def header_pre_runtime(
     #endif
       int s=1;
       double rval=0;
-      if(!str_comp("x",name)){{rval=p->x;s=0;}}
-      if(!str_comp("y",name)){{rval=p->y;s=0;}}
-      if(!str_comp("z",name)){{rval=p->z;s=0;}}
-      if(!str_comp("vx",name)){{rval=p->vx;s=0;}}
-      if(!str_comp("vy",name)){{rval=p->vy;s=0;}}
-      if(!str_comp("vz",name)){{rval=p->vz;s=0;}}
-      if(!str_comp("sx",name)){{rval=p->sx;s=0;}}
-      if(!str_comp("sy",name)){{rval=p->sy;s=0;}}
-      if(!str_comp("sz",name)){{rval=p->sz;s=0;}}
-      if(!str_comp("t",name)){{rval=p->t;s=0;}}
-      if(!str_comp("p",name)){{rval=p->p;s=0;}}
-      if(!str_comp("_mctmp_a",name)){{rval=p->_mctmp_a;s=0;}}
-      if(!str_comp("_mctmp_b",name)){{rval=p->_mctmp_b;s=0;}}
-      if(!str_comp("_mctmp_c",name)){{rval=p->_mctmp_c;s=0;}}
     {getvar}  
       if (suc!=0x0) {{*suc=s;}}
       return rval;
@@ -202,17 +208,6 @@ def header_pre_runtime(
     #endif
       int s=1;
       void* rval=0;
-      if(!str_comp("x",name)) {{rval=(void*)&(p->x); s=0;}}
-      if(!str_comp("y",name)) {{rval=(void*)&(p->y); s=0;}}
-      if(!str_comp("z",name)) {{rval=(void*)&(p->z); s=0;}}
-      if(!str_comp("vx",name)){{rval=(void*)&(p->vx);s=0;}}
-      if(!str_comp("vy",name)){{rval=(void*)&(p->vy);s=0;}}
-      if(!str_comp("vz",name)){{rval=(void*)&(p->vz);s=0;}}
-      if(!str_comp("sx",name)){{rval=(void*)&(p->sx);s=0;}}
-      if(!str_comp("sy",name)){{rval=(void*)&(p->sy);s=0;}}
-      if(!str_comp("sz",name)){{rval=(void*)&(p->sz);s=0;}}
-      if(!str_comp("t",name)) {{rval=(void*)&(p->t); s=0;}}
-      if(!str_comp("p",name)) {{rval=(void*)&(p->p); s=0;}}
     {getvar_void}
       if (suc!=0x0) {{*suc=s;}}
       return rval;
@@ -225,17 +220,6 @@ def header_pre_runtime(
     #define str_comp strcmp
     #endif
       int rval=1;
-      if(!str_comp("x",name)) {{memcpy(&(p->x),  value, sizeof(double)); rval=0;}}
-      if(!str_comp("y",name)) {{memcpy(&(p->y),  value, sizeof(double)); rval=0;}}
-      if(!str_comp("z",name)) {{memcpy(&(p->z),  value, sizeof(double)); rval=0;}}
-      if(!str_comp("vx",name)){{memcpy(&(p->vx), value, sizeof(double)); rval=0;}}
-      if(!str_comp("vy",name)){{memcpy(&(p->vy), value, sizeof(double)); rval=0;}}
-      if(!str_comp("vz",name)){{memcpy(&(p->vz), value, sizeof(double)); rval=0;}}
-      if(!str_comp("sx",name)){{memcpy(&(p->sx), value, sizeof(double)); rval=0;}}
-      if(!str_comp("sy",name)){{memcpy(&(p->sy), value, sizeof(double)); rval=0;}}
-      if(!str_comp("sz",name)){{memcpy(&(p->sz), value, sizeof(double)); rval=0;}}
-      if(!str_comp("p",name)) {{memcpy(&(p->p),  value, sizeof(double)); rval=0;}}
-      if(!str_comp("t",name)) {{memcpy(&(p->t),  value, sizeof(double)); rval=0;}}
     {setvar_void}  
       return rval;
     }}
@@ -256,10 +240,7 @@ def header_pre_runtime(
     #pragma acc routine
     void particle_restore(_class_particle *p, _class_particle *p0);
     void particle_restore(_class_particle *p, _class_particle *p0) {{
-      p->x  = p0->x;  p->y  = p0->y;  p->z  = p0->z;
-      p->vx = p0->vx; p->vy = p0->vy; p->vz = p0->vz;
-      p->sx = p0->sx; p->sy = p0->sy; p->sz = p0->sz;
-      p->t = p0->t;  p->p  = p0->p;
+      {restore}
       p->_absorbed=0; p->_restore=0;
     }}
     
