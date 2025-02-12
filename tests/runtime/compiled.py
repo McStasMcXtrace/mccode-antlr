@@ -1,5 +1,6 @@
 from __future__ import annotations
 from functools import cache
+from enum import Enum
 import pytest
 
 from mccode_antlr.compiler.check import simple_instr_compiles
@@ -45,13 +46,26 @@ def mcpl_compiled_test(method):
     return method
 
 
-def compile_and_run(instr, parameters, run=True, dump_source=True, target: dict | None = None, config: dict | None = None):
+class Flavor(Enum):
+    MCSTAS=1
+    MCXTRACE=2
+
+
+def compile_and_run(instr,
+                    parameters,
+                    run=True,
+                    dump_source=True,
+                    target: dict | None = None,
+                    config: dict | None = None,
+                    flavor: Flavor = Flavor.MCSTAS):
     from pathlib import Path
     from tempfile import TemporaryDirectory
-    from mccode_antlr.translators.target import MCSTAS_GENERATOR
+    from mccode_antlr.translators.target import MCSTAS_GENERATOR, MCXTRACE_GENERATOR
     from mccode_antlr.run import mccode_compile, mccode_run_compiled
 
-    kwargs = dict(generator=MCSTAS_GENERATOR, target=target, config=config, dump_source=dump_source)
+    generator = MCXTRACE_GENERATOR if flavor == Flavor.MCXTRACE else MCSTAS_GENERATOR
+
+    kwargs = dict(generator=generator, target=target, config=config, dump_source=dump_source)
 
     with TemporaryDirectory() as directory:
         binary, target = mccode_compile(instr, directory, **kwargs)
