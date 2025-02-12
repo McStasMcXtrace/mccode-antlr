@@ -114,15 +114,29 @@ def windows_split_flags(instrument: Instr, target: CBinaryTarget):
     # instrument-defined flags may be for the compiler or linker.
     # cl.exe accepts a _wide_ array of flags, most of which we can't support
     # so, instead we are forced to handle things piecemeal.
+    cl_flags = {
+        'D': {'not': '/DYNAMICBASE',},
+        'U': {},
+        'p': {'has': '='},
+        'std': {'has': '=', 'replace': ('=', ':')}
+    }
     for flag in instrument.decoded_flags():
         flag = flag.strip()
-        if (flag.startswith('/D') or flag.startswith('-D')) and not flag == '/DYNAMICBASE':
-            # assume this is a macro definition for cl.exe
-            compiler_flags.append(flag)
-        elif flag.startswith('/p:') and '=' in flag:
-            # this is _always_(?) a macro define to have a specific value
-            compiler_flags.append(flag)
+        if not flag.startswith('/') and not flag.startswith('-'):
+            # Not an actual flag? Punt for now
+            linker_flags.append(flag)
+        elif any(flag[1:].startswith(key) for key in cl_flags):
+            d = next(d for key, d in cl_flags.items() if flag[1:].startswith(key))
+            if ('not' in d and flag == d['not']) or ('has' in d and not d['has'] in flag):
+                linker_flags.append(flag)
+            else:
+                if 'replace' in d:
+                    flag = flag.replace(d['replace'][0], d['replace'][1])
+                compiler_flags.append(flag)
+        elif flag[1:].lower().startswith('l') or flag.lower().endswith('.lib'):
+            linker_flags.append(flag)
         else:
+            # Second punt; no match for our special (post / or -) strings
             linker_flags.append(flag)
 
     # Check for OpenACC or NeXus in flags?
