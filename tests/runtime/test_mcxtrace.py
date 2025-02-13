@@ -5,14 +5,17 @@ from mccode_antlr.reader.registry import InMemoryRegistry
 
 in_memory = InMemoryRegistry(
     "test_components",
-    trace_counter=dedent("""DEFINE COMPONENT trace_counter
+    calls_restore_xray=dedent("""DEFINE COMPONENT calls_restore_xray
     SETTING PARAMETERS (int n)
-    NOACC
-    TRACE
-    %{
-      for (int i= 0; i < n; i++) {
-        printf("%d\\n", i);
-      }
+    TRACE %{
+    RESTORE_XRAY(INDEX_CURRENT_COMP, x, y, z, kx, ky, kz, phi, t, Ex, Ey, Ez, p);
+    %}
+    END
+    """),
+    calls_restore_neutron=dedent("""DEFINE COMPONENT calls_restore_neutron
+    SETTING PARAMETERS (int n)
+    TRACE %{
+    RESTORE_NEUTRON(INDEX_CURRENT_COMP, x, y, z, vx, vy, vz, t, sx, sy, sz, p);
     %}
     END
     """),
@@ -43,3 +46,19 @@ def test_simplest_mcxtrace():
     """), registries=[in_memory])
     compile_and_run(instr, '-n 1 dummy=2', flavor=Flavor.MCXTRACE)
 
+
+@compiled_test
+def test_restore_neutron():
+    instr = parse_mcstas_instr(dedent("""
+    define instrument test_restore_neutron(dummy=0.)
+    trace component origin = calls_restore_neutron() at (0, 0, 0) absolute end
+    """), registries=[in_memory])
+    compile_and_run(instr, '-n 1 dummy=2', flavor=Flavor.MCSTAS)
+
+@compiled_test
+def test_restore_xray():
+    instr = parse_mcstas_instr(dedent("""
+    define instrument test_restore_xray(dummy=0.)
+    trace component origin = calls_restore_xray() at (0, 0, 0) absolute end
+    """), registries=[in_memory])
+    compile_and_run(instr, '-n 1 dummy=2', flavor=Flavor.MCXTRACE)

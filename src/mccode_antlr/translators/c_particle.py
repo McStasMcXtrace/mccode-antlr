@@ -1,3 +1,7 @@
+def restore_name(is_mcstas):
+    return "RESTORE_NEUTRON" if is_mcstas else "RESTORE_XRAY"
+
+
 def xyz_Axyz_Bxyz(is_mcstas, type_str):
     """Return lists of particle struct members
 

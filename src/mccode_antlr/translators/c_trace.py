@@ -21,6 +21,7 @@ def _runtime_kv_parameters(is_mcstas: bool):
 
 
 def def_trace_section(is_mcstas: bool):
+    from .c_particle import restore_name
     lines = [
         "/*******************************************************************************",
         "* components TRACE",
@@ -42,7 +43,7 @@ def def_trace_section(is_mcstas: bool):
         "#define SCATTERED (_particle->_scattered)",
         "#define RESTORE (_particle->_restore)",
         "#define ABSORBED (_particle->_absorbed)",
-        "#define RESTORE_NEUTRON(_index, ...) _particle->_restore = _index;",
+        f'#define {restore_name(is_mcstas)}(_index, ...) _particle->_restore = _index;',
         # /* define mcget_run_num within trace scope to refer to the particle */
         "#define mcget_run_num() _particle->_uid",
         "#define ABSORB0 do { DEBUG_STATE(); DEBUG_ABSORB(); MAGNET_OFF; ABSORBED++; return(_comp); } while(0)",
@@ -52,6 +53,7 @@ def def_trace_section(is_mcstas: bool):
 
 
 def undef_trace_section(is_mcstas: bool):
+    from .c_particle import restore_name
     lines = [f'#undef {x}' for x in _runtime_parameters(is_mcstas)]
     lines.extend([
         "#ifdef OPENACC",
@@ -64,7 +66,7 @@ def undef_trace_section(is_mcstas: bool):
         "#endif",
         "#undef SCATTERED",
         "#undef RESTORE",
-        "#undef RESTORE_NEUTRON",
+        f"#undef {restore_name(is_mcstas)}",
         "#undef STORE_NEUTRON",
         "#undef ABSORBED",
         "#undef ABSORB",
