@@ -27,6 +27,10 @@ def def_trace_section(is_mcstas: bool):
         "*******************************************************************************/"
     ]
     lines.extend([f'#define {x} (_particle->{x})' for x in _runtime_parameters(is_mcstas)])
+    if is_mcstas:
+        restore_particle="#define RESTORE_NEUTRON(_index, ...) _particle->_restore = _index;"
+    else:
+        restore_particle="#define RESTORE_XRAY(_index, ...) _particle->_restore = _index;"
     lines.extend([
         "/* if on GPU, globally nullify sprintf,fprintf,printfs   */",
         "/* (Similar defines are available in each comp trace but */",
@@ -42,7 +46,7 @@ def def_trace_section(is_mcstas: bool):
         "#define SCATTERED (_particle->_scattered)",
         "#define RESTORE (_particle->_restore)",
         "#define ABSORBED (_particle->_absorbed)",
-        "#define RESTORE_NEUTRON(_index, ...) _particle->_restore = _index;",
+        restore_particle,
         # /* define mcget_run_num within trace scope to refer to the particle */
         "#define mcget_run_num() _particle->_uid",
         "#define ABSORB0 do { DEBUG_STATE(); DEBUG_ABSORB(); MAGNET_OFF; ABSORBED++; return(_comp); } while(0)",
@@ -53,6 +57,10 @@ def def_trace_section(is_mcstas: bool):
 
 def undef_trace_section(is_mcstas: bool):
     lines = [f'#undef {x}' for x in _runtime_parameters(is_mcstas)]
+    if is_mcstas:
+        restore_particle="#undef RESTORE_NEUTRON"
+    else:
+        restore_particle="#undef RESTORE_XRAY"
     lines.extend([
         "#ifdef OPENACC",
         "#undef strlen",
@@ -64,7 +72,7 @@ def undef_trace_section(is_mcstas: bool):
         "#endif",
         "#undef SCATTERED",
         "#undef RESTORE",
-        "#undef RESTORE_NEUTRON",
+        restore_particle,
         "#undef STORE_NEUTRON",
         "#undef ABSORBED",
         "#undef ABSORB",
